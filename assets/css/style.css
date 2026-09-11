@@ -116,7 +116,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 }
 .card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
 .card-img{aspect-ratio:1/1;background:#eef2f5;overflow:hidden;position:relative}
-.card-img img{width:100%;height:100%;object-fit:cover}
+.card-img img{width:100%;height:100%;object-fit:contain}
 .card-cat{
   position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);
   padding:3px 10px;border-radius:999px;font-size:.68rem;font-weight:700;
@@ -156,9 +156,9 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   background:rgba(0,0,0,.06);border:none;display:grid;place-items:center;font-size:1.1rem;z-index:2;
 }
 .modal-gallery{background:#f0f3f5}
-.modal-gallery img{width:100%;aspect-ratio:1/1;object-fit:cover}
+.modal-gallery img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f0f3f5}
 .modal-thumbs{display:flex;gap:6px;padding:8px;overflow-x:auto}
-.modal-thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:2px solid transparent;flex:none;cursor:pointer}
+.modal-thumbs img{width:56px;height:56px;object-fit:contain;background:#f0f3f5;border-radius:8px;border:2px solid transparent;flex:none;cursor:pointer}
 .modal-thumbs img.active{border-color:var(--color-primary)}
 .modal-info{padding:26px 26px 26px 20px;display:flex;flex-direction:column;gap:14px}
 .modal-cat{color:var(--color-primary-dark);font-weight:700;font-size:.78rem;text-transform:uppercase;letter-spacing:.03em}
@@ -231,7 +231,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .cart-drawer h3{margin-top:6px}
 .cart-lines{display:flex;flex-direction:column;gap:14px;margin:18px 0}
 .cart-line{display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:start}
-.cart-line img{width:56px;height:56px;object-fit:cover;border-radius:8px;background:#eef2f5}
+.cart-line img{width:56px;height:56px;object-fit:contain;border-radius:8px;background:#eef2f5}
 .cart-line-title{font-size:.86rem;font-weight:600;color:var(--color-ink);line-height:1.3;margin-bottom:4px}
 .cart-line-price{font-size:.8rem;color:var(--color-muted);margin-bottom:6px}
 .cart-line-remove{background:none;border:none;color:var(--color-muted);font-size:1.2rem;line-height:1;padding:4px}
@@ -252,6 +252,31 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .toolbar{position:static}
   .hero{height:220px}
   .hero-copy h1{font-size:1.5rem}
+  .field-row{grid-template-columns:1fr}
+}
+
+@media (max-width:600px){
+  .site-header .container{gap:8px}
+  .brand{font-size:1rem;gap:8px}
+  .brand img{width:30px;height:30px}
+  .pill-btn{padding:7px 12px;font-size:.82rem}
+  .icon-btn{width:34px;height:34px}
+  .hero-copy p{font-size:.88rem}
+  .results-bar{margin:16px 0 10px}
+}
+
+@media (max-width:480px){
+  .container{padding:0 14px}
+  .grid{grid-template-columns:repeat(2,1fr);gap:10px;padding-bottom:40px}
+  .card-body{padding:10px 10px 12px;gap:6px}
+  .card-title{font-size:.82rem;min-height:2.3em}
+  .card-price{font-size:1rem}
+  .card-actions{flex-direction:column;gap:6px}
+  .btn{padding:9px 10px;font-size:.8rem}
+  .card-cat{font-size:.6rem;padding:2px 8px}
+  .toolbar{padding:12px 0}
+  .chips{gap:6px}
+  .chip{padding:7px 12px;font-size:.82rem}
 }
 
 /* ===== Admin ===== */
@@ -280,12 +305,12 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .status-msg.info{background:#eaf2fb;color:var(--color-primary-dark)}
 .admin-table{width:100%;border-collapse:collapse;font-size:.88rem}
 .admin-table th,.admin-table td{text-align:left;padding:10px;border-bottom:1px solid var(--color-border)}
-.admin-table img{width:44px;height:44px;object-fit:cover;border-radius:6px}
+.admin-table img{width:44px;height:44px;object-fit:contain;background:#eef2f5;border-radius:6px}
 .admin-table .row-actions{display:flex;gap:8px}
 .small-btn{padding:6px 12px;font-size:.78rem;border-radius:8px;border:1px solid var(--color-border);background:#fff}
 .small-btn.danger{color:#b3261e;border-color:#f3c9c6}
 .thumb-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.thumb-preview img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--color-border)}
+.thumb-preview img{width:64px;height:64px;object-fit:contain;background:#eef2f5;border-radius:8px;border:1px solid var(--color-border)}
 .help-text{font-size:.8rem;color:var(--color-muted);margin-top:4px}
 
 /* Admin tabs */
@@ -320,6 +345,25 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 }
 .order-date{color:var(--color-muted);font-size:.8rem;margin-left:10px}
 .order-status-select{padding:6px 10px;border-radius:8px;border:1px solid var(--color-border);font-size:.82rem;font-weight:700}
+.order-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+
+/* Order create/edit form */
+.order-item-edit-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.order-item-edit-row .oi-title{flex:1;min-width:0}
+.order-item-edit-row .oi-price,.order-item-edit-row .oi-qty{width:90px;flex:none}
+.order-item-edit-row input{padding:9px 10px;border-radius:8px;border:1px solid var(--color-border);font-size:.88rem;font-family:inherit}
+.order-item-edit-row .oi-remove{flex:none;padding:8px 10px}
+.order-form-total{font-size:1rem;margin:14px 0 4px}
+.order-form-total b{color:var(--color-primary-dark);font-size:1.15rem}
+
+/* Revenue summary */
+.revenue-summary{display:flex;gap:16px;margin:16px 0;flex-wrap:wrap}
+.revenue-stat{
+  flex:1;min-width:150px;background:var(--color-bg);border:1px solid var(--color-border);
+  border-radius:var(--radius);padding:14px 18px;
+}
+.revenue-stat span{display:block;font-size:.78rem;color:var(--color-muted);margin-bottom:4px}
+.revenue-stat b{font-size:1.4rem;color:var(--color-primary-dark)}
 .order-card-body{padding:16px;display:grid;grid-template-columns:1.2fr 1fr;gap:20px}
 .order-items{display:flex;flex-direction:column;gap:4px;font-size:.86rem}
 .order-item-row{display:flex;justify-content:space-between;gap:10px}
@@ -330,4 +374,16 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 
 @media (max-width:640px){
   .order-card-body{grid-template-columns:1fr}
+}
+
+@media (max-width:600px){
+  .admin-shell{padding:20px 14px 60px}
+  .card-panel{padding:18px}
+  .admin-tabs{gap:4px}
+  .admin-tab{padding:9px 12px;font-size:.85rem}
+  .order-item-edit-row{flex-wrap:wrap}
+  .order-item-edit-row .oi-title{flex:1 1 100%}
+  .order-item-edit-row .oi-price,.order-item-edit-row .oi-qty{flex:1;width:auto}
+  .orders-toolbar{flex-direction:column;align-items:stretch}
+  .revenue-stat{min-width:0}
 }

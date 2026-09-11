@@ -107,7 +107,9 @@ no se guardará ningún historial y la pestaña "Pedidos" del panel quedará vac
    valores de ejemplo (`TU_API_KEY`, etc.). Sube el cambio al repositorio.
 
 Con esto, la cesta ya guardará los pedidos y en `admin.html` → pestaña **Pedidos** podrás iniciar
-sesión con el email/contraseña del paso 5 y gestionarlos.
+sesión con el email/contraseña del paso 5 y gestionarlos: crear pedidos manuales (por ejemplo, uno
+que te llegue por teléfono), editar cualquier dato o los productos de un pedido existente, borrarlos,
+y consultar el **total facturado** filtrando por rango de fechas (no cuenta los pedidos cancelados).
 
 > Estos datos de `firebaseConfig` (apiKey, projectId...) no son secretos — están pensados para ir en
 > el código de cualquier app web. La seguridad real la dan las reglas de Firestore del paso 3 y tu

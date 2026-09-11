@@ -8,6 +8,7 @@
 <link rel="icon" href="images/site/logo.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
+<script src="assets/js/device.js"></script>
 </head>
 <body class="admin-body">
 
@@ -166,6 +167,100 @@
     </div>
 
     <div id="orders-panel" style="display:none">
+
+      <div class="card-panel">
+        <h3>Resumen de ventas</h3>
+        <div class="field-row">
+          <div class="field">
+            <label>Desde</label>
+            <input type="date" id="revenue-from">
+          </div>
+          <div class="field">
+            <label>Hasta</label>
+            <input type="date" id="revenue-to">
+          </div>
+        </div>
+        <div class="revenue-summary">
+          <div class="revenue-stat"><span>Total facturado</span><b id="revenue-total">0,00 €</b></div>
+          <div class="revenue-stat"><span>Pedidos</span><b id="revenue-count">0</b></div>
+        </div>
+        <p class="help-text">No incluye pedidos cancelados. Deja las fechas vacías para ver todo el histórico.</p>
+      </div>
+
+      <div class="card-panel">
+        <h3 id="order-form-title">Nuevo pedido</h3>
+        <div class="field-row">
+          <div class="field">
+            <label>Estado</label>
+            <select id="o-status">
+              <option value="pendiente">Pendiente</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="enviado">Enviado</option>
+              <option value="entregado">Entregado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Código de pedido</label>
+            <input id="o-code" placeholder="Se genera automáticamente si lo dejas vacío">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Nombre del cliente *</label>
+            <input id="o-name" placeholder="Nombre completo">
+          </div>
+          <div class="field">
+            <label>Teléfono *</label>
+            <input id="o-phone" placeholder="+34 600 000 000">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Email</label>
+            <input id="o-email" type="email">
+          </div>
+          <div class="field">
+            <label>Ciudad</label>
+            <input id="o-city">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Dirección</label>
+            <input id="o-address">
+          </div>
+          <div class="field">
+            <label>Código postal</label>
+            <input id="o-postal">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Provincia</label>
+            <input id="o-province">
+          </div>
+          <div class="field">
+            <label>Notas</label>
+            <input id="o-notes">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Productos del pedido</label>
+          <div id="order-items-rows"></div>
+          <button type="button" class="small-btn" id="order-add-item">+ Añadir línea</button>
+        </div>
+
+        <div class="order-form-total">Subtotal: <b id="order-form-subtotal">0,00 €</b></div>
+
+        <div style="display:flex;gap:10px;margin-top:12px">
+          <button class="btn btn-primary" id="order-save">Guardar pedido</button>
+          <button class="btn btn-outline" id="order-cancel" style="display:none">Cancelar edición</button>
+        </div>
+        <div id="order-form-status"></div>
+      </div>
+
       <div class="card-panel">
         <div class="orders-toolbar">
           <h3 style="margin:0">Pedidos (<span id="orders-count">0</span>)</h3>
