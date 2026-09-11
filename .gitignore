@@ -1,1 +1,3 @@
 .claude/
+token*.txt
+*.pat

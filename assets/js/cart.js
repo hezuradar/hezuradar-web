@@ -299,6 +299,14 @@
       console.error("No se pudo guardar el pedido en la base de datos:", err);
     }
 
+    try {
+      if (window.HA_EMAIL && window.HA_EMAIL.sendOrderEmail) {
+        await window.HA_EMAIL.sendOrderEmail(order);
+      }
+    } catch (err) {
+      console.error("No se pudo enviar el email del pedido:", err);
+    }
+
     const phone = (window.HA && window.HA.store && window.HA.store.whatsapp) || "";
     const text = buildWhatsAppMessage(order);
     if (phone) {

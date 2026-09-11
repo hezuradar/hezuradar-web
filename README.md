@@ -113,10 +113,40 @@ sesión con el email/contraseña del paso 5 y gestionarlos.
 > el código de cualquier app web. La seguridad real la dan las reglas de Firestore del paso 3 y tu
 > contraseña de administrador.
 
+## 5. Aviso por email de cada pedido (EmailJS)
+
+Además de abrirse WhatsApp, al confirmar un pedido se envía un email a `hezuradar@gmail.com` con el
+resumen. Esto usa **EmailJS**, un servicio gratuito que manda correos directamente desde el
+navegador del cliente sin necesitar un servidor propio (hasta 200 emails/mes gratis).
+
+Si no lo configuras, la tienda sigue funcionando igual (WhatsApp y el guardado en Firebase no se ven
+afectados); simplemente no llegará el aviso por correo.
+
+### Configurarlo (una sola vez, ~5 minutos)
+
+1. Crea una cuenta gratis en [emailjs.com](https://www.emailjs.com).
+2. **Email Services** → **Add New Email Service** → conecta tu Gmail (`hezuradar@gmail.com`) →
+   copia el **Service ID**.
+3. **Email Templates** → **Create New Template**. En el asunto/cuerpo usa estas variables (tal cual,
+   con las llaves dobles):
+   - `{{order_code}}`, `{{items_text}}`, `{{subtotal}}`, `{{customer_name}}`, `{{customer_phone}}`,
+     `{{customer_email}}`, `{{shipping_address}}`, `{{notes}}`
+   - En el campo **To Email** de la plantilla pon `{{to_email}}` (o directamente
+     `hezuradar@gmail.com`).
+   - Guarda y copia el **Template ID**.
+4. **Account** → **General** → copia tu **Public Key**.
+5. Pega los tres valores en
+   [assets/js/emailjs-config.js](assets/js/emailjs-config.js), reemplazando `TU_PUBLIC_KEY`,
+   `TU_SERVICE_ID` y `TU_TEMPLATE_ID`. Sube el cambio al repositorio.
+
+> Igual que con Firebase, estos identificadores no son contraseñas secretas: EmailJS está diseñado
+> para usarlos en código público de cliente. El límite de envíos gratuito y la cuenta conectada son
+> la protección real.
+
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de
-  envío y se confirma el pedido, que se envía por WhatsApp y (si has configurado Firebase) queda
-  guardado para gestionarlo desde el panel.
+  envío y se confirma el pedido, que se envía por WhatsApp, por email (si configuras EmailJS) y
+  (si has configurado Firebase) queda guardado para gestionarlo desde el panel.
 - No hay cobro online: el pago se acuerda por WhatsApp, como en la web de referencia.
 - Todas las fotos y textos de producto se importaron desde la tienda original de HezurAdar.
