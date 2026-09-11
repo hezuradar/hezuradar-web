@@ -10,9 +10,9 @@
 //    En "To Email" de la plantilla pon: hezuradar@gmail.com
 // 4. Account -> General -> copia tu "Public Key"
 window.HA_EMAILJS_CONFIG = {
-  publicKey: "TU_PUBLIC_KEY",
-  serviceId: "TU_SERVICE_ID",
-  templateId: "TU_TEMPLATE_ID",
+  publicKey: "OJRsbiXiBtTuXI009",
+  serviceId: "service_4hsf5zy",
+  templateId: "template_vw6xsbu",
   toEmail: "hezuradar@gmail.com",
 };
 
