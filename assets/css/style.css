@@ -348,10 +348,11 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .order-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 /* Order create/edit form */
-.order-item-edit-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
-.order-item-edit-row .oi-title{flex:1;min-width:0}
+.order-item-edit-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.order-item-edit-row .oi-product{flex:1 1 200px;min-width:0}
+.order-item-edit-row .oi-title-custom{flex:1 1 100%;min-width:0}
 .order-item-edit-row .oi-price,.order-item-edit-row .oi-qty{width:90px;flex:none}
-.order-item-edit-row input{padding:9px 10px;border-radius:8px;border:1px solid var(--color-border);font-size:.88rem;font-family:inherit}
+.order-item-edit-row input,.order-item-edit-row select{padding:9px 10px;border-radius:8px;border:1px solid var(--color-border);font-size:.88rem;font-family:inherit;background:#fff}
 .order-item-edit-row .oi-remove{flex:none;padding:8px 10px}
 .order-form-total{font-size:1rem;margin:14px 0 4px}
 .order-form-total b{color:var(--color-primary-dark);font-size:1.15rem}
@@ -381,8 +382,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .card-panel{padding:18px}
   .admin-tabs{gap:4px}
   .admin-tab{padding:9px 12px;font-size:.85rem}
-  .order-item-edit-row{flex-wrap:wrap}
-  .order-item-edit-row .oi-title{flex:1 1 100%}
+  .order-item-edit-row .oi-product{flex:1 1 100%}
   .order-item-edit-row .oi-price,.order-item-edit-row .oi-qty{flex:1;width:auto}
   .orders-toolbar{flex-direction:column;align-items:stretch}
   .revenue-stat{min-width:0}

@@ -3,6 +3,7 @@
 
   const $ = (id) => document.getElementById(id);
   let orders = [];
+  let catalogProducts = [];
   let statusFilter = "";
   let unsubscribe = null;
   let editingDocId = null;
@@ -10,6 +11,7 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     initTabs();
+    loadCatalog();
     resetOrderForm();
 
     if (!window.HA_FIREBASE_ENABLED) {
@@ -31,7 +33,7 @@
       renderOrders();
     });
     $("order-add-item").addEventListener("click", () => {
-      itemRows.push({ title: "", price: 0, qty: 1 });
+      itemRows.push({ productId: null, title: "", price: 0, qty: 1 });
       renderItemRows();
     });
     $("order-save").addEventListener("click", saveOrder);
@@ -86,6 +88,16 @@
 
   function setAuthStatus(type, msg) {
     $("orders-auth-status").innerHTML = msg ? `<div class="status-msg ${type}">${escapeHtml(msg)}</div>` : "";
+  }
+
+  async function loadCatalog() {
+    try {
+      const res = await fetch("data/products.json?v=" + Date.now());
+      catalogProducts = await res.json();
+    } catch (e) {
+      catalogProducts = [];
+    }
+    renderItemRows();
   }
 
   function subscribeOrders() {
@@ -220,7 +232,7 @@
 
   function resetOrderForm() {
     editingDocId = null;
-    itemRows = [{ title: "", price: 0, qty: 1 }];
+    itemRows = [{ productId: null, title: "", price: 0, qty: 1 }];
     $("order-form-title").textContent = "Nuevo pedido";
     $("o-status").value = "pendiente";
     ["o-code", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
@@ -248,33 +260,79 @@
     $("o-postal").value = s.postalCode || "";
     $("o-province").value = s.province || "";
     $("o-notes").value = s.notes || "";
-    itemRows = (o.items || []).map((it) => ({ title: it.title, price: it.price, qty: it.qty }));
-    if (!itemRows.length) itemRows = [{ title: "", price: 0, qty: 1 }];
+    itemRows = (o.items || []).map((it) => ({ productId: it.id || null, title: it.title, price: it.price, qty: it.qty }));
+    if (!itemRows.length) itemRows = [{ productId: null, title: "", price: 0, qty: 1 }];
     $("order-cancel").style.display = "inline-block";
     renderItemRows();
     setOrderFormStatus("", "");
     document.getElementById("order-form-title").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function renderItemRows() {
-    $("order-items-rows").innerHTML = itemRows
+  function isCustomRow(row) {
+    return !row.productId || !catalogProducts.some((p) => p.id === row.productId);
+  }
+
+  function productOptionsHtml(selectedId) {
+    return catalogProducts
+      .slice()
+      .sort((a, b) => a.title.localeCompare(b.title))
       .map(
-        (row, i) => `
-      <div class="order-item-edit-row">
-        <input type="text" placeholder="Producto" value="${escapeAttr(row.title)}" data-field="title" data-i="${i}" class="oi-title">
-        <input type="number" min="0" step="0.01" placeholder="Precio" value="${row.price}" data-field="price" data-i="${i}" class="oi-price">
-        <input type="number" min="1" step="1" placeholder="Cant." value="${row.qty}" data-field="qty" data-i="${i}" class="oi-qty">
-        <button type="button" class="small-btn danger oi-remove" data-i="${i}">✕</button>
-      </div>
-    `
+        (p) =>
+          `<option value="${p.id}" ${p.id === selectedId ? "selected" : ""}>${escapeHtml(p.title)} — ${formatPrice(p.price)}</option>`
       )
       .join("");
+  }
 
-    $("order-items-rows").querySelectorAll("input").forEach((inp) => {
+  function renderItemRows() {
+    $("order-items-rows").innerHTML = itemRows
+      .map((row, i) => {
+        const custom = isCustomRow(row);
+        return `
+      <div class="order-item-edit-row">
+        <select class="oi-product" data-i="${i}">
+          <option value="__custom__" ${custom ? "selected" : ""}>Producto personalizado…</option>
+          ${productOptionsHtml(custom ? null : row.productId)}
+        </select>
+        ${
+          custom
+            ? `<input type="text" class="oi-title-custom" data-i="${i}" placeholder="Nombre del producto" value="${escapeAttr(row.title)}">`
+            : ""
+        }
+        <input type="number" min="0" step="0.01" placeholder="Precio" value="${row.price}" data-i="${i}" class="oi-price">
+        <input type="number" min="1" step="1" placeholder="Cant." value="${row.qty}" data-i="${i}" class="oi-qty">
+        <button type="button" class="small-btn danger oi-remove" data-i="${i}">✕</button>
+      </div>
+    `;
+      })
+      .join("");
+
+    $("order-items-rows").querySelectorAll(".oi-product").forEach((sel) => {
+      sel.addEventListener("change", () => {
+        const i = parseInt(sel.dataset.i, 10);
+        if (sel.value === "__custom__") {
+          itemRows[i].productId = null;
+        } else {
+          const p = catalogProducts.find((x) => x.id === sel.value);
+          if (p) {
+            itemRows[i].productId = p.id;
+            itemRows[i].title = p.title;
+            itemRows[i].price = p.price;
+          }
+        }
+        renderItemRows();
+      });
+    });
+    $("order-items-rows").querySelectorAll(".oi-title-custom").forEach((inp) => {
       inp.addEventListener("input", () => {
         const i = parseInt(inp.dataset.i, 10);
-        const field = inp.dataset.field;
-        itemRows[i][field] = field === "title" ? inp.value : parseFloat(inp.value) || 0;
+        itemRows[i].title = inp.value;
+      });
+    });
+    $("order-items-rows").querySelectorAll(".oi-price,.oi-qty").forEach((inp) => {
+      inp.addEventListener("input", () => {
+        const i = parseInt(inp.dataset.i, 10);
+        const field = inp.classList.contains("oi-price") ? "price" : "qty";
+        itemRows[i][field] = parseFloat(inp.value) || 0;
         updateOrderFormSubtotal();
       });
     });
@@ -282,7 +340,7 @@
       btn.addEventListener("click", () => {
         const i = parseInt(btn.dataset.i, 10);
         itemRows.splice(i, 1);
-        if (!itemRows.length) itemRows = [{ title: "", price: 0, qty: 1 }];
+        if (!itemRows.length) itemRows = [{ productId: null, title: "", price: 0, qty: 1 }];
         renderItemRows();
       });
     });
@@ -313,13 +371,16 @@
       orderCode: $("o-code").value.trim() || (existing && existing.orderCode) || genOrderCode(),
       createdAt: (existing && existing.createdAt) || new Date().toISOString(),
       status: $("o-status").value,
-      items: validItems.map((r) => ({
-        id: (existing && existing.items && existing.items.find((x) => x.title === r.title)?.id) || null,
-        title: r.title.trim(),
-        price: Number(r.price) || 0,
-        qty: Number(r.qty) || 1,
-        image: (existing && existing.items && existing.items.find((x) => x.title === r.title)?.image) || "",
-      })),
+      items: validItems.map((r) => {
+        const p = r.productId ? catalogProducts.find((x) => x.id === r.productId) : null;
+        return {
+          id: r.productId || null,
+          title: r.title.trim(),
+          price: Number(r.price) || 0,
+          qty: Number(r.qty) || 1,
+          image: (p && p.images && p.images[0]) || "",
+        };
+      }),
       subtotal,
       customer: {
         name,
