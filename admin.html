@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Administración — HezurAdar</title>
+<link rel="icon" href="images/site/logo.jpg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="admin-body">
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <img src="images/site/logo.jpg" alt="Logo HezurAdar">
+      HezurAdar · Admin
+    </a>
+    <nav class="header-nav">
+      <a class="pill-btn" href="index.html">Ver tienda</a>
+      <button class="pill-btn" id="logout-btn" style="display:none">Salir</button>
+    </nav>
+  </div>
+</header>
+
+<div id="lock-screen" class="admin-lock">
+  <h2 id="lock-title">Panel privado</h2>
+  <p style="color:var(--color-muted);font-size:.88rem">Introduce tu PIN de acceso.</p>
+  <input type="password" id="pin-input" inputmode="numeric" placeholder="••••" maxlength="20" autofocus>
+  <button class="btn btn-primary" id="pin-submit" style="width:100%">Entrar</button>
+  <div id="lock-msg"></div>
+  <p style="margin-top:18px;font-size:.75rem;color:var(--color-muted)">
+    Este PIN solo oculta el panel en este navegador. La protección real de los datos
+    es tu token de GitHub, que se pide a continuación y nunca sale de tu navegador.
+  </p>
+</div>
+
+<div id="admin-shell" class="admin-shell" style="display:none">
+
+  <div class="admin-tabs">
+    <button class="admin-tab active" data-tab="tab-products">Productos</button>
+    <button class="admin-tab" data-tab="tab-orders">Pedidos<span class="tab-badge" id="orders-pending-badge" style="display:none"></span></button>
+  </div>
+
+  <div id="tab-products" class="admin-tab-panel">
+
+  <div class="card-panel">
+    <h3>Conexión con GitHub</h3>
+    <p class="help-text">
+      Para publicar cambios en la web necesitas un <b>Personal Access Token</b> de GitHub con permiso
+      <code>repo</code> (o <code>Contents: Read and write</code> si es un token fine-grained) sobre este repositorio.
+      Se genera en GitHub → Settings → Developer settings → Personal access tokens.
+      El token se guarda únicamente en este navegador (localStorage), nunca se envía a ningún sitio salvo a la API de GitHub.
+    </p>
+    <div class="field-row">
+      <div class="field">
+        <label>Usuario/organización de GitHub</label>
+        <input id="gh-owner" placeholder="p.ej. hzabala">
+      </div>
+      <div class="field">
+        <label>Nombre del repositorio</label>
+        <input id="gh-repo" placeholder="p.ej. hezuradar-web">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Rama</label>
+        <input id="gh-branch" value="main">
+      </div>
+      <div class="field">
+        <label>Personal Access Token</label>
+        <input id="gh-token" type="password" placeholder="ghp_...">
+      </div>
+    </div>
+    <button class="btn btn-primary" id="gh-save">Guardar conexión</button>
+    <div id="gh-status"></div>
+  </div>
+
+  <div class="card-panel">
+    <h3 id="form-title">Añadir producto</h3>
+    <div class="field">
+      <label>Título</label>
+      <input id="p-title" placeholder="p.ej. Cejuela de hueso blanco para Fender">
+    </div>
+    <div class="field">
+      <label>Descripción</label>
+      <textarea id="p-desc" placeholder="Descripción del producto..."></textarea>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Precio (EUR)</label>
+        <input id="p-price" type="number" step="0.01" min="0" placeholder="10.00">
+      </div>
+      <div class="field">
+        <label>Stock disponible</label>
+        <input id="p-stock" type="number" step="1" min="0" placeholder="10">
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>Categoría</label>
+        <input id="p-category" list="cat-list" placeholder="p.ej. Hueso">
+        <datalist id="cat-list"></datalist>
+      </div>
+      <div class="field">
+        <label>Subcategoría (opcional)</label>
+        <input id="p-subcategory" list="subcat-list" placeholder="p.ej. Cejuela">
+        <datalist id="subcat-list"></datalist>
+      </div>
+    </div>
+    <div class="field">
+      <label>SKU / referencia (opcional)</label>
+      <input id="p-sku" placeholder="p.ej. RR0022">
+    </div>
+    <div class="field">
+      <label>Imágenes</label>
+      <input id="p-images" type="file" accept="image/*" multiple>
+      <p class="help-text">Puedes seleccionar varias. Se añadirán a las imágenes ya existentes al editar.</p>
+      <div class="thumb-preview" id="thumb-preview"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-primary" id="p-save">Publicar producto</button>
+      <button class="btn btn-outline" id="p-cancel" style="display:none">Cancelar edición</button>
+    </div>
+    <div id="p-status"></div>
+  </div>
+
+  <div class="card-panel">
+    <h3>Productos publicados (<span id="p-count">0</span>)</h3>
+    <input id="p-filter" placeholder="Filtrar por nombre..." style="margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px solid var(--color-border);width:100%">
+    <div style="overflow-x:auto">
+      <table class="admin-table">
+        <thead>
+          <tr><th></th><th>Título</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th></tr>
+        </thead>
+        <tbody id="product-table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  </div>
+
+  <div id="tab-orders" class="admin-tab-panel" style="display:none">
+
+    <div id="orders-login" class="card-panel">
+      <h3>Acceso a pedidos</h3>
+      <p class="help-text">
+        Los pedidos se guardan en una base de datos (Firebase) separada del PIN de este panel:
+        solo se pueden leer iniciando sesión con la cuenta de administrador que creaste en Firebase.
+        Así, aunque alguien adivine el PIN, no puede ver los pedidos ni los datos de tus clientes.
+      </p>
+      <div class="field-row">
+        <div class="field">
+          <label>Email de administrador</label>
+          <input id="orders-email" type="email" placeholder="tucorreo@ejemplo.com">
+        </div>
+        <div class="field">
+          <label>Contraseña</label>
+          <input id="orders-password" type="password" placeholder="••••••••">
+        </div>
+      </div>
+      <button class="btn btn-primary" id="orders-login-btn">Entrar</button>
+      <button class="pill-btn-dark" id="orders-logout-btn" style="display:none">Cerrar sesión de pedidos</button>
+      <div id="orders-auth-status"></div>
+    </div>
+
+    <div id="orders-panel" style="display:none">
+      <div class="card-panel">
+        <div class="orders-toolbar">
+          <h3 style="margin:0">Pedidos (<span id="orders-count">0</span>)</h3>
+          <select id="orders-status-filter" class="sort-select">
+            <option value="">Todos los estados</option>
+            <option value="pendiente">Pendiente</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="enviado">Enviado</option>
+            <option value="entregado">Entregado</option>
+            <option value="cancelado">Cancelado</option>
+          </select>
+        </div>
+        <div id="orders-list"></div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js"></script>
+<script src="assets/js/admin.js"></script>
+<script src="assets/js/admin-orders.js"></script>
+</body>
+</html>
