@@ -38,6 +38,7 @@
     });
     $("order-save").addEventListener("click", saveOrder);
     $("order-cancel").addEventListener("click", resetOrderForm);
+    $("o-shipping-cost").addEventListener("input", updateOrderFormSubtotal);
     $("revenue-from").addEventListener("change", renderRevenue);
     $("revenue-to").addEventListener("change", renderRevenue);
 
@@ -146,6 +147,8 @@
       if (editBtn) editBtn.addEventListener("click", () => editOrder(o.docId));
       const delBtn = document.getElementById(`del-${o.docId}`);
       if (delBtn) delBtn.addEventListener("click", () => deleteOrder(o.docId));
+      const labelBtn = document.getElementById(`label-${o.docId}`);
+      if (labelBtn) labelBtn.addEventListener("click", () => printLabel(o.docId));
     });
   }
 
@@ -160,15 +163,31 @@
       if (to && created > to) return false;
       return true;
     });
-    const total = included.reduce((s, o) => s + (Number(o.subtotal) || 0), 0);
+    const total = included.reduce((s, o) => s + orderTotal(o), 0);
     $("revenue-total").textContent = formatPrice(total);
     $("revenue-count").textContent = included.length;
   }
 
+  function orderTotal(o) {
+    if (typeof o.total === "number") return o.total;
+    return (Number(o.subtotal) || 0) + (Number(o.shippingCost) || 0);
+  }
+
   function orderCard(o) {
     const date = formatDate(o.createdAt);
+    const status = o.status || "pendiente";
+    const shippingCost = Number(o.shippingCost) || 0;
+    const itemsSum = (o.items || []).reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
+    const total = orderTotal(o);
     const itemsHtml = (o.items || [])
-      .map((it) => `<div class="order-item-row"><span>${it.qty}× ${escapeHtml(it.title)}</span><span>${formatPrice(it.price * it.qty)}</span></div>`)
+      .map(
+        (it) => `
+        <div class="order-item-row">
+          ${it.image ? `<img src="${escapeAttr(it.image)}" alt="">` : `<div class="order-item-noimg"></div>`}
+          <span class="oi-name">${it.qty}× ${escapeHtml(it.title)}</span>
+          <span class="oi-total">${formatPrice(it.price * it.qty)}</span>
+        </div>`
+      )
       .join("");
     const c = o.customer || {};
     const s = o.shipping || {};
@@ -177,31 +196,39 @@
       : null;
 
     return `
-      <article class="order-card status-${escapeAttr(o.status || "pendiente")}">
+      <article class="order-card status-${escapeAttr(status)}">
         <div class="order-card-head">
-          <div>
+          <div class="order-head-title">
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
+            <span class="status-pill status-pill-${escapeAttr(status)}">${capitalize(status)}</span>
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
             <select id="status-${o.docId}" class="order-status-select">
               ${["pendiente", "confirmado", "enviado", "entregado", "cancelado"]
-                .map((s2) => `<option value="${s2}" ${o.status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
+                .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
                 .join("")}
             </select>
-            <button class="small-btn" id="edit-${o.docId}" type="button">Editar</button>
-            <button class="small-btn danger" id="del-${o.docId}" type="button">Borrar</button>
+            <button class="small-btn" id="label-${o.docId}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
+            <button class="small-btn" id="edit-${o.docId}" type="button">✏️ Editar</button>
+            <button class="small-btn danger" id="del-${o.docId}" type="button">🗑️ Borrar</button>
           </div>
         </div>
         <div class="order-card-body">
-          <div class="order-items">${itemsHtml}</div>
-          <div class="order-total">Subtotal: <b>${formatPrice(o.subtotal || 0)}</b></div>
+          <div class="order-items-block">
+            <div class="order-items">${itemsHtml}</div>
+            <div class="order-totals">
+              <div class="order-total-row"><span>Productos</span><span>${formatPrice(itemsSum)}</span></div>
+              ${shippingCost > 0 ? `<div class="order-total-row"><span>Envío</span><span>${formatPrice(shippingCost)}</span></div>` : ""}
+              <div class="order-total-row order-total-grand"><span>Total</span><b>${formatPrice(total)}</b></div>
+            </div>
+          </div>
           <div class="order-customer">
-            <div><b>${escapeHtml(c.name || "-")}</b></div>
-            <div>${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
-            ${c.email ? `<div>${escapeHtml(c.email)}</div>` : ""}
-            <div class="order-address">${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
-            ${s.notes ? `<div class="order-notes">Notas: ${escapeHtml(s.notes)}</div>` : ""}
+            <div class="order-customer-name">${escapeHtml(c.name || "-")}</div>
+            <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
+            ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
+            <div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
+            ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
           </div>
         </div>
       </article>
@@ -214,6 +241,47 @@
     } catch (e) {
       alert("No se pudo actualizar el estado: " + e.message);
     }
+  }
+
+  function printLabel(docId) {
+    const o = orders.find((x) => x.docId === docId);
+    if (!o) return;
+    const c = o.customer || {};
+    const s = o.shipping || {};
+    const win = window.open("", "_blank", "width=480,height=360");
+    if (!win) {
+      alert("El navegador ha bloqueado la ventana de impresión. Permite las ventanas emergentes para esta página.");
+      return;
+    }
+    win.document.write(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<title>Etiqueta ${escapeHtml(o.orderCode || o.docId)}</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;padding:22px;color:#111}
+  .label{border:2px solid #111;border-radius:10px;padding:22px;max-width:420px}
+  .from{font-size:11.5px;color:#444;padding-bottom:12px;margin-bottom:16px;border-bottom:1px dashed #999}
+  .to-caption{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#666;margin-bottom:6px}
+  .to{font-size:16px;line-height:1.55}
+  .to b{font-size:21px;display:block;margin-bottom:8px}
+  .code{margin-top:18px;font-size:11px;color:#666}
+  @media print{ body{padding:0} .label{border:none} }
+</style>
+</head><body>
+  <div class="label">
+    <div class="from">De: HezurAdar · Legazpi, Gipuzkoa · ${escapeHtml("hezuradar@gmail.com")}</div>
+    <div class="to-caption">Enviar a</div>
+    <div class="to">
+      <b>${escapeHtml(c.name || "")}</b>
+      ${escapeHtml(s.address || "")}<br>
+      ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")}<br>
+      ${s.province ? escapeHtml(s.province) + "<br>" : ""}
+      ${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}
+    </div>
+    <div class="code">Pedido ${escapeHtml(o.orderCode || o.docId)}</div>
+  </div>
+  <script>window.onload = function(){ window.print(); };<\/script>
+</body></html>`);
+    win.document.close();
   }
 
   async function deleteOrder(docId) {
@@ -238,6 +306,7 @@
     ["o-code", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
       (id) => ($(id).value = "")
     );
+    $("o-shipping-cost").value = "";
     $("order-cancel").style.display = "none";
     renderItemRows();
     setOrderFormStatus("", "");
@@ -260,6 +329,7 @@
     $("o-postal").value = s.postalCode || "";
     $("o-province").value = s.province || "";
     $("o-notes").value = s.notes || "";
+    $("o-shipping-cost").value = o.shippingCost || "";
     itemRows = (o.items || []).map((it) => ({ productId: it.id || null, title: it.title, price: it.price, qty: it.qty }));
     if (!itemRows.length) itemRows = [{ productId: null, title: "", price: 0, qty: 1 }];
     $("order-cancel").style.display = "inline-block";
@@ -348,8 +418,11 @@
   }
 
   function updateOrderFormSubtotal() {
-    const total = itemRows.reduce((s, r) => s + (Number(r.price) || 0) * (Number(r.qty) || 0), 0);
-    $("order-form-subtotal").textContent = formatPrice(total);
+    const itemsTotal = itemRows.reduce((s, r) => s + (Number(r.price) || 0) * (Number(r.qty) || 0), 0);
+    const shippingCost = Number($("o-shipping-cost").value) || 0;
+    $("order-form-items-total").textContent = formatPrice(itemsTotal);
+    $("order-form-shipping-total").textContent = formatPrice(shippingCost);
+    $("order-form-subtotal").textContent = formatPrice(itemsTotal + shippingCost);
   }
 
   async function saveOrder() {
@@ -365,6 +438,7 @@
       return;
     }
     const subtotal = validItems.reduce((s, r) => s + (Number(r.price) || 0) * (Number(r.qty) || 0), 0);
+    const shippingCost = Number($("o-shipping-cost").value) || 0;
     const existing = editingDocId ? orders.find((x) => x.docId === editingDocId) : null;
 
     const order = {
@@ -382,6 +456,8 @@
         };
       }),
       subtotal,
+      shippingCost,
+      total: subtotal + shippingCost,
       customer: {
         name,
         phone,
