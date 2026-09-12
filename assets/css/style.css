@@ -263,6 +263,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .icon-btn{width:34px;height:34px}
   .hero-copy p{font-size:.88rem}
   .results-bar{margin:16px 0 10px}
+  #cart-close{width:46px;height:46px;font-size:1.6rem}
 }
 
 @media (max-width:480px){
@@ -332,6 +333,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 
 /* Orders */
 .orders-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.orders-toolbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 #orders-list{display:flex;flex-direction:column;gap:14px}
 .order-card{border:1px solid var(--color-border);border-radius:var(--radius);overflow:hidden}
 .order-card.status-pendiente{border-left:4px solid #e0a300}
@@ -411,6 +413,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .order-item-edit-row .oi-product{flex:1 1 100%}
   .order-item-edit-row .oi-price,.order-item-edit-row .oi-qty{flex:1;width:auto}
   .orders-toolbar{flex-direction:column;align-items:stretch}
+  .orders-toolbar-actions{flex-direction:column;align-items:stretch}
   .revenue-stat{min-width:0}
   .order-card-head{flex-direction:column;align-items:stretch}
   .order-head-actions{justify-content:flex-start}

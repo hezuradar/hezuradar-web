@@ -275,14 +275,17 @@
       <div class="card-panel">
         <div class="orders-toolbar">
           <h3 style="margin:0">Pedidos (<span id="orders-count">0</span>)</h3>
-          <select id="orders-status-filter" class="sort-select">
-            <option value="">Todos los estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="confirmado">Confirmado</option>
-            <option value="enviado">Enviado</option>
-            <option value="entregado">Entregado</option>
-            <option value="cancelado">Cancelado</option>
-          </select>
+          <div class="orders-toolbar-actions">
+            <select id="orders-status-filter" class="sort-select">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="confirmado">Confirmado</option>
+              <option value="enviado">Enviado</option>
+              <option value="entregado">Entregado</option>
+              <option value="cancelado">Cancelado</option>
+            </select>
+            <button class="small-btn" id="print-confirmed-btn" type="button">🖨️ Imprimir confirmados (<span id="confirmed-count">0</span>)</button>
+          </div>
         </div>
         <div id="orders-list"></div>
       </div>

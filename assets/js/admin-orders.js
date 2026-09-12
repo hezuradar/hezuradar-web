@@ -32,6 +32,7 @@
       statusFilter = e.target.value;
       renderOrders();
     });
+    $("print-confirmed-btn").addEventListener("click", printConfirmedOrders);
     $("order-add-item").addEventListener("click", () => {
       itemRows.push({ productId: null, title: "", price: 0, qty: 1 });
       renderItemRows();
@@ -132,6 +133,7 @@
     } else {
       badge.style.display = "none";
     }
+    $("confirmed-count").textContent = orders.filter((o) => o.status === "confirmado").length;
 
     if (!list.length) {
       $("orders-list").innerHTML = '<div class="empty-state">No hay pedidos que mostrar.</div>';
@@ -149,6 +151,8 @@
       if (delBtn) delBtn.addEventListener("click", () => deleteOrder(o.docId));
       const labelBtn = document.getElementById(`label-${o.docId}`);
       if (labelBtn) labelBtn.addEventListener("click", () => printLabel(o.docId));
+      const albaranBtn = document.getElementById(`albaran-${o.docId}`);
+      if (albaranBtn) albaranBtn.addEventListener("click", () => printAlbaran(o.docId));
     });
   }
 
@@ -210,6 +214,7 @@
                 .join("")}
             </select>
             <button class="small-btn" id="label-${o.docId}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
+            <button class="small-btn" id="albaran-${o.docId}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
             <button class="small-btn" id="edit-${o.docId}" type="button">✏️ Editar</button>
             <button class="small-btn danger" id="del-${o.docId}" type="button">🗑️ Borrar</button>
           </div>
@@ -241,6 +246,101 @@
     } catch (e) {
       alert("No se pudo actualizar el estado: " + e.message);
     }
+  }
+
+  const ALBARAN_STYLE = `
+    body{font-family:Arial,Helvetica,sans-serif;color:#222;padding:24px}
+    .albaran{max-width:720px;margin:0 auto 40px;page-break-after:always}
+    .albaran:last-child{page-break-after:auto}
+    .albaran-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #245F96;padding-bottom:14px;margin-bottom:16px}
+    .albaran-brand{font-size:20px;font-weight:800;color:#245F96}
+    .albaran-brand-sub{font-size:11.5px;color:#666;margin-top:2px}
+    .albaran-doc{text-align:right;font-size:12.5px;color:#444}
+    .albaran-doc-title{font-weight:700;font-size:14px;color:#111;margin-bottom:4px}
+    .albaran-customer{font-size:13px;line-height:1.6;margin-bottom:18px}
+    .albaran-notes{font-style:italic;color:#555;margin-top:4px}
+    .albaran-table{width:100%;border-collapse:collapse;font-size:13px}
+    .albaran-table th,.albaran-table td{padding:8px 6px;border-bottom:1px solid #ddd;text-align:left}
+    .albaran-table .num{text-align:right}
+    .albaran-table tfoot td{border-bottom:none;padding-top:8px}
+    .albaran-total-row td{font-weight:800;font-size:14.5px;border-top:2px solid #245F96;padding-top:10px}
+    .albaran-footer{margin-top:24px;font-size:11.5px;color:#777;text-align:center}
+    @media print{ .albaran{margin-bottom:0} }
+  `;
+
+  function albaranHtml(o) {
+    const c = o.customer || {};
+    const s = o.shipping || {};
+    const shippingCost = Number(o.shippingCost) || 0;
+    const itemsSum = (o.items || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
+    const total = orderTotal(o);
+    const rows = (o.items || [])
+      .map(
+        (it) => `<tr><td>${escapeHtml(it.title)}</td><td class="num">${it.qty}</td><td class="num">${formatPrice(it.price)}</td><td class="num">${formatPrice(it.price * it.qty)}</td></tr>`
+      )
+      .join("");
+    return `
+    <section class="albaran">
+      <div class="albaran-header">
+        <div>
+          <div class="albaran-brand">HezurAdar</div>
+          <div class="albaran-brand-sub">Legazpi, Gipuzkoa · hezuradar@gmail.com</div>
+        </div>
+        <div class="albaran-doc">
+          <div class="albaran-doc-title">Albarán de entrega</div>
+          <div>Pedido ${escapeHtml(o.orderCode || o.docId)}</div>
+          <div>${formatDate(o.createdAt)}</div>
+        </div>
+      </div>
+      <div class="albaran-customer">
+        <div><b>${escapeHtml(c.name || "-")}</b></div>
+        <div>${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
+        <div>${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}${c.email ? " · " + escapeHtml(c.email) : ""}</div>
+        ${s.notes ? `<div class="albaran-notes">Notas: ${escapeHtml(s.notes)}</div>` : ""}
+      </div>
+      <table class="albaran-table">
+        <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot>
+          <tr><td colspan="3">Productos</td><td class="num">${formatPrice(itemsSum)}</td></tr>
+          ${shippingCost > 0 ? `<tr><td colspan="3">Envío</td><td class="num">${formatPrice(shippingCost)}</td></tr>` : ""}
+          <tr class="albaran-total-row"><td colspan="3">Total</td><td class="num">${formatPrice(total)}</td></tr>
+        </tfoot>
+      </table>
+      <div class="albaran-footer">Gracias por su compra.</div>
+    </section>`;
+  }
+
+  function openPrintWindow(title, bodyHtml) {
+    const win = window.open("", "_blank", "width=800,height=600");
+    if (!win) {
+      alert("El navegador ha bloqueado la ventana de impresión. Permite las ventanas emergentes para esta página.");
+      return;
+    }
+    win.document.write(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<title>${escapeHtml(title)}</title>
+<style>${ALBARAN_STYLE}</style>
+</head><body>
+${bodyHtml}
+<script>window.onload = function(){ window.print(); };<\/script>
+</body></html>`);
+    win.document.close();
+  }
+
+  function printAlbaran(docId) {
+    const o = orders.find((x) => x.docId === docId);
+    if (!o) return;
+    openPrintWindow(`Albarán ${o.orderCode || o.docId}`, albaranHtml(o));
+  }
+
+  function printConfirmedOrders() {
+    const confirmed = orders.filter((o) => o.status === "confirmado");
+    if (!confirmed.length) {
+      alert("No hay pedidos confirmados para imprimir.");
+      return;
+    }
+    openPrintWindow("Albaranes — pedidos confirmados", confirmed.map(albaranHtml).join(""));
   }
 
   function printLabel(docId) {
