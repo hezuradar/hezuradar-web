@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://api.emailjs.com; object-src 'none'; base-uri 'self'; form-action 'self';">
 <title>HezurAdar — Hueso y cuerno natural para luthería</title>
 <meta name="description" content="HezurAdar: venta de hueso y cuerno natural para guitarras, bajos e instrumentos de luthería. Cejuelas, selletas, pines y púas artesanales desde Legazpi.">
 <link rel="icon" href="images/site/logo.jpg">
@@ -97,7 +98,7 @@
 <div id="modal-root"></div>
 <div id="cart-root"></div>
 
-<script>document.getElementById('year').textContent = new Date().getFullYear();</script>
+<script src="assets/js/year.js?v=20260913b"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/js/firebase-config.js?v=20260913b"></script>
