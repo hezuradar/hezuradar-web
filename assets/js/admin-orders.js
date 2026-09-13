@@ -334,20 +334,74 @@ ${bodyHtml}
     openPrintWindow(`Albarán ${o.orderCode || o.docId}`, albaranHtml(o));
   }
 
+  function labelBlockHtml(o) {
+    const c = o.customer || {};
+    const s = o.shipping || {};
+    return `
+      <div class="from">De: HezurAdar · Legazpi, Gipuzkoa · ${escapeHtml("hezuradar@gmail.com")}</div>
+      <div class="to-caption">Enviar a</div>
+      <div class="to">
+        <b>${escapeHtml(c.name || "")}</b>
+        ${escapeHtml(s.address || "")}<br>
+        ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")}<br>
+        ${s.province ? escapeHtml(s.province) + "<br>" : ""}
+        ${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}
+      </div>
+      <div class="code">Pedido ${escapeHtml(o.orderCode || o.docId)}</div>
+    `;
+  }
+
   function printConfirmedOrders() {
     const confirmed = orders.filter((o) => o.status === "confirmado");
     if (!confirmed.length) {
       alert("No hay pedidos confirmados para imprimir.");
       return;
     }
-    openPrintWindow("Albaranes — pedidos confirmados", confirmed.map(albaranHtml).join(""));
+    const win = window.open("", "_blank", "width=900,height=700");
+    if (!win) {
+      alert("El navegador ha bloqueado la ventana de impresión. Permite las ventanas emergentes para esta página.");
+      return;
+    }
+    const labelsHtml = confirmed
+      .map((o) => `<div class="label"><span class="label-order-code">${escapeHtml(o.orderCode || o.docId)}</span>${labelBlockHtml(o)}</div>`)
+      .join("");
+    win.document.write(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<title>Etiquetas de envío — pedidos confirmados</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;padding:22px;color:#111}
+  h1{font-size:15px;margin:0 0 18px}
+  .label-sheet{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  .label{
+    position:relative;border:2px solid #111;border-radius:10px;padding:20px 18px;
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .label-order-code{
+    position:absolute;top:-11px;left:14px;background:#fff;padding:0 8px;
+    font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#245F96;
+  }
+  .from{font-size:11px;color:#444;padding-bottom:10px;margin-bottom:12px;border-bottom:1px dashed #999}
+  .to-caption{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#666;margin-bottom:6px}
+  .to{font-size:15px;line-height:1.5}
+  .to b{font-size:19px;display:block;margin-bottom:6px}
+  .code{margin-top:14px;font-size:10.5px;color:#666}
+  @media print{
+    body{padding:8px}
+    h1{display:none}
+    .label-sheet{gap:16px}
+  }
+</style>
+</head><body>
+  <h1>Etiquetas de envío — pedidos confirmados (${confirmed.length})</h1>
+  <div class="label-sheet">${labelsHtml}</div>
+  <script>window.onload = function(){ window.print(); };<\/script>
+</body></html>`);
+    win.document.close();
   }
 
   function printLabel(docId) {
     const o = orders.find((x) => x.docId === docId);
     if (!o) return;
-    const c = o.customer || {};
-    const s = o.shipping || {};
     const win = window.open("", "_blank", "width=480,height=360");
     if (!win) {
       alert("El navegador ha bloqueado la ventana de impresión. Permite las ventanas emergentes para esta página.");
@@ -367,18 +421,7 @@ ${bodyHtml}
   @media print{ body{padding:0} .label{border:none} }
 </style>
 </head><body>
-  <div class="label">
-    <div class="from">De: HezurAdar · Legazpi, Gipuzkoa · ${escapeHtml("hezuradar@gmail.com")}</div>
-    <div class="to-caption">Enviar a</div>
-    <div class="to">
-      <b>${escapeHtml(c.name || "")}</b>
-      ${escapeHtml(s.address || "")}<br>
-      ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")}<br>
-      ${s.province ? escapeHtml(s.province) + "<br>" : ""}
-      ${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}
-    </div>
-    <div class="code">Pedido ${escapeHtml(o.orderCode || o.docId)}</div>
-  </div>
+  <div class="label">${labelBlockHtml(o)}</div>
   <script>window.onload = function(){ window.print(); };<\/script>
 </body></html>`);
     win.document.close();
