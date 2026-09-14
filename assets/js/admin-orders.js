@@ -499,18 +499,29 @@ ${bodyHtml}
         const custom = isCustomRow(row);
         return `
       <div class="order-item-edit-row">
-        <select class="oi-product" data-i="${i}">
-          <option value="__custom__" ${custom ? "selected" : ""}>Producto personalizado…</option>
-          ${productOptionsHtml(custom ? null : row.productId)}
-        </select>
-        ${
-          custom
-            ? `<input type="text" class="oi-title-custom" data-i="${i}" placeholder="Nombre del producto" value="${escapeAttr(row.title)}">`
-            : ""
-        }
-        <input type="number" min="0" step="0.01" placeholder="Precio" value="${row.price}" data-i="${i}" class="oi-price">
-        <input type="number" min="1" step="1" placeholder="Cant." value="${row.qty}" data-i="${i}" class="oi-qty">
-        <button type="button" class="small-btn danger oi-remove" data-i="${i}">✕</button>
+        <div class="oi-main">
+          <label>Producto</label>
+          <select class="oi-product" data-i="${i}">
+            <option value="__custom__" ${custom ? "selected" : ""}>Producto personalizado…</option>
+            ${productOptionsHtml(custom ? null : row.productId)}
+          </select>
+          ${
+            custom
+              ? `<input type="text" class="oi-title-custom" data-i="${i}" placeholder="Nombre del producto" value="${escapeAttr(row.title)}">`
+              : ""
+          }
+        </div>
+        <div class="oi-sub">
+          <div class="oi-field">
+            <label>Precio (€)</label>
+            <input type="number" min="0" step="0.01" placeholder="0,00" value="${row.price}" data-i="${i}" class="oi-price">
+          </div>
+          <div class="oi-field">
+            <label>Cantidad</label>
+            <input type="number" min="1" step="1" placeholder="1" value="${row.qty}" data-i="${i}" class="oi-qty">
+          </div>
+          <button type="button" class="small-btn danger oi-remove" data-i="${i}" title="Eliminar línea">✕ Quitar</button>
+        </div>
       </div>
     `;
       })

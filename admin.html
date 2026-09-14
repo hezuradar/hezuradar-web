@@ -8,8 +8,8 @@
 <title>Administración — HezurAdar</title>
 <link rel="icon" href="images/site/logo.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260913b">
-<script src="assets/js/device.js?v=20260913b"></script>
+<link rel="stylesheet" href="assets/css/style.css?v=20260913c">
+<script src="assets/js/device.js?v=20260913c"></script>
 </head>
 <body class="admin-body">
 
@@ -190,6 +190,8 @@
 
       <div class="card-panel">
         <h3 id="order-form-title">Nuevo pedido</h3>
+
+        <h4 class="form-section-title">📋 Estado del pedido</h4>
         <div class="field-row">
           <div class="field">
             <label>Estado</label>
@@ -206,6 +208,8 @@
             <input id="o-code" placeholder="Se genera automáticamente si lo dejas vacío">
           </div>
         </div>
+
+        <h4 class="form-section-title">🧑 Datos del cliente</h4>
         <div class="field-row">
           <div class="field">
             <label>Nombre del cliente *</label>
@@ -219,36 +223,38 @@
         <div class="field-row">
           <div class="field">
             <label>Email</label>
-            <input id="o-email" type="email">
+            <input id="o-email" type="email" placeholder="cliente@ejemplo.com">
           </div>
           <div class="field">
-            <label>Ciudad</label>
-            <input id="o-city">
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Dirección</label>
-            <input id="o-address">
-          </div>
-          <div class="field">
-            <label>Código postal</label>
-            <input id="o-postal">
-          </div>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Provincia</label>
-            <input id="o-province">
-          </div>
-          <div class="field">
-            <label>Notas</label>
-            <input id="o-notes">
+            <label>Notas del pedido</label>
+            <input id="o-notes" placeholder="Observaciones, forma de pago, etc.">
           </div>
         </div>
 
+        <h4 class="form-section-title">📦 Dirección de envío</h4>
+        <div class="field-row">
+          <div class="field">
+            <label>Dirección</label>
+            <input id="o-address" placeholder="Calle, número, piso...">
+          </div>
+          <div class="field">
+            <label>Código postal</label>
+            <input id="o-postal" placeholder="20230">
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Ciudad</label>
+            <input id="o-city" placeholder="Legazpi">
+          </div>
+          <div class="field">
+            <label>Provincia</label>
+            <input id="o-province" placeholder="Gipuzkoa">
+          </div>
+        </div>
+
+        <h4 class="form-section-title">🛒 Productos del pedido</h4>
         <div class="field">
-          <label>Productos del pedido</label>
           <div id="order-items-rows"></div>
           <button type="button" class="small-btn" id="order-add-item">+ Añadir línea</button>
         </div>
@@ -299,8 +305,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="assets/js/firebase-config.js?v=20260913b"></script>
-<script src="assets/js/admin.js?v=20260913b"></script>
-<script src="assets/js/admin-orders.js?v=20260913b"></script>
+<script src="assets/js/firebase-config.js?v=20260913c"></script>
+<script src="assets/js/admin.js?v=20260913c"></script>
+<script src="assets/js/admin-orders.js?v=20260913c"></script>
 </body>
 </html>
