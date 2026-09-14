@@ -2,6 +2,7 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+  const CORREOS_TRACKING_URL = "https://www.correos.es/es/es/herramientas/localizador/envios/detalle?tracking-number=";
   let orders = [];
   let catalogProducts = [];
   let statusFilter = "";
@@ -227,6 +228,7 @@
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
             <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
             ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el albarán por WhatsApp al cliente">📲 Albarán WhatsApp</button>` : ""}
+            ${o.trackingNumber ? `<a class="small-btn" href="${escapeAttr(CORREOS_TRACKING_URL + encodeURIComponent(o.trackingNumber))}" target="_blank" rel="noopener" title="Ver seguimiento del envío en Correos">🚚 Seguimiento</a>` : ""}
             <button class="small-btn" id="edit-${escapeAttr(o.docId)}" type="button">✏️ Editar</button>
             <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
           </div>
@@ -498,7 +500,7 @@ ${bodyHtml}
     itemRows = [{ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 }];
     $("order-form-title").textContent = "Nuevo pedido";
     $("o-status").value = "pendiente";
-    ["o-code", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
+    ["o-code", "o-tracking", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
       (id) => ($(id).value = "")
     );
     $("o-shipping-cost").value = "";
@@ -516,6 +518,7 @@ ${bodyHtml}
     $("order-form-title").textContent = "Editar pedido";
     $("o-status").value = o.status || "pendiente";
     $("o-code").value = o.orderCode || "";
+    $("o-tracking").value = o.trackingNumber || "";
     $("o-name").value = c.name || "";
     $("o-phone").value = c.phone || "";
     $("o-email").value = c.email || "";
@@ -657,6 +660,7 @@ ${bodyHtml}
 
     const order = {
       orderCode: $("o-code").value.trim() || (existing && existing.orderCode) || genOrderCode(),
+      trackingNumber: $("o-tracking").value.trim(),
       createdAt: (existing && existing.createdAt) || new Date().toISOString(),
       status: $("o-status").value,
       items: validItems.map((r) => {

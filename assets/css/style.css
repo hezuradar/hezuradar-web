@@ -343,6 +343,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .admin-table img{width:44px;height:44px;object-fit:contain;background:#eef2f5;border-radius:6px}
 .admin-table .row-actions{display:flex;gap:8px}
 .small-btn{padding:6px 12px;font-size:.78rem;border-radius:8px;border:1px solid var(--color-border);background:#fff}
+a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
 .discount-tag{background:#c0392b;color:#fff;font-size:.72rem;font-weight:800;border-radius:999px;padding:1px 8px}
 .small-btn.danger{color:#b3261e;border-color:#f3c9c6}
 .thumb-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
