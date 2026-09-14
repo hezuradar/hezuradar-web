@@ -113,6 +113,7 @@
     const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/${path}`;
     const res = await fetch(url, {
       ...opts,
+      cache: "no-store",
       headers: {
         Authorization: `Bearer ${cfg.token}`,
         Accept: "application/vnd.github+json",
@@ -206,6 +207,20 @@
       fillDatalists();
     } catch (e) {
       setStatus("p-status", "err", "Error cargando catálogo: " + e.message);
+    }
+  }
+
+  async function putProductsFile(mutate, message) {
+    let file = await getFile(PRODUCTS_PATH);
+    let next = mutate(file ? JSON.parse(file.content) : []);
+    try {
+      await putFile(PRODUCTS_PATH, b64EncodeUnicode(JSON.stringify(next, null, 2)), message, file ? file.sha : null);
+    } catch (e) {
+      if (!String(e.message).includes("409")) throw e;
+      // El catálogo cambió justo mientras se publicaba: se reintenta una vez con los datos más recientes.
+      file = await getFile(PRODUCTS_PATH);
+      next = mutate(file ? JSON.parse(file.content) : []);
+      await putFile(PRODUCTS_PATH, b64EncodeUnicode(JSON.stringify(next, null, 2)), message, file ? file.sha : null);
     }
   }
 
@@ -346,19 +361,12 @@
       };
 
       setStatus("p-status", "info", "Actualizando catálogo...");
-      const file = await getFile(PRODUCTS_PATH);
-      const current = file ? JSON.parse(file.content) : [];
-      const idx = current.findIndex((x) => x.id === id);
-      if (idx >= 0) current[idx] = product;
-      else current.push(product);
-
-      const newContent = b64EncodeUnicode(JSON.stringify(current, null, 2));
-      await putFile(
-        PRODUCTS_PATH,
-        newContent,
-        `${editingId ? "Edita" : "Añade"} producto: ${title}`,
-        file ? file.sha : null
-      );
+      await putProductsFile((current) => {
+        const idx = current.findIndex((x) => x.id === id);
+        if (idx >= 0) current[idx] = product;
+        else current.push(product);
+        return current;
+      }, `${editingId ? "Edita" : "Añade"} producto: ${title}`);
 
       setStatus(
         "p-status",
@@ -380,11 +388,7 @@
     if (!confirm(`¿Borrar "${p.title}" del catálogo? Esta acción se publica de inmediato.`)) return;
     try {
       setStatus("p-status", "info", "Borrando...");
-      const file = await getFile(PRODUCTS_PATH);
-      const current = file ? JSON.parse(file.content) : [];
-      const next = current.filter((x) => x.id !== id);
-      const newContent = b64EncodeUnicode(JSON.stringify(next, null, 2));
-      await putFile(PRODUCTS_PATH, newContent, `Borra producto: ${p.title}`, file.sha);
+      await putProductsFile((current) => current.filter((x) => x.id !== id), `Borra producto: ${p.title}`);
 
       for (const imgPath of p.images || []) {
         try {
