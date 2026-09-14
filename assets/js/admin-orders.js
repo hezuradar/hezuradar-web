@@ -98,7 +98,7 @@
 
   async function loadCatalog() {
     try {
-      const res = await fetch("data/products.json?v=" + Date.now());
+      const res = await fetch("data/products.json?v=" + Date.now(), { cache: "no-store" });
       catalogProducts = await res.json();
     } catch (e) {
       catalogProducts = [];

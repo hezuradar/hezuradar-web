@@ -94,7 +94,7 @@
   }
 
   async function fetchJSON(path) {
-    const res = await fetch(path + "?v=" + Date.now());
+    const res = await fetch(path + "?v=" + Date.now(), { cache: "no-store" });
     if (!res.ok) throw new Error("No se pudo cargar " + path);
     return res.json();
   }

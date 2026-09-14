@@ -183,7 +183,7 @@
     if (!cfg.owner || !cfg.repo || !cfg.token) {
       setStatus("p-status", "info", "Configura la conexión con GitHub para cargar y publicar productos.");
       try {
-        const res = await fetch(PRODUCTS_PATH + "?v=" + Date.now());
+        const res = await fetch(PRODUCTS_PATH + "?v=" + Date.now(), { cache: "no-store" });
         if (res.ok) {
           products = await res.json();
           renderTable();
@@ -371,7 +371,7 @@
       setStatus(
         "p-status",
         "ok",
-        "Publicado. GitHub Pages tardará uno o dos minutos en actualizar la web pública."
+        "Publicado correctamente. La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta."
       );
       resetForm();
       await loadProducts();
