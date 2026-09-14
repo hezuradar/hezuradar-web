@@ -338,7 +338,6 @@ ${bodyHtml}
     const c = o.customer || {};
     const s = o.shipping || {};
     return `
-      <div class="from">De: HezurAdar · Legazpi, Gipuzkoa · ${escapeHtml("hezuradar@gmail.com")}</div>
       <div class="to-caption">Enviar a</div>
       <div class="to">
         <b>${escapeHtml(c.name || "")}</b>
@@ -380,7 +379,6 @@ ${bodyHtml}
     position:absolute;top:-11px;left:14px;background:#fff;padding:0 8px;
     font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#245F96;
   }
-  .from{font-size:11px;color:#444;padding-bottom:10px;margin-bottom:12px;border-bottom:1px dashed #999}
   .to-caption{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#666;margin-bottom:6px}
   .to{font-size:15px;line-height:1.5}
   .to b{font-size:19px;display:block;margin-bottom:6px}
@@ -413,7 +411,6 @@ ${bodyHtml}
 <style>
   body{font-family:Arial,Helvetica,sans-serif;padding:22px;color:#111}
   .label{border:2px solid #111;border-radius:10px;padding:22px;max-width:420px}
-  .from{font-size:11.5px;color:#444;padding-bottom:12px;margin-bottom:16px;border-bottom:1px dashed #999}
   .to-caption{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:#666;margin-bottom:6px}
   .to{font-size:16px;line-height:1.55}
   .to b{font-size:21px;display:block;margin-bottom:8px}
