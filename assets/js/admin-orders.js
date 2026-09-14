@@ -199,7 +199,7 @@
         (it) => `
         <div class="order-item-row">
           ${it.image ? `<img src="${escapeAttr(it.image)}" alt="">` : `<div class="order-item-noimg"></div>`}
-          <span class="oi-name">${it.qty}× ${escapeHtml(it.title)}${it.discountPercent ? ` <span class="oi-discount-tag">-${it.discountPercent}%</span>` : ""}</span>
+          <span class="oi-name">${Number(it.qty) || 0}× ${escapeHtml(it.title)}${it.discountPercent ? ` <span class="oi-discount-tag">-${Number(it.discountPercent) || 0}%</span>` : ""}</span>
           <span class="oi-total">${formatPrice(it.price * it.qty)}</span>
         </div>`
       )
@@ -215,20 +215,20 @@
         <div class="order-card-head">
           <div class="order-head-title">
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
-            <span class="status-pill status-pill-${escapeAttr(status)}">${capitalize(status)}</span>
+            <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
-            <select id="status-${o.docId}" class="order-status-select">
+            <select id="status-${escapeAttr(o.docId)}" class="order-status-select">
               ${["pendiente", "confirmado", "enviado", "entregado", "cancelado"]
                 .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
                 .join("")}
             </select>
-            <button class="small-btn" id="label-${o.docId}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
-            <button class="small-btn" id="albaran-${o.docId}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
-            ${c.phone ? `<button class="small-btn" id="wa-albaran-${o.docId}" type="button" title="Enviar el albarán por WhatsApp al cliente">📲 Albarán WhatsApp</button>` : ""}
-            <button class="small-btn" id="edit-${o.docId}" type="button">✏️ Editar</button>
-            <button class="small-btn danger" id="del-${o.docId}" type="button">🗑️ Borrar</button>
+            <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
+            <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
+            ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el albarán por WhatsApp al cliente">📲 Albarán WhatsApp</button>` : ""}
+            <button class="small-btn" id="edit-${escapeAttr(o.docId)}" type="button">✏️ Editar</button>
+            <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
           </div>
         </div>
         <div class="order-card-body">
@@ -289,7 +289,7 @@
     const total = orderTotal(o);
     const rows = (o.items || [])
       .map(
-        (it) => `<tr><td>${escapeHtml(it.title)}${it.discountPercent ? ` <span class="albaran-discount-tag">-${it.discountPercent}%</span>` : ""}</td><td class="num">${it.qty}</td><td class="num">${formatPrice(it.price)}</td><td class="num">${formatPrice(it.price * it.qty)}</td></tr>`
+        (it) => `<tr><td>${escapeHtml(it.title)}${it.discountPercent ? ` <span class="albaran-discount-tag">-${Number(it.discountPercent) || 0}%</span>` : ""}</td><td class="num">${Number(it.qty) || 0}</td><td class="num">${formatPrice(it.price)}</td><td class="num">${formatPrice(it.price * it.qty)}</td></tr>`
       )
       .join("");
     return `
@@ -575,11 +575,11 @@ ${bodyHtml}
         <div class="oi-sub">
           <div class="oi-field">
             <label>Precio (€)</label>
-            <input type="number" min="0" step="0.01" placeholder="0,00" value="${row.price}" data-i="${i}" class="oi-price">
+            <input type="number" min="0" step="0.01" placeholder="0,00" value="${Number(row.price) || 0}" data-i="${i}" class="oi-price">
           </div>
           <div class="oi-field">
             <label>Cantidad</label>
-            <input type="number" min="1" step="1" placeholder="1" value="${row.qty}" data-i="${i}" class="oi-qty">
+            <input type="number" min="1" step="1" placeholder="1" value="${Number(row.qty) || 1}" data-i="${i}" class="oi-qty">
           </div>
           <button type="button" class="small-btn danger oi-remove" data-i="${i}" title="Eliminar línea">✕ Quitar</button>
         </div>

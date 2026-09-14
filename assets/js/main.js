@@ -77,9 +77,9 @@
     if (els.contactList) {
       els.contactList.innerHTML = `
         <li><b>Ubicación</b>Legazpi, Gipuzkoa (España)</li>
-        <li><b>Email</b><a href="mailto:${store.email}">${store.email}</a></li>
-        <li><b>WhatsApp</b><a href="${waLink(store.whatsapp)}" target="_blank" rel="noopener">${formatPhone(store.whatsapp)}</a></li>
-        <li><b>Instagram</b><a href="${store.instagram}" target="_blank" rel="noopener">@hezuradar</a></li>
+        <li><b>Email</b><a href="mailto:${escapeAttr(store.email)}">${escapeHtml(store.email)}</a></li>
+        <li><b>WhatsApp</b><a href="${escapeAttr(waLink(store.whatsapp))}" target="_blank" rel="noopener">${escapeHtml(formatPhone(store.whatsapp))}</a></li>
+        <li><b>Instagram</b><a href="${escapeAttr(store.instagram)}" target="_blank" rel="noopener">@hezuradar</a></li>
       `;
     }
   }
