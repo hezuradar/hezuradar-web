@@ -140,6 +140,19 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   padding:3px 10px;border-radius:999px;font-size:.68rem;font-weight:700;
   letter-spacing:.02em;text-transform:uppercase;color:var(--color-primary-dark);
 }
+.card-img.has-stock-badge .card-cat{top:38px}
+.badge-outofstock{
+  position:absolute;top:10px;left:10px;z-index:2;background:#c0392b;color:#fff;
+  padding:4px 10px;border-radius:6px;font-size:.68rem;font-weight:800;
+  letter-spacing:.02em;text-transform:uppercase;
+}
+.badge-discount{
+  position:absolute;top:10px;right:10px;z-index:2;width:42px;height:42px;border-radius:50%;
+  background:#c0392b;color:#fff;font-size:.78rem;font-weight:800;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25);
+}
+.card.out-of-stock .card-img img{opacity:.55}
+.price-old{color:var(--color-muted);font-weight:500;text-decoration:line-through;font-size:.85em;margin-right:4px}
 .card-body{padding:14px 14px 16px;display:flex;flex-direction:column;gap:8px;flex:1}
 .card-title{font-size:.95rem;font-weight:600;color:var(--color-ink);line-height:1.35;min-height:2.6em}
 .card-price{font-size:1.15rem;font-weight:700;color:var(--color-primary-dark);margin-top:auto}
@@ -154,6 +167,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .btn-outline:hover{border-color:var(--color-primary);color:var(--color-primary)}
 .btn-whatsapp{background:var(--color-whatsapp);color:#fff}
 .btn-whatsapp:hover{filter:brightness(.95)}
+.btn[disabled]{opacity:.55;cursor:not-allowed;pointer-events:none}
 .empty-state{
   text-align:center;padding:60px 20px;color:var(--color-muted);
 }
@@ -329,6 +343,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .admin-table img{width:44px;height:44px;object-fit:contain;background:#eef2f5;border-radius:6px}
 .admin-table .row-actions{display:flex;gap:8px}
 .small-btn{padding:6px 12px;font-size:.78rem;border-radius:8px;border:1px solid var(--color-border);background:#fff}
+.discount-tag{background:#c0392b;color:#fff;font-size:.72rem;font-weight:800;border-radius:999px;padding:1px 8px}
 .small-btn.danger{color:#b3261e;border-color:#f3c9c6}
 .thumb-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .thumb-preview img{width:64px;height:64px;object-fit:contain;background:#eef2f5;border-radius:8px;border:1px solid var(--color-border)}
@@ -436,6 +451,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 }
 .order-item-row .oi-name{flex:1;min-width:0}
 .order-item-row .oi-total{color:var(--color-muted);white-space:nowrap}
+.oi-discount-tag{background:#c0392b;color:#fff;font-size:.68rem;font-weight:800;border-radius:999px;padding:1px 7px}
 .order-totals{
   background:var(--color-bg);border:1px solid var(--color-border);border-radius:8px;
   padding:10px 12px;font-size:.86rem;display:flex;flex-direction:column;gap:4px;

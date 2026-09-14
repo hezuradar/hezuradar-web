@@ -38,7 +38,7 @@
     });
     $("print-confirmed-btn").addEventListener("click", printConfirmedOrders);
     $("order-add-item").addEventListener("click", () => {
-      itemRows.push({ productId: null, title: "", price: 0, qty: 1 });
+      itemRows.push({ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 });
       renderItemRows();
     });
     $("order-save").addEventListener("click", saveOrder);
@@ -199,7 +199,7 @@
         (it) => `
         <div class="order-item-row">
           ${it.image ? `<img src="${escapeAttr(it.image)}" alt="">` : `<div class="order-item-noimg"></div>`}
-          <span class="oi-name">${it.qty}× ${escapeHtml(it.title)}</span>
+          <span class="oi-name">${it.qty}× ${escapeHtml(it.title)}${it.discountPercent ? ` <span class="oi-discount-tag">-${it.discountPercent}%</span>` : ""}</span>
           <span class="oi-total">${formatPrice(it.price * it.qty)}</span>
         </div>`
       )
@@ -273,6 +273,7 @@
     .albaran-notes{font-style:italic;color:#555;margin-top:4px}
     .albaran-table{width:100%;border-collapse:collapse;font-size:13px}
     .albaran-table th,.albaran-table td{padding:8px 6px;border-bottom:1px solid #ddd;text-align:left}
+    .albaran-discount-tag{display:inline-block;background:#c0392b;color:#fff;font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 7px;margin-left:4px}
     .albaran-table .num{text-align:right}
     .albaran-table tfoot td{border-bottom:none;padding-top:8px}
     .albaran-total-row td{font-weight:800;font-size:14.5px;border-top:2px solid #245F96;padding-top:10px}
@@ -288,7 +289,7 @@
     const total = orderTotal(o);
     const rows = (o.items || [])
       .map(
-        (it) => `<tr><td>${escapeHtml(it.title)}</td><td class="num">${it.qty}</td><td class="num">${formatPrice(it.price)}</td><td class="num">${formatPrice(it.price * it.qty)}</td></tr>`
+        (it) => `<tr><td>${escapeHtml(it.title)}${it.discountPercent ? ` <span class="albaran-discount-tag">-${it.discountPercent}%</span>` : ""}</td><td class="num">${it.qty}</td><td class="num">${formatPrice(it.price)}</td><td class="num">${formatPrice(it.price * it.qty)}</td></tr>`
       )
       .join("");
     return `
@@ -494,7 +495,7 @@ ${bodyHtml}
 
   function resetOrderForm() {
     editingDocId = null;
-    itemRows = [{ productId: null, title: "", price: 0, qty: 1 }];
+    itemRows = [{ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 }];
     $("order-form-title").textContent = "Nuevo pedido";
     $("o-status").value = "pendiente";
     ["o-code", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
@@ -524,8 +525,14 @@ ${bodyHtml}
     $("o-province").value = s.province || "";
     $("o-notes").value = s.notes || "";
     $("o-shipping-cost").value = o.shippingCost || "";
-    itemRows = (o.items || []).map((it) => ({ productId: it.id || null, title: it.title, price: it.price, qty: it.qty }));
-    if (!itemRows.length) itemRows = [{ productId: null, title: "", price: 0, qty: 1 }];
+    itemRows = (o.items || []).map((it) => ({
+      productId: it.id || null,
+      title: it.title,
+      price: it.price,
+      qty: it.qty,
+      discountPercent: Number(it.discountPercent) || 0,
+    }));
+    if (!itemRows.length) itemRows = [{ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 }];
     $("order-cancel").style.display = "inline-block";
     renderItemRows();
     setOrderFormStatus("", "");
@@ -542,7 +549,7 @@ ${bodyHtml}
       .sort((a, b) => a.title.localeCompare(b.title))
       .map(
         (p) =>
-          `<option value="${p.id}" ${p.id === selectedId ? "selected" : ""}>${escapeHtml(p.title)} — ${formatPrice(p.price)}</option>`
+          `<option value="${p.id}" ${p.id === selectedId ? "selected" : ""}>${escapeHtml(p.title)} — ${formatPrice(p.price)}${p.discountPercent ? ` (-${p.discountPercent}%)` : ""}</option>`
       )
       .join("");
   }
@@ -589,9 +596,11 @@ ${bodyHtml}
         } else {
           const p = catalogProducts.find((x) => x.id === sel.value);
           if (p) {
+            const pct = Number(p.discountPercent) || 0;
             itemRows[i].productId = p.id;
             itemRows[i].title = p.title;
-            itemRows[i].price = p.price;
+            itemRows[i].price = pct > 0 ? Math.round(p.price * (1 - pct / 100) * 100) / 100 : p.price;
+            itemRows[i].discountPercent = pct;
           }
         }
         renderItemRows();
@@ -615,7 +624,7 @@ ${bodyHtml}
       btn.addEventListener("click", () => {
         const i = parseInt(btn.dataset.i, 10);
         itemRows.splice(i, 1);
-        if (!itemRows.length) itemRows = [{ productId: null, title: "", price: 0, qty: 1 }];
+        if (!itemRows.length) itemRows = [{ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 }];
         renderItemRows();
       });
     });
@@ -656,6 +665,8 @@ ${bodyHtml}
           id: r.productId || null,
           title: r.title.trim(),
           price: Number(r.price) || 0,
+          originalPrice: p ? Number(p.price) : Number(r.price) || 0,
+          discountPercent: Number(r.discountPercent) || 0,
           qty: Number(r.qty) || 1,
           image: (p && p.images && p.images[0]) || "",
         };

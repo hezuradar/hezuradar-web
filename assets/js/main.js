@@ -29,6 +29,8 @@
       window.HA.store = store;
       window.HA.waLink = waLink;
       window.HA.formatPrice = formatPrice;
+      window.HA.effectivePrice = effectivePrice;
+      window.HA.isOutOfStock = isOutOfStock;
       document.dispatchEvent(new CustomEvent("ha:ready"));
       hydrateStore(store);
       buildCategoryChips();
@@ -201,18 +203,30 @@
 
   function cardTemplate(p) {
     const img = (p.images && p.images[0]) || "";
+    const outOfStock = isOutOfStock(p);
+    const hasDiscount = Number(p.discountPercent) > 0;
     return `
-      <article class="card">
-        <div class="card-img" data-open="${p.id}">
+      <article class="card${outOfStock ? " out-of-stock" : ""}">
+        <div class="card-img${outOfStock ? " has-stock-badge" : ""}" data-open="${p.id}">
+          ${outOfStock ? `<span class="badge-outofstock">Sin stock</span>` : ""}
+          ${hasDiscount ? `<span class="badge-discount">-${p.discountPercent}%</span>` : ""}
           <span class="card-cat">${escapeHtml(p.subcategory || p.category)}</span>
           <img src="${img}" alt="${escapeAttr(p.title)}" loading="lazy">
         </div>
         <div class="card-body">
           <div class="card-title">${escapeHtml(p.title)}</div>
-          <div class="card-price">${formatPrice(p.price)}</div>
+          <div class="card-price">${
+            hasDiscount
+              ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`
+              : formatPrice(p.price)
+          }</div>
           <div class="card-actions">
             <button class="btn btn-outline" data-open="${p.id}">Más info</button>
-            <button class="btn btn-primary" data-add="${p.id}">Añadir</button>
+            ${
+              outOfStock
+                ? `<button class="btn btn-outline" disabled>Sin stock</button>`
+                : `<button class="btn btn-primary" data-add="${p.id}">Añadir</button>`
+            }
           </div>
         </div>
       </article>
@@ -230,10 +244,21 @@
     return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
   }
 
+  function effectivePrice(p) {
+    const pct = Number(p.discountPercent) || 0;
+    return pct > 0 ? Math.round(p.price * (1 - pct / 100) * 100) / 100 : p.price;
+  }
+
+  function isOutOfStock(p) {
+    return typeof p.stock === "number" && p.stock <= 0;
+  }
+
   function openModal(id) {
     const p = state.products.find((x) => x.id === id);
     if (!p) return;
     const images = p.images && p.images.length ? p.images : [""];
+    const outOfStock = isOutOfStock(p);
+    const hasDiscount = Number(p.discountPercent) > 0;
     els.modalRoot.innerHTML = `
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal">
@@ -254,16 +279,21 @@
           <div class="modal-info">
             <div class="modal-cat">${escapeHtml(p.category)}${p.subcategory ? " · " + escapeHtml(p.subcategory) : ""}</div>
             <h2>${escapeHtml(p.title)}</h2>
-            <div class="modal-price">${formatPrice(p.price)}</div>
+            <div class="modal-price">${
+              hasDiscount
+                ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`
+                : formatPrice(p.price)
+            }</div>
+            ${outOfStock ? `<div class="status-msg err">Sin stock disponible.</div>` : ""}
             <div class="modal-desc">${escapeHtml(p.description || "")}</div>
             <div class="modal-sku">Ref. ${escapeHtml(p.sku || "-")}</div>
             <div class="qty-stepper">
-              <button type="button" id="modal-qty-dec" aria-label="Menos">&minus;</button>
-              <input type="number" id="modal-qty" value="1" min="1" inputmode="numeric">
-              <button type="button" id="modal-qty-inc" aria-label="Más">+</button>
+              <button type="button" id="modal-qty-dec" aria-label="Menos" ${outOfStock ? "disabled" : ""}>&minus;</button>
+              <input type="number" id="modal-qty" value="1" min="1" inputmode="numeric" ${outOfStock ? "disabled" : ""}>
+              <button type="button" id="modal-qty-inc" aria-label="Más" ${outOfStock ? "disabled" : ""}>+</button>
             </div>
             <div class="modal-actions">
-              <button class="btn btn-primary" id="modal-add-cart">Añadir a la cesta</button>
+              <button class="btn btn-primary" id="modal-add-cart" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Sin stock" : "Añadir a la cesta"}</button>
               <a class="btn btn-outline" target="_blank" rel="noopener" href="${productWaLink(p)}">Consultar por WhatsApp</a>
             </div>
           </div>

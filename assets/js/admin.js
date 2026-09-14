@@ -231,7 +231,7 @@
         <td><img src="${(p.images && p.images[0]) || ""}" alt=""></td>
         <td>${escapeHtml(p.title)}</td>
         <td>${escapeHtml(p.subcategory || p.category || "")}</td>
-        <td>${Number(p.price).toFixed(2)} €</td>
+        <td>${Number(p.price).toFixed(2)} €${p.discountPercent ? ` <span class="discount-tag">-${p.discountPercent}%</span>` : ""}</td>
         <td>${p.stock ?? "-"}</td>
         <td class="row-actions">
           <button class="small-btn" data-edit="${p.id}">Editar</button>
@@ -258,6 +258,7 @@
     $("p-desc").value = p.description || "";
     $("p-price").value = p.price ?? "";
     $("p-stock").value = p.stock ?? "";
+    $("p-discount").value = p.discountPercent ?? "";
     $("p-category").value = p.category || "";
     $("p-subcategory").value = p.subcategory || "";
     $("p-sku").value = p.sku || "";
@@ -272,7 +273,7 @@
     editingId = null;
     pendingFiles = [];
     $("form-title").textContent = "Añadir producto";
-    ["p-title", "p-desc", "p-price", "p-stock", "p-category", "p-subcategory", "p-sku"].forEach(
+    ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-category", "p-subcategory", "p-sku"].forEach(
       (id) => ($(id).value = "")
     );
     $("p-images").value = "";
@@ -339,6 +340,8 @@
         category: $("p-category").value.trim() || "Otros",
         subcategory: $("p-subcategory").value.trim() || null,
         stock: $("p-stock").value === "" ? null : parseInt($("p-stock").value, 10),
+        discountPercent:
+          $("p-discount").value === "" ? null : Math.min(99, Math.max(0, parseInt($("p-discount").value, 10) || 0)),
         images,
       };
 

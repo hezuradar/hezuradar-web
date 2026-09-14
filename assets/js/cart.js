@@ -28,6 +28,8 @@
   }
 
   function add(id, qty) {
+    const product = getProducts().find((x) => x.id === id);
+    if (product && window.HA && window.HA.isOutOfStock && window.HA.isOutOfStock(product)) return;
     const line = cart.find((c) => c.id === id);
     if (line) line.qty += qty;
     else cart.push({ id, qty });
@@ -57,13 +59,19 @@
   function getProducts() {
     return (window.HA && window.HA.products) || [];
   }
+  function effectivePrice(p) {
+    if (window.HA && window.HA.effectivePrice) return window.HA.effectivePrice(p);
+    return p.price;
+  }
+
   function lines() {
     const products = getProducts();
     return cart
       .map((c) => {
         const p = products.find((x) => x.id === c.id);
         if (!p) return null;
-        return { id: c.id, qty: c.qty, product: p, lineTotal: p.price * c.qty };
+        const price = effectivePrice(p);
+        return { id: c.id, qty: c.qty, product: p, price, lineTotal: price * c.qty };
       })
       .filter(Boolean);
   }
@@ -136,7 +144,11 @@
             <img src="${(l.product.images && l.product.images[0]) || ""}" alt="">
             <div class="cart-line-info">
               <div class="cart-line-title">${escapeHtml(l.product.title)}</div>
-              <div class="cart-line-price">${formatPrice(l.product.price)}</div>
+              <div class="cart-line-price">${
+                l.product.discountPercent
+                  ? `<span class="price-old">${formatPrice(l.product.price)}</span> ${formatPrice(l.price)}`
+                  : formatPrice(l.price)
+              }</div>
               <div class="qty-stepper qty-stepper-sm">
                 <button type="button" data-dec="${l.id}">&minus;</button>
                 <input type="number" min="1" value="${l.qty}" data-qty="${l.id}">
@@ -280,7 +292,9 @@
       items: orderLines.map((l) => ({
         id: l.product.id,
         title: l.product.title,
-        price: l.product.price,
+        price: l.price,
+        originalPrice: l.product.price,
+        discountPercent: Number(l.product.discountPercent) || 0,
         qty: l.qty,
         image: (l.product.images && l.product.images[0]) || "",
       })),
@@ -340,7 +354,7 @@
 
   function buildWhatsAppMessage(order) {
     const lines = order.items
-      .map((it) => `- ${it.qty}x ${it.title} — ${formatPrice(it.price * it.qty)}`)
+      .map((it) => `- ${it.qty}x ${it.title}${it.discountPercent ? ` (-${it.discountPercent}%)` : ""} — ${formatPrice(it.price * it.qty)}`)
       .join("\n");
     const s = order.shipping;
     const c = order.customer;
