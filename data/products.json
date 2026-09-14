@@ -23,7 +23,8 @@
     "sku": "RR0053",
     "category": "Accesorios",
     "subcategory": "Puas",
-    "stock": 98,
+    "stock": 5,
+    "discountPercent": null,
     "images": [
       "images/products/806df2c5-2e3a-46c2-a653-5bb5423a7951_0.jpg",
       "images/products/806df2c5-2e3a-46c2-a653-5bb5423a7951_1.jpg",
