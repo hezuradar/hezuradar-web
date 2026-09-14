@@ -8,7 +8,7 @@
     "category": "Accesorios",
     "subcategory": "Puas",
     "stock": 5,
-    "discountPercent": 0,
+    "discountPercent": null,
     "images": [
       "images/products/68e0d1e3-8ceb-4adf-896d-2fd5ce442a69_0.jpg",
       "images/products/68e0d1e3-8ceb-4adf-896d-2fd5ce442a69_1.jpg",
