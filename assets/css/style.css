@@ -298,6 +298,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   font-size:.92rem;font-family:inherit;background:#fff;
 }
 .field textarea{min-height:110px;resize:vertical}
+.field textarea.field-textarea-compact{min-height:64px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:0}
 .card-panel{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius);padding:24px;margin-bottom:24px}
 .status-msg{padding:10px 14px;border-radius:8px;font-size:.85rem;margin-top:10px}
@@ -334,6 +335,19 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 /* Orders */
 .orders-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .orders-toolbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-tabs{
+  display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px;margin-bottom:14px;
+  border-bottom:1px solid var(--color-border);
+}
+.status-tab{
+  flex:none;display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--color-border);
+  background:#fff;color:var(--color-muted);font-size:.84rem;font-weight:700;white-space:nowrap;
+}
+.status-tab.active{background:var(--color-primary-dark);border-color:var(--color-primary-dark);color:#fff}
+.status-tab-count{
+  background:var(--color-bg);color:var(--color-muted);border-radius:999px;padding:1px 7px;font-size:.74rem;font-weight:800;
+}
+.status-tab.active .status-tab-count{background:rgba(255,255,255,.25);color:#fff}
 #orders-list{display:flex;flex-direction:column;gap:14px}
 .order-card{border:1px solid var(--color-border);border-radius:var(--radius);overflow:hidden}
 .order-card.status-pendiente{border-left:4px solid #e0a300}
@@ -430,4 +444,5 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .revenue-stat{min-width:0}
   .order-card-head{flex-direction:column;align-items:stretch}
   .order-head-actions{justify-content:flex-start}
+  #tab-orders .field input,#tab-orders .field select,#tab-orders .field textarea{font-size:16px}
 }

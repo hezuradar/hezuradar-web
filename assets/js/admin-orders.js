@@ -28,9 +28,13 @@
       if (e.key === "Enter") login();
     });
     $("orders-logout-btn").addEventListener("click", () => firebase.auth().signOut());
-    $("orders-status-filter").addEventListener("change", (e) => {
-      statusFilter = e.target.value;
-      renderOrders();
+    document.querySelectorAll(".status-tab").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        statusFilter = btn.dataset.status;
+        document.querySelectorAll(".status-tab").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderOrders();
+      });
     });
     $("print-confirmed-btn").addEventListener("click", printConfirmedOrders);
     $("order-add-item").addEventListener("click", () => {
@@ -134,6 +138,11 @@
       badge.style.display = "none";
     }
     $("confirmed-count").textContent = orders.filter((o) => o.status === "confirmado").length;
+    $("count-all").textContent = orders.length;
+    ["pendiente", "confirmado", "enviado", "entregado", "cancelado"].forEach((s2) => {
+      const el = $("count-" + s2);
+      if (el) el.textContent = orders.filter((o) => o.status === s2).length;
+    });
 
     if (!list.length) {
       $("orders-list").innerHTML = '<div class="empty-state">No hay pedidos que mostrar.</div>';
@@ -153,6 +162,8 @@
       if (labelBtn) labelBtn.addEventListener("click", () => printLabel(o.docId));
       const albaranBtn = document.getElementById(`albaran-${o.docId}`);
       if (albaranBtn) albaranBtn.addEventListener("click", () => printAlbaran(o.docId));
+      const waAlbaranBtn = document.getElementById(`wa-albaran-${o.docId}`);
+      if (waAlbaranBtn) waAlbaranBtn.addEventListener("click", () => sendAlbaranWhatsApp(o.docId));
     });
   }
 
@@ -215,6 +226,7 @@
             </select>
             <button class="small-btn" id="label-${o.docId}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
             <button class="small-btn" id="albaran-${o.docId}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
+            ${c.phone ? `<button class="small-btn" id="wa-albaran-${o.docId}" type="button" title="Enviar el albarán por WhatsApp al cliente">📲 Albarán WhatsApp</button>` : ""}
             <button class="small-btn" id="edit-${o.docId}" type="button">✏️ Editar</button>
             <button class="small-btn danger" id="del-${o.docId}" type="button">🗑️ Borrar</button>
           </div>
@@ -332,6 +344,48 @@ ${bodyHtml}
     const o = orders.find((x) => x.docId === docId);
     if (!o) return;
     openPrintWindow(`Albarán ${o.orderCode || o.docId}`, albaranHtml(o));
+  }
+
+  function albaranWhatsAppText(o) {
+    const c = o.customer || {};
+    const s = o.shipping || {};
+    const shippingCost = Number(o.shippingCost) || 0;
+    const itemsSum = (o.items || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
+    const total = orderTotal(o);
+    const lines = (o.items || [])
+      .map((it) => `- ${it.qty}x ${it.title} — ${formatPrice(it.price * it.qty)}`)
+      .join("\n");
+    return [
+      `📄 *Albarán de entrega · Pedido ${o.orderCode || o.docId}*`,
+      "",
+      "Productos:",
+      lines,
+      "",
+      `Productos: ${formatPrice(itemsSum)}`,
+      shippingCost > 0 ? `Envío: ${formatPrice(shippingCost)}` : null,
+      `Total: ${formatPrice(total)}`,
+      "",
+      "Enviar a:",
+      c.name || "",
+      `${s.address || ""}, ${s.postalCode || ""} ${s.city || ""}${s.province ? " (" + s.province + ")" : ""}`,
+      "",
+      "Gracias por su compra — HezurAdar",
+    ]
+      .filter((l) => l !== null)
+      .join("\n");
+  }
+
+  function sendAlbaranWhatsApp(docId) {
+    const o = orders.find((x) => x.docId === docId);
+    if (!o) return;
+    const c = o.customer || {};
+    if (!c.phone) {
+      alert("Este pedido no tiene teléfono de cliente.");
+      return;
+    }
+    const phone = String(c.phone).replace(/[^\d+]/g, "").replace("+", "");
+    const text = albaranWhatsAppText(o);
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
   }
 
   function labelBlockHtml(o) {

@@ -8,8 +8,8 @@
 <title>Administración — HezurAdar</title>
 <link rel="icon" href="images/site/logo.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260913c">
-<script src="assets/js/device.js?v=20260913c"></script>
+<link rel="stylesheet" href="assets/css/style.css?v=20260913d">
+<script src="assets/js/device.js?v=20260913d"></script>
 </head>
 <body class="admin-body">
 
@@ -227,7 +227,7 @@
           </div>
           <div class="field">
             <label>Notas del pedido</label>
-            <input id="o-notes" placeholder="Observaciones, forma de pago, etc.">
+            <textarea id="o-notes" class="field-textarea-compact" placeholder="Observaciones, forma de pago, etc."></textarea>
           </div>
         </div>
 
@@ -235,7 +235,7 @@
         <div class="field-row">
           <div class="field">
             <label>Dirección</label>
-            <input id="o-address" placeholder="Calle, número, piso...">
+            <textarea id="o-address" class="field-textarea-compact" placeholder="Calle, número, piso..."></textarea>
           </div>
           <div class="field">
             <label>Código postal</label>
@@ -283,16 +283,16 @@
         <div class="orders-toolbar">
           <h3 style="margin:0">Pedidos (<span id="orders-count">0</span>)</h3>
           <div class="orders-toolbar-actions">
-            <select id="orders-status-filter" class="sort-select">
-              <option value="">Todos los estados</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="confirmado">Confirmado</option>
-              <option value="enviado">Enviado</option>
-              <option value="entregado">Entregado</option>
-              <option value="cancelado">Cancelado</option>
-            </select>
             <button class="small-btn" id="print-confirmed-btn" type="button" title="Imprime en una sola página todas las etiquetas de envío de los pedidos confirmados">🏷️ Etiquetas de confirmados (<span id="confirmed-count">0</span>)</button>
           </div>
+        </div>
+        <div class="status-tabs" id="orders-status-tabs">
+          <button class="status-tab active" type="button" data-status="">Todos <span class="status-tab-count" id="count-all">0</span></button>
+          <button class="status-tab" type="button" data-status="pendiente">Pendiente <span class="status-tab-count" id="count-pendiente">0</span></button>
+          <button class="status-tab" type="button" data-status="confirmado">Confirmado <span class="status-tab-count" id="count-confirmado">0</span></button>
+          <button class="status-tab" type="button" data-status="enviado">Enviado <span class="status-tab-count" id="count-enviado">0</span></button>
+          <button class="status-tab" type="button" data-status="entregado">Entregado <span class="status-tab-count" id="count-entregado">0</span></button>
+          <button class="status-tab" type="button" data-status="cancelado">Cancelado <span class="status-tab-count" id="count-cancelado">0</span></button>
         </div>
         <div id="orders-list"></div>
       </div>
@@ -305,8 +305,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="assets/js/firebase-config.js?v=20260913c"></script>
-<script src="assets/js/admin.js?v=20260913c"></script>
-<script src="assets/js/admin-orders.js?v=20260913c"></script>
+<script src="assets/js/firebase-config.js?v=20260913d"></script>
+<script src="assets/js/admin.js?v=20260913d"></script>
+<script src="assets/js/admin-orders.js?v=20260913d"></script>
 </body>
 </html>

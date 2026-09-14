@@ -268,6 +268,10 @@
     if (submitBtn) submitBtn.disabled = true;
     setCheckoutStatus("info", "Procesando pedido...");
 
+    // Se abre ya (de forma síncrona, dentro del gesto de clic) para que los
+    // navegadores móviles no bloqueen la ventana emergente tras los `await` siguientes.
+    const waWindow = window.open("", "_blank");
+
     const orderLines = lines();
     const order = {
       orderCode: genOrderCode(),
@@ -310,7 +314,15 @@
     const phone = (window.HA && window.HA.store && window.HA.store.whatsapp) || "";
     const text = buildWhatsAppMessage(order);
     if (phone) {
-      window.open(`https://wa.me/${phone.replace("+", "")}?text=${encodeURIComponent(text)}`, "_blank");
+      const waUrl = `https://wa.me/${phone.replace("+", "")}?text=${encodeURIComponent(text)}`;
+      if (waWindow) {
+        waWindow.location.href = waUrl;
+      } else {
+        // La ventana previa fue bloqueada igualmente: último intento.
+        window.open(waUrl, "_blank");
+      }
+    } else if (waWindow) {
+      waWindow.close();
     }
 
     lastOrder = order;
