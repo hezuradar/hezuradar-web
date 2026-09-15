@@ -145,6 +145,26 @@ afectados); simplemente no llegará el aviso por correo.
 > para usarlos en código público de cliente. El límite de envíos gratuito y la cuenta conectada son
 > la protección real.
 
+### Email de confirmación al cliente (opcional)
+
+Además del aviso a `hezuradar@gmail.com`, si el cliente rellena su email al hacer el pedido se le
+puede enviar automáticamente un correo de confirmación con el resumen del pedido en formato visual
+(logo, productos, importes, forma de pago y dirección de envío). Usa la misma cuenta de EmailJS,
+pero necesita **una segunda plantilla**:
+
+1. En EmailJS, **Email Templates** → **Create New Template** (una nueva, distinta a la del aviso
+   interno).
+2. En **To Email** pon `{{to_email}}` (así cada correo se envía a la dirección de cada cliente).
+3. En el asunto, algo como: `Pedido {{order_code}} confirmado - Hezur&Adar`.
+4. En el cuerpo, cambia al editor de código (HTML) y deja únicamente: `{{{order_html}}}` (con
+   triple llave) — el diseño ya viene maquetado desde la web, esta variable lo inserta tal cual.
+5. Guarda y copia el **Template ID** → pégalo en
+   [assets/js/emailjs-config.js](assets/js/emailjs-config.js) en `customerTemplateId`, reemplazando
+   `TU_CUSTOMER_TEMPLATE_ID`. Sube el cambio al repositorio.
+
+Si no configuras esta segunda plantilla, todo sigue funcionando igual (WhatsApp, aviso interno y
+guardado en Firebase); simplemente no se enviará confirmación por email al cliente.
+
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de

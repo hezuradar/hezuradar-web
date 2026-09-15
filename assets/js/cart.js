@@ -282,11 +282,16 @@
   }
 
   function successTemplate() {
+    const email = lastOrder && lastOrder.customer && lastOrder.customer.email;
     return `
       <h3>¡Pedido enviado!</h3>
       <div class="status-msg ok">Pedido ${escapeHtml((lastOrder && lastOrder.orderCode) || "")} recibido.</div>
-      <p>Hemos abierto WhatsApp con el resumen de tu pedido. Si no se ha abierto automáticamente,
-      contáctanos directamente para confirmarlo.</p>
+      <p>Tu pedido será tramitado, nos pondremos en contacto contigo en breve para concretar los
+      detalles pendientes, gracias por tu compra.</p>
+      <p class="help-text">Hemos abierto WhatsApp con el resumen de tu pedido. Si no se ha abierto
+      automáticamente, contáctanos directamente para confirmarlo.${
+        email ? ` También te hemos enviado la confirmación a <b>${escapeHtml(email)}</b>.` : ""
+      }</p>
       <button class="btn btn-primary" id="continue-shopping" style="width:100%">Seguir comprando</button>
     `;
   }
@@ -396,6 +401,14 @@
       }
     } catch (err) {
       console.error("No se pudo enviar el email del pedido:", err);
+    }
+
+    try {
+      if (window.HA_EMAIL && window.HA_EMAIL.sendCustomerOrderEmail) {
+        await window.HA_EMAIL.sendCustomerOrderEmail(order);
+      }
+    } catch (err) {
+      console.error("No se pudo enviar el email de confirmación al cliente:", err);
     }
 
     const phone = (window.HA && window.HA.store && window.HA.store.whatsapp) || "";
