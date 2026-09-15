@@ -207,9 +207,7 @@
       .join("");
     const c = o.customer || {};
     const s = o.shipping || {};
-    const waHref = c.phone
-      ? `https://wa.me/${String(c.phone).replace(/[^\d+]/g, "").replace("+", "")}`
-      : null;
+    const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
 
     return `
       <article class="order-card status-${escapeAttr(status)}">
@@ -386,7 +384,7 @@ ${bodyHtml}
       alert("Este pedido no tiene teléfono de cliente.");
       return;
     }
-    const phone = String(c.phone).replace(/[^\d+]/g, "").replace("+", "");
+    const phone = waPhoneDigits(c.phone);
     const text = albaranWhatsAppText(o);
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
   }
@@ -725,6 +723,16 @@ ${bodyHtml}
 
   /* ---------------- UTIL ---------------- */
 
+  function waPhoneDigits(phone) {
+    let digits = String(phone || "").replace(/[^\d+]/g, "");
+    const hadPlus = digits.startsWith("+");
+    digits = digits.replace(/\+/g, "");
+    if (!hadPlus && digits.length === 9) {
+      // Número español sin prefijo de país (p.ej. 653 71 34 28): se asume +34.
+      digits = "34" + digits;
+    }
+    return digits;
+  }
   function formatDate(iso) {
     if (!iso) return "";
     try {
