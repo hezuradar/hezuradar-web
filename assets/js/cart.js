@@ -116,9 +116,10 @@
     else if (view === "checkout") inner = checkoutTemplate();
     else inner = cartTemplate();
 
+    const isCheckout = view === "checkout" ? " checkout-view" : "";
     root.innerHTML = `
-      <div class="cart-backdrop" id="cart-backdrop">
-        <aside class="cart-drawer">
+      <div class="cart-backdrop${isCheckout}" id="cart-backdrop">
+        <aside class="cart-drawer${isCheckout}">
           <button class="modal-close" id="cart-close" aria-label="Cerrar">&times;</button>
           ${inner}
         </aside>
@@ -188,15 +189,40 @@
     `;
   }
 
+  const PAYMENT_METHODS = [
+    { value: "paypal", label: "PayPal", img: "images/site/payment/paypal.png" },
+    { value: "bizum", label: "Bizum", img: "images/site/payment/bizum.png" },
+    { value: "otros", label: "Otros", img: "images/site/payment/otros.png" },
+  ];
+  const PAYMENT_LABELS = PAYMENT_METHODS.reduce((m, p) => ((m[p.value] = p.label), m), {});
+
   function checkoutTemplate() {
     const list = lines();
     return `
-      <h3>Tus datos</h3>
-      <div class="cart-summary cart-summary-compact">
-        ${list.map((l) => `<div class="cart-mini-line"><span>${l.qty}× ${escapeHtml(l.product.title)}</span><span>${formatPrice(l.lineTotal)}</span></div>`).join("")}
-        ${shippingSummaryHtml()}
+      <h3>Revisa y confirma tu pedido</h3>
+      <div class="checkout-order-card">
+        <div class="checkout-order-lines">
+          ${list
+            .map(
+              (l) => `
+            <div class="checkout-order-line">
+              <img src="${(l.product.images && l.product.images[0]) || ""}" alt="">
+              <div class="checkout-order-line-info">
+                <div class="checkout-order-line-title">${escapeHtml(l.product.title)}</div>
+                <div class="checkout-order-line-qty">${l.qty} × ${formatPrice(l.price)}</div>
+              </div>
+              <div class="checkout-order-line-price">${formatPrice(l.lineTotal)}</div>
+            </div>
+          `
+            )
+            .join("")}
+        </div>
+        <div class="cart-summary cart-summary-compact">
+          ${shippingSummaryHtml()}
+        </div>
       </div>
       <form id="checkout-form">
+        <h4 class="checkout-section-title">Tus datos</h4>
         <div class="field">
           <label>Nombre y apellidos *</label>
           <input required name="name" id="co-name" placeholder="Nombre completo">
@@ -233,6 +259,19 @@
           <label>Notas del pedido (opcional)</label>
           <textarea name="notes" id="co-notes" placeholder="Instrucciones de entrega, preferencias..."></textarea>
         </div>
+
+        <h4 class="checkout-section-title">Forma de pago *</h4>
+        <div class="payment-methods">
+          ${PAYMENT_METHODS.map(
+            (p) => `
+            <label class="payment-method-btn">
+              <input type="radio" name="paymentMethod" value="${p.value}" required>
+              <img src="${p.img}" alt="${escapeHtml(p.label)}">
+            </label>
+          `
+          ).join("")}
+        </div>
+
         <div id="checkout-status"></div>
         <div style="display:flex;gap:10px;margin-top:6px">
           <button type="button" class="btn btn-outline" id="back-to-cart">Volver a la cesta</button>
@@ -279,6 +318,12 @@
     } else if (view === "checkout") {
       document.getElementById("back-to-cart").addEventListener("click", () => openDrawer("cart"));
       document.getElementById("checkout-form").addEventListener("submit", onSubmitCheckout);
+      document.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
+        input.addEventListener("change", () => {
+          document.querySelectorAll(".payment-method-btn").forEach((btn) => btn.classList.remove("selected"));
+          input.closest(".payment-method-btn").classList.add("selected");
+        });
+      });
     } else if (view === "success") {
       document.getElementById("continue-shopping").addEventListener("click", closeDrawer);
     }
@@ -292,6 +337,10 @@
     const data = Object.fromEntries(new FormData(form).entries());
     if (!data.name || !data.phone || !data.address || !data.postalCode || !data.city) {
       setCheckoutStatus("err", "Rellena los campos obligatorios (*).");
+      return;
+    }
+    if (!data.paymentMethod) {
+      setCheckoutStatus("err", "Elige una forma de pago.");
       return;
     }
     submitting = true;
@@ -322,6 +371,7 @@
       subtotal: orderSubtotal,
       shippingCost: orderShipping,
       total: orderSubtotal + orderShipping,
+      paymentMethod: data.paymentMethod,
       customer: { name: data.name.trim(), phone: data.phone.trim(), email: (data.email || "").trim() },
       shipping: {
         address: data.address.trim(),
@@ -390,6 +440,8 @@
       `Subtotal: ${formatPrice(order.subtotal)}`,
       order.shippingCost ? `Envío certificado: ${formatPrice(order.shippingCost)}` : null,
       order.shippingCost ? `Total: ${formatPrice(order.total)}` : null,
+      "",
+      `Forma de pago: ${PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-"}`,
       "",
       "Datos de envío:",
       `Nombre: ${c.name}`,

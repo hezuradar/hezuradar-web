@@ -245,6 +245,7 @@
             <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
             ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
             <div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
+            ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
             ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
           </div>
         </div>
@@ -309,6 +310,7 @@
         <div><b>${escapeHtml(c.name || "-")}</b></div>
         <div>${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
         <div>${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}${c.email ? " · " + escapeHtml(c.email) : ""}</div>
+        ${o.paymentMethod ? `<div>Forma de pago: ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
         ${s.notes ? `<div class="albaran-notes">Notas: ${escapeHtml(s.notes)}</div>` : ""}
       </div>
       <table class="albaran-table">
@@ -723,6 +725,9 @@ ${bodyHtml}
 
   /* ---------------- UTIL ---------------- */
 
+  function paymentLabel(method) {
+    return { paypal: "PayPal", bizum: "Bizum", otros: "Otros" }[method] || method;
+  }
   function waPhoneDigits(phone) {
     let digits = String(phone || "").replace(/[^\d+]/g, "");
     const hadPlus = digits.startsWith("+");
