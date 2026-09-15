@@ -2,6 +2,8 @@
   "use strict";
 
   const LS_CART = "ha_cart";
+  const SHIPPING_COST = 5.5;
+  const SHIPPING_FREE_MAX_ITEMS = 2;
   let cart = loadCart();
   let view = "cart"; // 'cart' | 'checkout' | 'success'
   let lastOrder = null;
@@ -77,6 +79,9 @@
   }
   function subtotal() {
     return lines().reduce((s, l) => s + l.lineTotal, 0);
+  }
+  function shippingCost() {
+    return count() > SHIPPING_FREE_MAX_ITEMS ? SHIPPING_COST : 0;
   }
 
   function updateBadge() {
@@ -162,10 +167,24 @@
           .join("")}
       </div>
       <div class="cart-summary">
-        <div class="cart-subtotal"><span>Subtotal</span><b>${formatPrice(subtotal())}</b></div>
-        <p class="help-text">Los gastos de envío se confirman por WhatsApp.</p>
+        ${shippingSummaryHtml()}
         <button class="btn btn-primary" id="go-checkout" style="width:100%">Finalizar pedido</button>
       </div>
+    `;
+  }
+
+  function shippingSummaryHtml() {
+    const shipping = shippingCost();
+    if (shipping <= 0) {
+      return `
+        <div class="cart-subtotal"><span>Subtotal</span><b>${formatPrice(subtotal())}</b></div>
+        <p class="help-text">Los gastos de envío se confirman por WhatsApp.</p>
+      `;
+    }
+    return `
+      <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
+      <div class="cart-mini-line"><span>Envío certificado</span><span>${formatPrice(shipping)}</span></div>
+      <div class="cart-subtotal"><span>Total</span><b>${formatPrice(subtotal() + shipping)}</b></div>
     `;
   }
 
@@ -175,7 +194,7 @@
       <h3>Tus datos</h3>
       <div class="cart-summary cart-summary-compact">
         ${list.map((l) => `<div class="cart-mini-line"><span>${l.qty}× ${escapeHtml(l.product.title)}</span><span>${formatPrice(l.lineTotal)}</span></div>`).join("")}
-        <div class="cart-subtotal"><span>Subtotal</span><b>${formatPrice(subtotal())}</b></div>
+        ${shippingSummaryHtml()}
       </div>
       <form id="checkout-form">
         <div class="field">
@@ -285,6 +304,8 @@
     const waWindow = window.open("", "_blank");
 
     const orderLines = lines();
+    const orderSubtotal = subtotal();
+    const orderShipping = shippingCost();
     const order = {
       orderCode: genOrderCode(),
       createdAt: new Date().toISOString(),
@@ -298,7 +319,9 @@
         qty: l.qty,
         image: (l.product.images && l.product.images[0]) || "",
       })),
-      subtotal: subtotal(),
+      subtotal: orderSubtotal,
+      shippingCost: orderShipping,
+      total: orderSubtotal + orderShipping,
       customer: { name: data.name.trim(), phone: data.phone.trim(), email: (data.email || "").trim() },
       shipping: {
         address: data.address.trim(),
@@ -365,6 +388,8 @@
       lines,
       "",
       `Subtotal: ${formatPrice(order.subtotal)}`,
+      order.shippingCost ? `Envío certificado: ${formatPrice(order.shippingCost)}` : null,
+      order.shippingCost ? `Total: ${formatPrice(order.total)}` : null,
       "",
       "Datos de envío:",
       `Nombre: ${c.name}`,
