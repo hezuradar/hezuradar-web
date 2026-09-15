@@ -8,8 +8,8 @@
 <title>Administración — HezurAdar</title>
 <link rel="icon" href="images/site/logo.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260915c">
-<script src="assets/js/device.js?v=20260915c"></script>
+<link rel="stylesheet" href="assets/css/style.css?v=20260915d">
+<script src="assets/js/device.js?v=20260915d"></script>
 </head>
 <body class="admin-body">
 
@@ -219,6 +219,15 @@
             <label>Número de seguimiento (opcional)</label>
             <input id="o-tracking" placeholder="Ej. AB123456789ES">
           </div>
+          <div class="field">
+            <label>Forma de pago</label>
+            <select id="o-payment">
+              <option value="">Sin especificar</option>
+              <option value="paypal">PayPal</option>
+              <option value="bizum">Bizum</option>
+              <option value="otros">Otros</option>
+            </select>
+          </div>
         </div>
 
         <h4 class="form-section-title">🧑 Datos del cliente</h4>
@@ -317,8 +326,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="assets/js/firebase-config.js?v=20260915c"></script>
-<script src="assets/js/admin.js?v=20260915c"></script>
-<script src="assets/js/admin-orders.js?v=20260915c"></script>
+<script src="assets/js/firebase-config.js?v=20260915d"></script>
+<script src="assets/js/admin.js?v=20260915d"></script>
+<script src="assets/js/admin-orders.js?v=20260915d"></script>
 </body>
 </html>

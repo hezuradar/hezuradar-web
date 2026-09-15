@@ -500,7 +500,7 @@ ${bodyHtml}
     itemRows = [{ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 }];
     $("order-form-title").textContent = "Nuevo pedido";
     $("o-status").value = "pendiente";
-    ["o-code", "o-tracking", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
+    ["o-code", "o-tracking", "o-payment", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
       (id) => ($(id).value = "")
     );
     $("o-shipping-cost").value = "";
@@ -519,6 +519,7 @@ ${bodyHtml}
     $("o-status").value = o.status || "pendiente";
     $("o-code").value = o.orderCode || "";
     $("o-tracking").value = o.trackingNumber || "";
+    $("o-payment").value = o.paymentMethod || "";
     $("o-name").value = c.name || "";
     $("o-phone").value = c.phone || "";
     $("o-email").value = c.email || "";
@@ -661,6 +662,7 @@ ${bodyHtml}
     const order = {
       orderCode: $("o-code").value.trim() || (existing && existing.orderCode) || genOrderCode(),
       trackingNumber: $("o-tracking").value.trim(),
+      paymentMethod: $("o-payment").value,
       createdAt: (existing && existing.createdAt) || new Date().toISOString(),
       status: $("o-status").value,
       items: validItems.map((r) => {
