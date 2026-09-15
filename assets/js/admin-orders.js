@@ -165,6 +165,8 @@
       if (albaranBtn) albaranBtn.addEventListener("click", () => printAlbaran(o.docId));
       const waAlbaranBtn = document.getElementById(`wa-albaran-${o.docId}`);
       if (waAlbaranBtn) waAlbaranBtn.addEventListener("click", () => sendAlbaranWhatsApp(o.docId));
+      const resendEmailBtn = document.getElementById(`resend-email-${o.docId}`);
+      if (resendEmailBtn) resendEmailBtn.addEventListener("click", () => resendCustomerEmail(o.docId));
     });
   }
 
@@ -226,6 +228,7 @@
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
             <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
             ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el albarán por WhatsApp al cliente">📲 Albarán WhatsApp</button>` : ""}
+            ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
             ${o.trackingNumber ? `<a class="small-btn" href="${escapeAttr(CORREOS_TRACKING_URL + encodeURIComponent(o.trackingNumber))}" target="_blank" rel="noopener" title="Ver seguimiento del envío en Correos">🚚 Seguimiento</a>` : ""}
             <button class="small-btn" id="edit-${escapeAttr(o.docId)}" type="button">✏️ Editar</button>
             <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
@@ -389,6 +392,36 @@ ${bodyHtml}
     const phone = waPhoneDigits(c.phone);
     const text = albaranWhatsAppText(o);
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  async function resendCustomerEmail(docId) {
+    const o = orders.find((x) => x.docId === docId);
+    if (!o) return;
+    const c = o.customer || {};
+    if (!c.email) {
+      alert("Este pedido no tiene email de cliente.");
+      return;
+    }
+    if (!window.HA_EMAIL || !window.HA_EMAIL.sendCustomerOrderEmail) {
+      alert("El envío de email no está disponible en este panel.");
+      return;
+    }
+    const btn = document.getElementById(`resend-email-${docId}`);
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Enviando...";
+    }
+    try {
+      await window.HA_EMAIL.sendCustomerOrderEmail(o);
+      alert(`Email de confirmación reenviado a ${c.email}.`);
+    } catch (e) {
+      alert("No se pudo enviar el email: " + ((e && (e.text || e.message)) || e));
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "✉️ Reenviar email";
+      }
+    }
   }
 
   function labelBlockHtml(o) {
