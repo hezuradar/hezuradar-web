@@ -26,7 +26,7 @@ window.HA_EMAILJS_CONFIG = {
   publicKey: "OJRsbiXiBtTuXI009",
   serviceId: "service_4hsf5zy",
   templateId: "template_vw6xsbu",
-  customerTemplateId: "TU_CUSTOMER_TEMPLATE_ID",
+  customerTemplateId: "template_ul6jy8a",
   toEmail: "hezuradar@gmail.com",
 };
 
