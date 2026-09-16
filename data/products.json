@@ -816,11 +816,12 @@
     "id": "cc014734-f88c-474a-b131-b02c55f8512a",
     "title": "Madre Perla para selleta",
     "description": "Madre perla para Selleta \n85x4x10",
-    "price": 4.5,
+    "price": 7,
     "sku": "RR0013",
     "category": "Madre Perla Y Abalone",
     "subcategory": "Silleta",
     "stock": 41,
+    "discountPercent": null,
     "images": [
       "images/products/cc014734-f88c-474a-b131-b02c55f8512a_0.jpg",
       "images/products/cc014734-f88c-474a-b131-b02c55f8512a_1.jpg",
