@@ -38,6 +38,8 @@
       });
     });
     $("print-confirmed-btn").addEventListener("click", printConfirmedOrders);
+    $("customer-filter").addEventListener("input", renderCustomers);
+    $("o-customer-select").addEventListener("change", onCustomerSelectChange);
     $("order-add-item").addEventListener("click", () => {
       itemRows.push({ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 });
       renderItemRows();
@@ -55,12 +57,16 @@
         $("orders-logout-btn").style.display = "inline-block";
         setAuthStatus("ok", `Sesión iniciada como ${user.email}`);
         $("orders-panel").style.display = "block";
+        $("customers-panel").style.display = "block";
+        $("customers-login-notice").style.display = "none";
         subscribeOrders();
       } else {
         $("orders-login").querySelector(".field-row").style.display = "grid";
         $("orders-login-btn").style.display = "inline-block";
         $("orders-logout-btn").style.display = "none";
         $("orders-panel").style.display = "none";
+        $("customers-panel").style.display = "none";
+        $("customers-login-notice").style.display = "block";
         if (unsubscribe) unsubscribe();
         orders = [];
       }
@@ -118,6 +124,8 @@
           orders = snap.docs.map((d) => ({ docId: d.id, ...d.data() }));
           renderOrders();
           renderRevenue();
+          renderCustomers();
+          populateCustomerSelect();
         },
         (err) => {
           setAuthStatus("err", "Error leyendo pedidos: " + err.message);
@@ -189,6 +197,109 @@
   function orderTotal(o) {
     if (typeof o.total === "number") return o.total;
     return (Number(o.subtotal) || 0) + (Number(o.shippingCost) || 0);
+  }
+
+  /* ---------------- CUSTOMERS (derivados de los pedidos) ---------------- */
+
+  function customerKey(c) {
+    const phone = waPhoneDigits(c.phone || "");
+    if (phone) return "p:" + phone;
+    const email = (c.email || "").trim().toLowerCase();
+    if (email) return "e:" + email;
+    const name = (c.name || "").trim().toLowerCase();
+    return name ? "n:" + name : null;
+  }
+
+  function customersFromOrders() {
+    const sorted = orders.slice().sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    const map = new Map();
+    sorted.forEach((o) => {
+      const c = o.customer || {};
+      const s = o.shipping || {};
+      const key = customerKey(c);
+      if (!key) return;
+      const prev = map.get(key) || { orderCount: 0, totalSpent: 0, firstOrderAt: o.createdAt };
+      map.set(key, {
+        key,
+        name: c.name || prev.name || "",
+        phone: c.phone || prev.phone || "",
+        email: c.email || prev.email || "",
+        address: s.address || prev.address || "",
+        postalCode: s.postalCode || prev.postalCode || "",
+        city: s.city || prev.city || "",
+        province: s.province || prev.province || "",
+        orderCount: prev.orderCount + 1,
+        totalSpent: prev.totalSpent + (o.status === "cancelado" ? 0 : orderTotal(o)),
+        firstOrderAt: prev.firstOrderAt || o.createdAt,
+        lastOrderAt: o.createdAt,
+      });
+    });
+    return Array.from(map.values()).sort((a, b) => String(b.lastOrderAt || "").localeCompare(String(a.lastOrderAt || "")));
+  }
+
+  function renderCustomers() {
+    const all = customersFromOrders();
+    $("customers-count").textContent = all.length;
+    const filter = ($("customer-filter").value || "").trim().toLowerCase();
+    const list = filter
+      ? all.filter(
+          (c) =>
+            c.name.toLowerCase().includes(filter) ||
+            c.phone.toLowerCase().includes(filter) ||
+            c.email.toLowerCase().includes(filter)
+        )
+      : all;
+    if (!list.length) {
+      $("customers-table-body").innerHTML = `<tr><td colspan="6" class="empty-state">No hay clientes que mostrar.</td></tr>`;
+      return;
+    }
+    $("customers-table-body").innerHTML = list
+      .map((c) => {
+        const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
+        const address = [c.address, [c.postalCode, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+        return `
+        <tr>
+          <td><b>${escapeHtml(c.name || "-")}</b></td>
+          <td>
+            ${c.phone ? `📞 ${escapeHtml(c.phone)}${waHref ? ` · <a href="${escapeAttr(waHref)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}<br>` : ""}
+            ${c.email ? `✉️ ${escapeHtml(c.email)}` : ""}
+          </td>
+          <td>${escapeHtml(address)}${c.province ? ` (${escapeHtml(c.province)})` : ""}</td>
+          <td>${c.orderCount}</td>
+          <td>${formatPrice(c.totalSpent)}</td>
+          <td>${formatDate(c.lastOrderAt)}</td>
+        </tr>`;
+      })
+      .join("");
+  }
+
+  function populateCustomerSelect() {
+    const sel = $("o-customer-select");
+    const current = sel.value;
+    const list = customersFromOrders();
+    sel.innerHTML =
+      '<option value="">— Nuevo cliente —</option>' +
+      list
+        .map(
+          (c) =>
+            `<option value="${escapeAttr(c.key)}">${escapeHtml(c.name || "(sin nombre)")}${c.phone ? " · " + escapeHtml(c.phone) : ""}</option>`
+        )
+        .join("");
+    if (list.some((c) => c.key === current)) sel.value = current;
+  }
+
+  function onCustomerSelectChange() {
+    const key = $("o-customer-select").value;
+    if (!key) return;
+    const c = customersFromOrders().find((x) => x.key === key);
+    if (!c) return;
+    $("o-name").value = c.name || "";
+    $("o-phone").value = c.phone || "";
+    $("o-email").value = c.email || "";
+    $("o-address").value = c.address || "";
+    $("o-postal").value = c.postalCode || "";
+    $("o-city").value = c.city || "";
+    $("o-province").value = c.province || "";
   }
 
   function orderCard(o) {
@@ -532,6 +643,7 @@ ${bodyHtml}
     editingDocId = null;
     itemRows = [{ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 }];
     $("order-form-title").textContent = "Nuevo pedido";
+    $("o-customer-select").value = "";
     $("o-status").value = "pendiente";
     ["o-code", "o-tracking", "o-payment", "o-name", "o-phone", "o-email", "o-city", "o-address", "o-postal", "o-province", "o-notes"].forEach(
       (id) => ($(id).value = "")
@@ -549,6 +661,7 @@ ${bodyHtml}
     const c = o.customer || {};
     const s = o.shipping || {};
     $("order-form-title").textContent = "Editar pedido";
+    $("o-customer-select").value = "";
     $("o-status").value = o.status || "pendiente";
     $("o-code").value = o.orderCode || "";
     $("o-tracking").value = o.trackingNumber || "";

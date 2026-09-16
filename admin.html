@@ -8,8 +8,8 @@
 <title>Administración — HezurAdar</title>
 <link rel="icon" href="images/site/logo.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260915f">
-<script src="assets/js/device.js?v=20260915f"></script>
+<link rel="stylesheet" href="assets/css/style.css?v=20260915g">
+<script src="assets/js/device.js?v=20260915g"></script>
 </head>
 <body class="admin-body">
 
@@ -43,6 +43,7 @@
   <div class="admin-tabs">
     <button class="admin-tab active" data-tab="tab-products">Productos</button>
     <button class="admin-tab" data-tab="tab-orders">Pedidos<span class="tab-badge" id="orders-pending-badge" style="display:none"></span></button>
+    <button class="admin-tab" data-tab="tab-customers">Clientes</button>
   </div>
 
   <div id="tab-products" class="admin-tab-panel">
@@ -231,6 +232,13 @@
         </div>
 
         <h4 class="form-section-title">🧑 Datos del cliente</h4>
+        <div class="field">
+          <label>Cliente existente (opcional)</label>
+          <select id="o-customer-select">
+            <option value="">— Nuevo cliente —</option>
+          </select>
+          <p class="help-text">Elige un cliente para rellenar sus datos automáticamente, o déjalo en "Nuevo cliente" para darlo de alta con los datos que escribas abajo.</p>
+        </div>
         <div class="field-row">
           <div class="field">
             <label>Nombre del cliente *</label>
@@ -321,16 +329,39 @@
 
   </div>
 
+  <div id="tab-customers" class="admin-tab-panel" style="display:none">
+    <div id="customers-login-notice" class="card-panel">
+      <p class="help-text">Inicia sesión en la pestaña "Pedidos" para ver los clientes: los datos se obtienen de tus pedidos guardados.</p>
+    </div>
+    <div id="customers-panel" style="display:none">
+      <div class="card-panel">
+        <div class="orders-toolbar">
+          <h3 style="margin:0">Clientes (<span id="customers-count">0</span>)</h3>
+        </div>
+        <input id="customer-filter" placeholder="Buscar por nombre, teléfono o email..." style="margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px solid var(--color-border);width:100%">
+        <div style="overflow-x:auto">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Cliente</th><th>Contacto</th><th>Dirección</th><th>Pedidos</th><th>Total gastado</th><th>Último pedido</th></tr>
+            </thead>
+            <tbody id="customers-table-body"></tbody>
+          </table>
+        </div>
+        <p class="help-text">Esta lista se genera automáticamente a partir de los pedidos guardados (no hace falta darlos de alta a mano): cada pedido nuevo actualiza los datos del cliente correspondiente.</p>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script src="assets/js/firebase-config.js?v=20260915f"></script>
+<script src="assets/js/firebase-config.js?v=20260915g"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
-<script src="assets/js/emailjs-config.js?v=20260915f"></script>
-<script src="assets/js/emailjs-notify.js?v=20260915f"></script>
-<script src="assets/js/admin.js?v=20260915f"></script>
-<script src="assets/js/admin-orders.js?v=20260915f"></script>
+<script src="assets/js/emailjs-config.js?v=20260915g"></script>
+<script src="assets/js/emailjs-notify.js?v=20260915g"></script>
+<script src="assets/js/admin.js?v=20260915g"></script>
+<script src="assets/js/admin-orders.js?v=20260915g"></script>
 </body>
 </html>
