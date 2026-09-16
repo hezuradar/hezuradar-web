@@ -271,7 +271,7 @@
     $("form-title").textContent = "Editar producto";
     $("p-title").value = p.title || "";
     $("p-desc").value = p.description || "";
-    $("p-price").value = p.price ?? "";
+    $("p-price").value = p.price != null ? String(p.price).replace(".", ",") : "";
     $("p-stock").value = p.stock ?? "";
     $("p-discount").value = p.discountPercent ?? "";
     $("p-category").value = p.category || "";
@@ -318,9 +318,9 @@
   async function saveProduct() {
     try {
       const title = $("p-title").value.trim();
-      const price = parseFloat($("p-price").value);
+      const price = parseDecimal($("p-price").value);
       if (!title) throw new Error("El título es obligatorio.");
-      if (isNaN(price)) throw new Error("El precio no es válido.");
+      if (isNaN(price) || price < 0) throw new Error("El precio no es válido. Usa solo números, con coma o punto para los decimales (p.ej. 10,50).");
 
       const cfg = ghConfig();
       if (!cfg.owner || !cfg.repo || !cfg.token) {
@@ -428,5 +428,12 @@
   }
   function escapeAttr(str) {
     return escapeHtml(str);
+  }
+  function parseDecimal(raw) {
+    const s = String(raw ?? "")
+      .trim()
+      .replace(/[€\s]/g, "")
+      .replace(",", ".");
+    return s === "" ? NaN : parseFloat(s);
   }
 })();
