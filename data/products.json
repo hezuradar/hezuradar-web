@@ -783,11 +783,12 @@
     "id": "4a151d42-7852-4ae1-a6a2-4be49afae5d6",
     "title": "Madre Perla  Cordal / Selleta",
     "description": "Madre perla  para cordales o selletas 85x3x15",
-    "price": 4.6,
+    "price": 6.5,
     "sku": "RR0039",
     "category": "Madre Perla Y Abalone",
     "subcategory": "Silleta",
     "stock": 19,
+    "discountPercent": null,
     "images": [
       "images/products/4a151d42-7852-4ae1-a6a2-4be49afae5d6_0.jpg",
       "images/products/4a151d42-7852-4ae1-a6a2-4be49afae5d6_1.jpg",
