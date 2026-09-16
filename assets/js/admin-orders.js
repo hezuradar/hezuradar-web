@@ -9,6 +9,8 @@
   let unsubscribe = null;
   let editingDocId = null;
   let itemRows = [];
+  let expandedCustomerKey = null;
+  let editingCustomerKey = null;
 
   document.addEventListener("DOMContentLoaded", () => {
     initTabs();
@@ -237,6 +239,12 @@
     return Array.from(map.values()).sort((a, b) => String(b.lastOrderAt || "").localeCompare(String(a.lastOrderAt || "")));
   }
 
+  function ordersForCustomer(key) {
+    return orders
+      .filter((o) => customerKey(o.customer || {}) === key)
+      .sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+  }
+
   function renderCustomers() {
     const all = customersFromOrders();
     $("customers-count").textContent = all.length;
@@ -250,27 +258,198 @@
         )
       : all;
     if (!list.length) {
-      $("customers-table-body").innerHTML = `<tr><td colspan="6" class="empty-state">No hay clientes que mostrar.</td></tr>`;
+      $("customers-table-body").innerHTML = `<tr><td colspan="7" class="empty-state">No hay clientes que mostrar.</td></tr>`;
       return;
     }
-    $("customers-table-body").innerHTML = list
-      .map((c) => {
-        const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
-        const address = [c.address, [c.postalCode, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-        return `
+    $("customers-table-body").innerHTML = list.map(customerRowsHtml).join("");
+
+    list.forEach((c) => {
+      const viewBtn = document.getElementById(`cust-view-${c.key}`);
+      if (viewBtn)
+        viewBtn.addEventListener("click", () => {
+          expandedCustomerKey = expandedCustomerKey === c.key ? null : c.key;
+          editingCustomerKey = null;
+          renderCustomers();
+        });
+      const editBtn = document.getElementById(`cust-edit-${c.key}`);
+      if (editBtn)
+        editBtn.addEventListener("click", () => {
+          editingCustomerKey = c.key;
+          expandedCustomerKey = null;
+          renderCustomers();
+        });
+      const delBtn = document.getElementById(`cust-del-${c.key}`);
+      if (delBtn) delBtn.addEventListener("click", () => deleteCustomer(c.key));
+
+      if (editingCustomerKey === c.key) {
+        const saveBtn = document.getElementById(`cedit-save-${c.key}`);
+        if (saveBtn) saveBtn.addEventListener("click", () => saveCustomerEdit(c.key));
+        const cancelBtn = document.getElementById(`cedit-cancel-${c.key}`);
+        if (cancelBtn)
+          cancelBtn.addEventListener("click", () => {
+            editingCustomerKey = null;
+            renderCustomers();
+          });
+      }
+
+      if (expandedCustomerKey === c.key) {
+        ordersForCustomer(c.key).forEach((o) => {
+          const openBtn = document.getElementById(`cust-order-open-${o.docId}`);
+          if (openBtn) openBtn.addEventListener("click", () => openCustomerOrder(o.docId));
+        });
+      }
+    });
+  }
+
+  function customerRowsHtml(c) {
+    const key = escapeAttr(c.key);
+
+    if (editingCustomerKey === c.key) {
+      return `
         <tr>
-          <td><b>${escapeHtml(c.name || "-")}</b></td>
-          <td>
-            ${c.phone ? `📞 ${escapeHtml(c.phone)}${waHref ? ` · <a href="${escapeAttr(waHref)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}<br>` : ""}
-            ${c.email ? `✉️ ${escapeHtml(c.email)}` : ""}
+          <td colspan="7">
+            <div class="field-row">
+              <div class="field"><label>Nombre *</label><input id="cedit-name-${key}" value="${escapeAttr(c.name)}"></div>
+              <div class="field"><label>Teléfono *</label><input id="cedit-phone-${key}" value="${escapeAttr(c.phone)}"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Email</label><input id="cedit-email-${key}" type="email" value="${escapeAttr(c.email)}"></div>
+              <div class="field"><label>Dirección</label><input id="cedit-address-${key}" value="${escapeAttr(c.address)}"></div>
+            </div>
+            <div class="field-row">
+              <div class="field"><label>Código postal</label><input id="cedit-postal-${key}" value="${escapeAttr(c.postalCode)}"></div>
+              <div class="field"><label>Ciudad</label><input id="cedit-city-${key}" value="${escapeAttr(c.city)}"></div>
+              <div class="field"><label>Provincia</label><input id="cedit-province-${key}" value="${escapeAttr(c.province)}"></div>
+            </div>
+            <p class="help-text">Se actualizará en ${c.orderCount} pedido(s) de este cliente.</p>
+            <div style="display:flex;gap:10px;margin-top:6px">
+              <button class="btn btn-primary" id="cedit-save-${key}" type="button">Guardar</button>
+              <button class="btn btn-outline" id="cedit-cancel-${key}" type="button">Cancelar</button>
+            </div>
+            <div id="cedit-status-${key}"></div>
           </td>
-          <td>${escapeHtml(address)}${c.province ? ` (${escapeHtml(c.province)})` : ""}</td>
-          <td>${c.orderCount}</td>
-          <td>${formatPrice(c.totalSpent)}</td>
-          <td>${formatDate(c.lastOrderAt)}</td>
         </tr>`;
-      })
-      .join("");
+    }
+
+    const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
+    const address = [c.address, [c.postalCode, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+    const mainRow = `
+      <tr>
+        <td><b>${escapeHtml(c.name || "-")}</b></td>
+        <td>
+          ${c.phone ? `📞 ${escapeHtml(c.phone)}${waHref ? ` · <a href="${escapeAttr(waHref)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}<br>` : ""}
+          ${c.email ? `✉️ ${escapeHtml(c.email)}` : ""}
+        </td>
+        <td>${escapeHtml(address)}${c.province ? ` (${escapeHtml(c.province)})` : ""}</td>
+        <td>${c.orderCount}</td>
+        <td>${formatPrice(c.totalSpent)}</td>
+        <td>${formatDate(c.lastOrderAt)}</td>
+        <td class="row-actions">
+          <button class="small-btn" id="cust-view-${key}" type="button">📦 Pedidos</button>
+          <button class="small-btn" id="cust-edit-${key}" type="button">✏️ Editar</button>
+          <button class="small-btn danger" id="cust-del-${key}" type="button">🗑️ Borrar</button>
+        </td>
+      </tr>`;
+
+    if (expandedCustomerKey !== c.key) return mainRow;
+
+    const custOrders = ordersForCustomer(c.key);
+    const detailRow = `
+      <tr>
+        <td colspan="7">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            ${
+              custOrders
+                .map(
+                  (o) => `
+              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--color-border)">
+                <b>${escapeHtml(o.orderCode || o.docId)}</b>
+                <span class="status-pill status-pill-${escapeAttr(o.status || "pendiente")}">${escapeHtml(capitalize(o.status || "pendiente"))}</span>
+                <span>${formatDate(o.createdAt)}</span>
+                <span>${formatPrice(orderTotal(o))}</span>
+                <button class="small-btn" id="cust-order-open-${escapeAttr(o.docId)}" type="button">Ver / editar pedido</button>
+              </div>`
+                )
+                .join("") || `<div class="empty-state">Sin pedidos.</div>`
+            }
+          </div>
+        </td>
+      </tr>`;
+    return mainRow + detailRow;
+  }
+
+  function openCustomerOrder(docId) {
+    document.querySelector('[data-tab="tab-orders"]').click();
+    editOrder(docId);
+  }
+
+  async function deleteCustomer(key) {
+    const c = customersFromOrders().find((x) => x.key === key);
+    if (!c) return;
+    const custOrders = ordersForCustomer(key);
+    if (
+      !confirm(
+        `¿Borrar a "${c.name || c.phone || c.email}"? Se borrarán TODOS sus pedidos (${custOrders.length}) de forma permanente. Esta acción no se puede deshacer.`
+      )
+    )
+      return;
+    try {
+      const db = firebase.firestore();
+      const batch = db.batch();
+      custOrders.forEach((o) => batch.delete(db.collection("orders").doc(o.docId)));
+      await batch.commit();
+      if (custOrders.some((o) => o.docId === editingDocId)) resetOrderForm();
+      if (expandedCustomerKey === key) expandedCustomerKey = null;
+      if (editingCustomerKey === key) editingCustomerKey = null;
+    } catch (e) {
+      alert("No se pudo borrar el cliente: " + e.message);
+    }
+  }
+
+  async function saveCustomerEdit(key) {
+    const name = $(`cedit-name-${key}`).value.trim();
+    const phone = $(`cedit-phone-${key}`).value.trim();
+    if (!name || !phone) {
+      setInlineStatus(`cedit-status-${key}`, "err", "El nombre y el teléfono son obligatorios.");
+      return;
+    }
+    const email = $(`cedit-email-${key}`).value.trim();
+    const address = $(`cedit-address-${key}`).value.trim();
+    const postalCode = $(`cedit-postal-${key}`).value.trim();
+    const city = $(`cedit-city-${key}`).value.trim();
+    const province = $(`cedit-province-${key}`).value.trim();
+
+    const custOrders = ordersForCustomer(key);
+    const saveBtn = $(`cedit-save-${key}`);
+    if (saveBtn) saveBtn.disabled = true;
+    setInlineStatus(`cedit-status-${key}`, "info", "Guardando...");
+    try {
+      const db = firebase.firestore();
+      const batch = db.batch();
+      custOrders.forEach((o) => {
+        batch.update(db.collection("orders").doc(o.docId), {
+          "customer.name": name,
+          "customer.phone": phone,
+          "customer.email": email,
+          "shipping.address": address,
+          "shipping.postalCode": postalCode,
+          "shipping.city": city,
+          "shipping.province": province,
+        });
+      });
+      await batch.commit();
+      editingCustomerKey = null;
+      renderCustomers();
+    } catch (e) {
+      setInlineStatus(`cedit-status-${key}`, "err", "No se pudo guardar: " + e.message);
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+
+  function setInlineStatus(elId, type, msg) {
+    const el = $(elId);
+    if (!el) return;
+    el.innerHTML = msg ? `<div class="status-msg ${type}">${escapeHtml(msg)}</div>` : "";
   }
 
   function populateCustomerSelect() {
