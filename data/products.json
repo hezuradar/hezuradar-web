@@ -800,11 +800,12 @@
     "id": "3eb02817-627f-42a5-8fcb-456bfdef8f9f",
     "title": "Madre Perla para Cejuela",
     "description": "Madre perla para cejuela \n55x6x10",
-    "price": 4,
+    "price": 5.5,
     "sku": "RR0012",
     "category": "Madre Perla Y Abalone",
     "subcategory": "Cejuela",
     "stock": 39,
+    "discountPercent": null,
     "images": [
       "images/products/3eb02817-627f-42a5-8fcb-456bfdef8f9f_0.jpg",
       "images/products/3eb02817-627f-42a5-8fcb-456bfdef8f9f_1.jpg",
