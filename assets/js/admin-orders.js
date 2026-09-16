@@ -11,6 +11,23 @@
   let itemRows = [];
   let expandedCustomerKey = null;
   let editingCustomerKey = null;
+  let customerSort = { field: "lastOrderAt", dir: "desc" };
+  const CUSTOMER_SORT_DEFAULT_DIR = {
+    name: "asc",
+    phone: "asc",
+    address: "asc",
+    orderCount: "desc",
+    totalSpent: "desc",
+    lastOrderAt: "desc",
+  };
+  const CUSTOMER_SORT_GETTERS = {
+    name: (c) => (c.name || "").toLowerCase(),
+    phone: (c) => c.phone || "",
+    address: (c) => [c.address, c.postalCode, c.city].filter(Boolean).join(" ").toLowerCase(),
+    orderCount: (c) => c.orderCount,
+    totalSpent: (c) => c.totalSpent,
+    lastOrderAt: (c) => c.lastOrderAt || "",
+  };
 
   document.addEventListener("DOMContentLoaded", () => {
     initTabs();
@@ -42,6 +59,20 @@
     $("print-confirmed-btn").addEventListener("click", printConfirmedOrders);
     $("customer-filter").addEventListener("input", renderCustomers);
     $("o-customer-select").addEventListener("change", onCustomerSelectChange);
+    document.querySelectorAll("#customers-thead-row [data-field]").forEach((th) => {
+      th.addEventListener("click", () => {
+        const field = th.dataset.field;
+        if (customerSort.field === field) {
+          customerSort.dir = customerSort.dir === "asc" ? "desc" : "asc";
+        } else {
+          customerSort.field = field;
+          customerSort.dir = CUSTOMER_SORT_DEFAULT_DIR[field] || "asc";
+        }
+        updateCustomerSortArrows();
+        renderCustomers();
+      });
+    });
+    updateCustomerSortArrows();
     $("order-add-item").addEventListener("click", () => {
       itemRows.push({ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 });
       renderItemRows();
@@ -239,6 +270,25 @@
     return Array.from(map.values()).sort((a, b) => String(b.lastOrderAt || "").localeCompare(String(a.lastOrderAt || "")));
   }
 
+  function sortCustomers(list) {
+    const getter = CUSTOMER_SORT_GETTERS[customerSort.field] || CUSTOMER_SORT_GETTERS.lastOrderAt;
+    const dir = customerSort.dir === "asc" ? 1 : -1;
+    return list.slice().sort((a, b) => {
+      const av = getter(a);
+      const bv = getter(b);
+      if (typeof av === "number" || typeof bv === "number") return ((Number(av) || 0) - (Number(bv) || 0)) * dir;
+      return String(av).localeCompare(String(bv), "es", { sensitivity: "base" }) * dir;
+    });
+  }
+
+  function updateCustomerSortArrows() {
+    document.querySelectorAll("#customers-thead-row [data-field]").forEach((th) => {
+      const arrow = th.querySelector(".sort-arrow");
+      if (!arrow) return;
+      arrow.textContent = th.dataset.field === customerSort.field ? (customerSort.dir === "asc" ? " ▲" : " ▼") : "";
+    });
+  }
+
   function ordersForCustomer(key) {
     return orders
       .filter((o) => customerKey(o.customer || {}) === key)
@@ -249,7 +299,7 @@
     const all = customersFromOrders();
     $("customers-count").textContent = all.length;
     const filter = ($("customer-filter").value || "").trim().toLowerCase();
-    const list = filter
+    const filtered = filter
       ? all.filter(
           (c) =>
             c.name.toLowerCase().includes(filter) ||
@@ -257,6 +307,7 @@
             c.email.toLowerCase().includes(filter)
         )
       : all;
+    const list = sortCustomers(filtered);
     if (!list.length) {
       $("customers-table-body").innerHTML = `<tr><td colspan="7" class="empty-state">No hay clientes que mostrar.</td></tr>`;
       return;
