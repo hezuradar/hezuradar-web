@@ -3,7 +3,14 @@
 
   const $ = (id) => document.getElementById(id);
   const PLATE_PX = 480;
+  const PLATE_MM = 32;
+  const PLATE_PX_PER_MM = PLATE_PX / PLATE_MM;
   const FIT_RATIO = 0.82; // el logo, al ajustarlo, ocupa como mucho este % del lado de la placa
+  const MM_PER_FIT_SCALE = PLATE_MM * FIT_RATIO; // mm reales (lado mayor) a las que corresponde scale=1
+  const SIZE_MM_MIN = 5;
+  const SIZE_MM_MAX = 80;
+  const scaleToMm = (scale) => scale * MM_PER_FIT_SCALE;
+  const mmToScale = (mm) => mm / MM_PER_FIT_SCALE;
   const HARD_MAX_FILE_BYTES = 15 * 1024 * 1024; // por encima de esto ni se intenta leer el archivo (evita colgar el navegador)
   const SAFE_ORDER_BYTES = 950 * 1024; // margen de seguridad bajo el límite de 1 MiB por documento de Firestore
 
@@ -114,14 +121,16 @@
     $("original-size-btn").addEventListener("click", setOriginalSize);
 
     $("scale-range").addEventListener("input", (e) => {
-      state.scale = parseFloat(e.target.value);
+      state.scale = mmToScale(parseFloat(e.target.value));
       drawPlate();
     });
     document.querySelectorAll("[data-scale]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const dir = parseInt(btn.dataset.scale, 10);
-        state.scale = clamp(state.scale + dir * 0.1, 0.2, 3);
-        $("scale-range").value = state.scale;
+        const mmStep = 2;
+        const newMm = clamp(scaleToMm(state.scale) + dir * mmStep, SIZE_MM_MIN, SIZE_MM_MAX);
+        state.scale = mmToScale(newMm);
+        $("scale-range").value = newMm.toFixed(1);
         drawPlate();
       });
     });
@@ -377,7 +386,7 @@
     state.offsetY = 0;
     state.scale = 1;
     state.rotationDeg = 0;
-    $("scale-range").value = 1;
+    $("scale-range").value = MM_PER_FIT_SCALE.toFixed(1);
     $("rotate-range").value = 0;
   }
 
@@ -390,11 +399,10 @@
       setFileStatus("err", "El tamaño real solo se puede calcular para archivos DXF (en PDF no hay una escala fiable).");
       return;
     }
-    const platePxPerMm = PLATE_PX / 32;
-    const rawScale = platePxPerMm / (state.dxfPxPerMm * state.fitPxSize);
-    const clamped = clamp(rawScale, 0.2, 3);
+    const rawScale = PLATE_PX_PER_MM / (state.dxfPxPerMm * state.fitPxSize);
+    const clamped = clamp(rawScale, mmToScale(SIZE_MM_MIN), mmToScale(SIZE_MM_MAX));
     state.scale = clamped;
-    $("scale-range").value = clamped;
+    $("scale-range").value = scaleToMm(clamped).toFixed(1);
     drawPlate();
     if (Math.abs(clamped - rawScale) > 0.001) {
       setFileStatus("info", "El tamaño real del diseño se sale del rango de ajuste permitido, se ha dejado en el máximo posible.");
@@ -477,7 +485,6 @@
   // rectángulo (ya girado) que ocupa el logo sobre la placa. Sirven de referencia de tamaño
   // mientras se mueve, agranda o gira el diseño.
   function drawDimensions(ctx, { cx, cy, w, h, angleRad }) {
-    const platePxPerMm = PLATE_PX / 32;
     const hw = w / 2,
       hh = h / 2;
     const corners = [
@@ -492,8 +499,8 @@
       maxX = Math.max(...xs);
     const minY = Math.min(...ys),
       maxY = Math.max(...ys);
-    const widthMm = (maxX - minX) / platePxPerMm;
-    const heightMm = (maxY - minY) / platePxPerMm;
+    const widthMm = (maxX - minX) / PLATE_PX_PER_MM;
+    const heightMm = (maxY - minY) / PLATE_PX_PER_MM;
 
     ctx.save();
     ctx.strokeStyle = "rgba(36,95,150,.85)";
