@@ -502,11 +502,12 @@
     const widthMm = (maxX - minX) / PLATE_PX_PER_MM;
     const heightMm = (maxY - minY) / PLATE_PX_PER_MM;
 
+    const dimColor = materialById(state.materialId).contrast;
     ctx.save();
-    ctx.strokeStyle = "rgba(36,95,150,.85)";
-    ctx.fillStyle = "rgba(36,95,150,.95)";
+    ctx.strokeStyle = dimColor;
+    ctx.fillStyle = dimColor;
     ctx.lineWidth = 1;
-    ctx.font = "600 12px Inter, sans-serif";
+    ctx.font = "600 14px Inter, sans-serif";
     ctx.textAlign = "center";
 
     const hy = Math.min(maxY + 12, PLATE_PX - 6);
