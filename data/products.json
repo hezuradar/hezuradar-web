@@ -844,5 +844,21 @@
       "images/products/ecfa8213-cd53-431e-a002-7363f1bb6978_2.jpg",
       "images/products/ecfa8213-cd53-431e-a002-7363f1bb6978_3.jpg"
     ]
+  },
+  {
+    "id": "8fc55074-c794-419f-897b-d9fb191d80d1",
+    "title": "Cuerno Buey Negro Bloque",
+    "description": "bloque de cuerno de 60x15x15 mm",
+    "price": 5.5,
+    "sku": "",
+    "category": "Cuerno",
+    "subcategory": "Custom",
+    "stock": null,
+    "discountPercent": null,
+    "images": [
+      "images/products/8fc55074-c794-419f-897b-d9fb191d80d1_1789650967175_0.jpg",
+      "images/products/8fc55074-c794-419f-897b-d9fb191d80d1_1789650971644_1.jpg",
+      "images/products/8fc55074-c794-419f-897b-d9fb191d80d1_1789650974720_2.jpg"
+    ]
   }
 ]
