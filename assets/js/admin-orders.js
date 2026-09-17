@@ -210,7 +210,47 @@
       if (resendEmailBtn) resendEmailBtn.addEventListener("click", () => resendCustomerEmail(o.docId));
       const viewDesignBtn = document.getElementById(`view-design-${o.docId}`);
       if (viewDesignBtn) viewDesignBtn.addEventListener("click", () => viewDesign(o));
+      const downloadBtn = document.getElementById(`download-design-${o.docId}`);
+      if (downloadBtn) {
+        downloadBtn.addEventListener("click", () => {
+          const d = o.design || {};
+          downloadDesignFile(d.fileData, d.fileName, d.fileType);
+        });
+      }
     });
+  }
+
+  // Convierte un data URL (base64) en un Blob decodificándolo a mano, sin usar fetch(): así no
+  // depende de que "data:" esté permitido en connect-src del CSP de la página.
+  function dataUrlToBlob(dataUrl, mimeType) {
+    const comma = dataUrl.indexOf(",");
+    const meta = dataUrl.substring(5, comma); // p.ej. "application/pdf;base64"
+    const type = mimeType || meta.replace(/;base64$/i, "") || "application/octet-stream";
+    const binary = atob(dataUrl.substring(comma + 1));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type });
+  }
+
+  // Descarga el archivo original del cliente a partir del data URL guardado en el pedido.
+  // Un <a href="data:..." download> directo falla en varios navegadores móviles (sobre todo
+  // con tipos poco comunes como .dxf), así que se convierte a un Blob real antes de descargar,
+  // que es el método con mejor soporte en iOS/Android.
+  function downloadDesignFile(dataUrl, fileName, mimeType) {
+    if (!dataUrl) return;
+    try {
+      const blob = dataUrlToBlob(dataUrl, mimeType);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName || "diseno";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (e) {
+      alert("No se pudo descargar el archivo: " + e.message);
+    }
   }
 
   function viewDesign(o) {
@@ -666,7 +706,7 @@
                 .join("")}
             </select>
             ${d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver la placa tal y como la configuró el cliente">👁️ Ver diseño</button>` : ""}
-            ${d.fileData ? `<a class="small-btn" href="${escapeAttr(d.fileData)}" download="${escapeAttr(d.fileName || "diseno")}" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</a>` : ""}
+            ${d.fileData ? `<button class="small-btn" id="download-design-${escapeAttr(o.docId)}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</button>` : ""}
             ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
             <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
           </div>

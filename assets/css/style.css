@@ -336,9 +336,10 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 }
 
 @media (max-width:600px){
-  .site-header .container{gap:8px}
+  .site-header .container{flex-wrap:wrap;height:auto;padding:10px 20px;row-gap:8px;gap:8px}
   .brand{font-size:1rem;gap:8px}
   .brand img{width:30px;height:30px}
+  .header-nav{width:100%;justify-content:center;flex-wrap:wrap;row-gap:8px}
   .pill-btn{padding:7px 12px;font-size:.82rem}
   .icon-btn{width:34px;height:34px}
   .hero-copy p{font-size:.88rem}
@@ -581,7 +582,7 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
 
 .plate-controls{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .plate-control-row{display:flex;align-items:center;gap:10px}
-.plate-control-row label{font-size:.82rem;font-weight:700;color:var(--color-ink);width:52px;flex:none}
+.plate-control-row label{font-size:.82rem;font-weight:700;color:var(--color-ink);flex:none;white-space:nowrap}
 .plate-control-row input[type="range"]{flex:1;min-width:0}
 
 @media (max-width:600px){
