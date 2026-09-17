@@ -40,6 +40,8 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem;margin-right:auto}
 .brand img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#fff}
 .header-nav{display:flex;align-items:center;gap:10px}
+.header-links{display:flex;align-items:center;gap:10px}
+.header-icons{display:flex;align-items:center;gap:10px}
 .pill-btn{
   border:1px solid rgba(255,255,255,.55);
   background:transparent;color:#fff;
@@ -339,7 +341,9 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .site-header .container{flex-wrap:wrap;height:auto;padding:10px 20px;row-gap:8px;gap:8px}
   .brand{font-size:1rem;gap:8px}
   .brand img{width:30px;height:30px}
-  .header-nav{width:100%;justify-content:center;flex-wrap:wrap;row-gap:8px}
+  .header-nav{display:contents}
+  .header-icons{order:1;margin-left:auto}
+  .header-links{order:2;flex-basis:100%;justify-content:center;flex-wrap:wrap;row-gap:8px}
   .pill-btn{padding:7px 12px;font-size:.82rem}
   .icon-btn{width:34px;height:34px}
   .hero-copy p{font-size:.88rem}
