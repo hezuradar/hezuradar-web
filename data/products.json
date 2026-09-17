@@ -336,9 +336,10 @@
     "category": "Cuerno",
     "subcategory": "Cejuela",
     "stock": 133,
+    "discountPercent": null,
     "images": [
-      "images/products/fa70af70-e099-4a7c-a595-d3ba70fd3fcc_0.jpg",
-      "images/products/fa70af70-e099-4a7c-a595-d3ba70fd3fcc_1.jpg"
+      "images/products/fa70af70-e099-4a7c-a595-d3ba70fd3fcc_1789650005351_0.jpg",
+      "images/products/fa70af70-e099-4a7c-a595-d3ba70fd3fcc_1789650008009_1.jpg"
     ]
   },
   {
