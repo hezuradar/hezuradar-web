@@ -391,6 +391,12 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
 .small-btn.danger{color:#b3261e;border-color:#f3c9c6}
 .thumb-preview{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .thumb-preview img{width:64px;height:64px;object-fit:contain;background:#eef2f5;border-radius:8px;border:1px solid var(--color-border)}
+.thumb-item{position:relative;display:inline-block;line-height:0}
+.thumb-remove{
+  position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:50%;
+  background:#c0392b;color:#fff;border:2px solid #fff;cursor:pointer;
+  font-size:13px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center;
+}
 .help-text{font-size:.8rem;color:var(--color-muted);margin-top:4px}
 
 /* Admin tabs */

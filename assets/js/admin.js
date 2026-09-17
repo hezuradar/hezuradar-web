@@ -15,6 +15,7 @@
   let productsSha = null;
   let editingId = null;
   let pendingFiles = [];
+  let currentImages = [];
 
   const $ = (id) => document.getElementById(id);
 
@@ -268,6 +269,7 @@
     if (!p) return;
     editingId = id;
     pendingFiles = [];
+    currentImages = [...(p.images || [])];
     $("form-title").textContent = "Editar producto";
     $("p-title").value = p.title || "";
     $("p-desc").value = p.description || "";
@@ -278,32 +280,56 @@
     $("p-subcategory").value = p.subcategory || "";
     $("p-sku").value = p.sku || "";
     $("p-cancel").style.display = "inline-block";
-    $("thumb-preview").innerHTML = (p.images || [])
-      .map((src) => `<img src="${src}">`)
-      .join("");
+    renderThumbPreview();
     window.scrollTo({ top: $("form-title").offsetTop - 80, behavior: "smooth" });
   }
 
   function resetForm() {
     editingId = null;
     pendingFiles = [];
+    currentImages = [];
     $("form-title").textContent = "Añadir producto";
     ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-category", "p-subcategory", "p-sku"].forEach(
       (id) => ($(id).value = "")
     );
     $("p-images").value = "";
-    $("thumb-preview").innerHTML = "";
+    renderThumbPreview();
     $("p-cancel").style.display = "none";
   }
 
   function onFilesSelected(e) {
     pendingFiles = Array.from(e.target.files || []);
-    const existing = editingId
-      ? (products.find((x) => x.id === editingId)?.images || [])
-      : [];
-    const previews = existing.map((src) => `<img src="${src}">`);
-    pendingFiles.forEach((f) => previews.push(`<img src="${URL.createObjectURL(f)}">`));
-    $("thumb-preview").innerHTML = previews.join("");
+    renderThumbPreview();
+  }
+
+  function renderThumbPreview() {
+    const existingThumbs = currentImages.map(
+      (src, i) => `
+        <div class="thumb-item">
+          <img src="${escapeAttr(src)}" alt="">
+          <button type="button" class="thumb-remove" data-existing-idx="${i}" title="Quitar imagen">&times;</button>
+        </div>`
+    );
+    const pendingThumbs = pendingFiles.map(
+      (f, i) => `
+        <div class="thumb-item">
+          <img src="${URL.createObjectURL(f)}" alt="">
+          <button type="button" class="thumb-remove" data-pending-idx="${i}" title="Quitar imagen">&times;</button>
+        </div>`
+    );
+    $("thumb-preview").innerHTML = existingThumbs.join("") + pendingThumbs.join("");
+    $("thumb-preview").querySelectorAll("[data-existing-idx]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        currentImages.splice(parseInt(btn.dataset.existingIdx, 10), 1);
+        renderThumbPreview();
+      });
+    });
+    $("thumb-preview").querySelectorAll("[data-pending-idx]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        pendingFiles.splice(parseInt(btn.dataset.pendingIdx, 10), 1);
+        renderThumbPreview();
+      });
+    });
   }
 
   function fileToBase64(file) {
@@ -332,7 +358,7 @@
 
       const id = editingId || crypto.randomUUID();
       const existing = editingId ? products.find((x) => x.id === editingId) : null;
-      let images = existing ? [...(existing.images || [])] : [];
+      let images = [...currentImages];
 
       if (pendingFiles.length) {
         setStatus("p-status", "info", `Subiendo ${pendingFiles.length} imagen(es)...`);
@@ -367,6 +393,16 @@
         else current.push(product);
         return current;
       }, `${editingId ? "Edita" : "Añade"} producto: ${title}`);
+
+      const removedImages = (existing?.images || []).filter((src) => !images.includes(src));
+      for (const imgPath of removedImages) {
+        try {
+          const imgFile = await getFile(imgPath);
+          if (imgFile) await deleteFile(imgPath, `Borra imagen quitada de: ${title}`, imgFile.sha);
+        } catch (e) {
+          /* ignore missing images */
+        }
+      }
 
       setStatus(
         "p-status",
