@@ -860,5 +860,20 @@
       "images/products/8fc55074-c794-419f-897b-d9fb191d80d1_1789650971644_1.jpg",
       "images/products/8fc55074-c794-419f-897b-d9fb191d80d1_1789650974720_2.jpg"
     ]
+  },
+  {
+    "id": "7995a685-3dca-4cec-a824-bcf89a6e2d40",
+    "title": "Madre Perla Placa 70x40x2.5",
+    "description": "Madre Perla Placa 70x40x2.5",
+    "price": 12,
+    "sku": "RR0055",
+    "category": "Madre Perla Y Abalone",
+    "subcategory": "Custom",
+    "stock": null,
+    "discountPercent": null,
+    "images": [
+      "images/products/7995a685-3dca-4cec-a824-bcf89a6e2d40_1789651615405_0.jpg",
+      "images/products/7995a685-3dca-4cec-a824-bcf89a6e2d40_1789651618438_1.jpg"
+    ]
   }
 ]
