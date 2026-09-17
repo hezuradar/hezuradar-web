@@ -43,6 +43,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     renderMaterialSwatches();
     preloadMaterialImages();
+    renderRulers();
     bindEvents();
     drawPlate();
     if (window.pdfjsLib) {
@@ -65,6 +66,22 @@
         }
       };
     });
+  }
+
+  // Regla de referencia alrededor de la placa: marca cada mm real (la placa mide 32x32mm),
+  // con ticks más largos y etiqueta cada 5mm. Se genera una sola vez, ya que el tamaño de la
+  // placa no cambia.
+  function renderRulers() {
+    const ticks = [];
+    for (let mm = 0; mm <= 32; mm++) ticks.push(mm);
+    const buildTick = (mm, axis) => {
+      const isMajor = mm % 5 === 0 || mm === 32;
+      const pct = (mm / 32) * 100;
+      const pos = axis === "h" ? `left:${pct}%` : `top:${pct}%`;
+      return `<span class="ruler-tick${isMajor ? " major" : ""}" style="${pos}">${isMajor ? `<span>${mm}</span>` : ""}</span>`;
+    };
+    $("ruler-bottom").innerHTML = ticks.map((mm) => buildTick(mm, "h")).join("");
+    $("ruler-side").innerHTML = ticks.map((mm) => buildTick(mm, "v")).join("");
   }
 
   function renderMaterialSwatches() {
@@ -426,6 +443,7 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
+    let logoGeom = null;
     if (state.logoCanvas) {
       const cx = canvas.width / 2 + state.offsetX;
       const cy = canvas.height / 2 + state.offsetY;
@@ -433,11 +451,13 @@
       const drawMax = state.fitPxSize * maxDim * state.scale;
       const w = drawMax * (state.logoCanvas.width / maxDim);
       const h = drawMax * (state.logoCanvas.height / maxDim);
+      const angleRad = (state.rotationDeg * Math.PI) / 180;
       ctx.save();
       ctx.translate(cx, cy);
-      ctx.rotate((state.rotationDeg * Math.PI) / 180);
+      ctx.rotate(angleRad);
       ctx.drawImage(state.logoCanvas, -w / 2, -h / 2, w, h);
       ctx.restore();
+      logoGeom = { cx, cy, w, h, angleRad };
     }
 
     ctx.restore();
@@ -449,6 +469,75 @@
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.restore();
+
+    if (logoGeom) drawDimensions(ctx, logoGeom);
+  }
+
+  // Cotas del diseño cargado: dos líneas con topes y una etiqueta en mm, siguiendo el
+  // rectángulo (ya girado) que ocupa el logo sobre la placa. Sirven de referencia de tamaño
+  // mientras se mueve, agranda o gira el diseño.
+  function drawDimensions(ctx, { cx, cy, w, h, angleRad }) {
+    const platePxPerMm = PLATE_PX / 32;
+    const hw = w / 2,
+      hh = h / 2;
+    const corners = [
+      [-hw, -hh],
+      [hw, -hh],
+      [hw, hh],
+      [-hw, hh],
+    ].map(([x, y]) => [cx + x * Math.cos(angleRad) - y * Math.sin(angleRad), cy + x * Math.sin(angleRad) + y * Math.cos(angleRad)]);
+    const xs = corners.map((p) => p[0]);
+    const ys = corners.map((p) => p[1]);
+    const minX = Math.min(...xs),
+      maxX = Math.max(...xs);
+    const minY = Math.min(...ys),
+      maxY = Math.max(...ys);
+    const widthMm = (maxX - minX) / platePxPerMm;
+    const heightMm = (maxY - minY) / platePxPerMm;
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(36,95,150,.85)";
+    ctx.fillStyle = "rgba(36,95,150,.95)";
+    ctx.lineWidth = 1;
+    ctx.font = "600 12px Inter, sans-serif";
+    ctx.textAlign = "center";
+
+    const hy = Math.min(maxY + 12, PLATE_PX - 6);
+    ctx.textBaseline = "top";
+    drawDimLine(ctx, minX, hy, maxX, hy, true);
+    ctx.fillText(widthMm.toFixed(1) + " mm", (minX + maxX) / 2, hy + 4);
+
+    const vx = Math.min(maxX + 12, PLATE_PX - 6);
+    drawDimLine(ctx, vx, minY, vx, maxY, false);
+    ctx.save();
+    ctx.translate(vx + 4, (minY + maxY) / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textBaseline = "bottom";
+    ctx.fillText(heightMm.toFixed(1) + " mm", 0, 0);
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function drawDimLine(ctx, x1, y1, x2, y2, horizontal) {
+    const tick = 5;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.beginPath();
+    if (horizontal) {
+      ctx.moveTo(x1, y1 - tick);
+      ctx.lineTo(x1, y1 + tick);
+      ctx.moveTo(x2, y2 - tick);
+      ctx.lineTo(x2, y2 + tick);
+    } else {
+      ctx.moveTo(x1 - tick, y1);
+      ctx.lineTo(x1 + tick, y1);
+      ctx.moveTo(x2 - tick, y2);
+      ctx.lineTo(x2 + tick, y2);
+    }
+    ctx.stroke();
   }
 
   function roundedRectPath(ctx, x, y, w, h, r) {

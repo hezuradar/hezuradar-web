@@ -554,8 +554,9 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
 .material-swatch.selected img{box-shadow:0 0 0 2px var(--color-primary)}
 
 .plate-stage{position:relative;display:flex;justify-content:center;margin:16px 0}
+.plate-canvas-wrap{position:relative;width:100%;max-width:480px;margin-right:28px;margin-bottom:24px}
 #plate-canvas{
-  width:100%;max-width:480px;aspect-ratio:1/1;touch-action:none;cursor:grab;
+  display:block;width:100%;aspect-ratio:1/1;touch-action:none;cursor:grab;
   background:#e7e2da;border-radius:18px;box-shadow:var(--shadow);
 }
 #plate-canvas:active{cursor:grabbing}
@@ -563,6 +564,20 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   color:var(--color-muted);font-size:.85rem;text-align:center;padding:0 20px;pointer-events:none;
 }
+
+/* Regla de referencia (mm reales de la placa de 32x32mm) */
+.plate-ruler{position:absolute;pointer-events:none}
+.plate-ruler-bottom{left:0;right:0;top:100%;height:20px;margin-top:3px}
+.plate-ruler-side{top:0;bottom:0;left:100%;width:24px;margin-left:3px}
+.ruler-tick{position:absolute}
+.plate-ruler-bottom .ruler-tick{top:0;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center}
+.plate-ruler-bottom .ruler-tick::before{content:"";width:1px;height:4px;background:var(--color-border)}
+.plate-ruler-bottom .ruler-tick.major::before{height:7px;background:var(--color-muted)}
+.plate-ruler-bottom .ruler-tick span{font-size:.6rem;color:var(--color-muted);margin-top:2px;line-height:1}
+.plate-ruler-side .ruler-tick{left:0;transform:translateY(-50%);display:flex;align-items:center}
+.plate-ruler-side .ruler-tick::before{content:"";height:1px;width:4px;background:var(--color-border)}
+.plate-ruler-side .ruler-tick.major::before{width:7px;background:var(--color-muted)}
+.plate-ruler-side .ruler-tick span{font-size:.6rem;color:var(--color-muted);margin-left:3px;line-height:1}
 
 .plate-controls{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .plate-control-row{display:flex;align-items:center;gap:10px}

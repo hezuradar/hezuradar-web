@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260915r">
+<link rel="stylesheet" href="assets/css/style.css?v=20260915s">
 <script src="assets/js/device.js?v=20260915q"></script>
 </head>
 <body>
@@ -57,9 +57,14 @@
         agrandarlo, empequeñecerlo o girarlo. Siempre se ajusta automáticamente al cargarlo.</p>
 
         <div class="plate-stage">
-          <canvas id="plate-canvas" width="480" height="480"></canvas>
-          <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la placa</div>
+          <div class="plate-canvas-wrap">
+            <canvas id="plate-canvas" width="480" height="480"></canvas>
+            <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la placa</div>
+            <div class="plate-ruler plate-ruler-bottom" id="ruler-bottom"></div>
+            <div class="plate-ruler plate-ruler-side" id="ruler-side"></div>
+          </div>
         </div>
+        <p class="help-text">La regla marca milímetros reales de la placa (32 × 32 mm); las líneas azules sobre el diseño indican el ancho y el alto reales de tu logo tal y como quedará.</p>
 
         <div class="plate-controls" id="plate-controls" style="display:none">
           <div class="plate-control-row">
@@ -122,6 +127,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/js/firebase-config.js?v=20260915q"></script>
 <script src="assets/js/firebase-orders.js?v=20260915q"></script>
-<script src="assets/js/disenador.js?v=20260915r"></script>
+<script src="assets/js/disenador.js?v=20260915s"></script>
 </body>
 </html>
