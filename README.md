@@ -165,6 +165,29 @@ pero necesita **una segunda plantilla**:
 Si no configuras esta segunda plantilla, todo sigue funcionando igual (WhatsApp, aviso interno y
 guardado en Firebase); simplemente no se enviará confirmación por email al cliente.
 
+## 6. Personalizador de placas (`/disenador.html`)
+
+Sección aparte de la tienda (enlazada desde el menú como "Personaliza tu placa") donde el cliente
+puede subir el logo de su diseño en **PDF o DXF**, elegirlo sobre una placa de 32×32&nbsp;mm en uno
+de 5 materiales (con la textura real de cada uno) y ajustarlo con el ratón/dedo: moverlo, agrandarlo,
+encogerlo o girarlo. El DXF se interpreta con un parser propio (`assets/js/dxf-mini.js`, soporta
+LINE/CIRCLE/ARC/LWPOLYLINE/POLYLINE) y el PDF con [pdf.js](https://mozilla.github.io/pdf.js/) de
+Mozilla; el DWG (formato cerrado de AutoCAD) no se puede leer en el navegador, así que si el cliente
+solo tiene un DWG se le pide que lo exporte a DXF (gratis, desde cualquier programa de CAD).
+
+Al enviar la solicitud se guarda en la misma base de datos Firebase que los pedidos normales (con
+`kind: "placa-personalizada"`, así que no requiere ninguna configuración adicional a la ya descrita
+en la sección 4) y se abre WhatsApp con el resumen. Estas solicitudes aparecen en la pestaña
+**Pedidos** del panel con su propio distintivo "🎨 Placa personalizada", mostrando el material, una
+vista previa de cómo queda el diseño sobre la placa y un botón para descargar el archivo original
+(si no pesaba demasiado para guardarlo). No cuentan en el resumen de ventas, al no ser pedidos con
+precio cerrado.
+
+> El worker de pdf.js (`assets/js/vendor/pdf.worker.min.js`) está alojado en el propio repositorio
+> en vez de en un CDN externo: cargar un *web worker* de otro dominio necesita permisos de red
+> adicionales en la política de seguridad (CSP) que, según el navegador, pueden dejar la carga del
+> PDF colgada sin avisar. Alojarlo en local evita ese problema.
+
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de

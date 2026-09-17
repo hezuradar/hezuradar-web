@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
+<title>Personaliza tu placa — HezurAdar</title>
+<meta name="description" content="Sube el logo de tu diseño (PDF o DXF) y ajústalo sobre una placa de 32×32 mm en 5 materiales distintos: resina madre perla, cuerno de buey (negro, ámbar, ankola) y hueso blanco.">
+<link rel="icon" href="images/site/logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css?v=20260915o">
+<script src="assets/js/device.js?v=20260915o"></script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="container">
+    <a class="brand" href="index.html">
+      <img src="images/site/logo.jpg" alt="Logo HezurAdar">
+      HezurAdar
+    </a>
+    <nav class="header-nav">
+      <a class="pill-btn" href="index.html">← Volver a la tienda</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container designer-page">
+  <div class="designer-intro">
+    <h1>Personaliza tu placa</h1>
+    <p>Sube el logo de tu diseño en PDF o DXF, elige el material y ajústalo sobre la placa de 32&nbsp;×&nbsp;32&nbsp;mm.
+    Cuando lo tengas listo, nos lo envías y te preparamos un presupuesto.</p>
+  </div>
+
+  <div class="designer-grid">
+    <div class="designer-panel">
+
+      <div class="card-panel">
+        <h3>1. Elige el material</h3>
+        <div class="material-swatches" id="material-swatches"></div>
+      </div>
+
+      <div class="card-panel">
+        <h3>2. Sube tu diseño</h3>
+        <p class="help-text">Formatos admitidos: <b>PDF</b> y <b>DXF</b> (el formato abierto de CAD). Si solo tienes un
+        archivo <b>DWG</b>, expórtalo a DXF desde tu programa de diseño — es gratis y tarda segundos.</p>
+        <input type="file" id="design-file-input" accept=".pdf,.dxf,application/pdf">
+        <div id="design-file-status"></div>
+        <button class="btn btn-outline" id="remove-design-btn" type="button" style="display:none;margin-top:10px">✕ Quitar diseño</button>
+      </div>
+
+      <div class="card-panel">
+        <h3>3. Ajusta tu logo sobre la placa</h3>
+        <p class="help-text">Arrastra el logo con el ratón (o el dedo) para moverlo. Usa los controles para
+        agrandarlo, empequeñecerlo o girarlo. Siempre se ajusta automáticamente al cargarlo.</p>
+
+        <div class="plate-stage">
+          <canvas id="plate-canvas" width="480" height="480"></canvas>
+          <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la placa</div>
+        </div>
+
+        <div class="plate-controls" id="plate-controls" style="display:none">
+          <div class="plate-control-row">
+            <label>Tamaño</label>
+            <button type="button" class="small-btn" data-scale="-1">−</button>
+            <input type="range" id="scale-range" min="0.2" max="3" step="0.01" value="1">
+            <button type="button" class="small-btn" data-scale="1">+</button>
+          </div>
+          <div class="plate-control-row">
+            <label>Girar</label>
+            <button type="button" class="small-btn" data-rotate="-1">↶ 15°</button>
+            <input type="range" id="rotate-range" min="0" max="359" step="1" value="0">
+            <button type="button" class="small-btn" data-rotate="1">15° ↷</button>
+          </div>
+          <div class="plate-control-row">
+            <button type="button" class="btn btn-outline" id="reset-fit-btn">Centrar y ajustar a la placa</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h3>4. Tus datos</h3>
+        <div class="field-row">
+          <div class="field">
+            <label>Nombre y apellidos *</label>
+            <input id="d-name" placeholder="Nombre completo">
+          </div>
+          <div class="field">
+            <label>Teléfono *</label>
+            <input id="d-phone" placeholder="+34 600 000 000">
+          </div>
+        </div>
+        <div class="field">
+          <label>Email (opcional)</label>
+          <input id="d-email" type="email" placeholder="tucorreo@ejemplo.com">
+        </div>
+        <div class="field">
+          <label>Notas (opcional)</label>
+          <textarea id="d-notes" placeholder="Cantidad, plazo, acabado que buscas..."></textarea>
+        </div>
+        <button class="btn btn-primary" id="send-request-btn" type="button" style="width:100%">Enviar solicitud</button>
+        <div id="request-status"></div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <span>&copy; <span id="year"></span> HezurAdar · Legazpi, Gipuzkoa</span>
+  </div>
+</footer>
+
+<script src="assets/js/year.js?v=20260915o"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
+<script src="assets/js/dxf-mini.js?v=20260915o"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="assets/js/firebase-config.js?v=20260915o"></script>
+<script src="assets/js/firebase-orders.js?v=20260915o"></script>
+<script src="assets/js/disenador.js?v=20260915o"></script>
+</body>
+</html>

@@ -215,6 +215,7 @@
     const from = $("revenue-from").value ? new Date($("revenue-from").value + "T00:00:00") : null;
     const to = $("revenue-to").value ? new Date($("revenue-to").value + "T23:59:59") : null;
     const included = orders.filter((o) => {
+      if (o.kind === "placa-personalizada") return false;
       if (o.status === "cancelado") return false;
       const created = o.createdAt ? new Date(o.createdAt) : null;
       if (!created) return false;
@@ -430,7 +431,17 @@
   }
 
   function openCustomerOrder(docId) {
+    const o = orders.find((x) => x.docId === docId);
     document.querySelector('[data-tab="tab-orders"]').click();
+    if (o && o.kind === "placa-personalizada") {
+      // Las solicitudes de placa personalizada no usan el formulario de pedido manual:
+      // solo se desplaza hasta su tarjeta, para no sobrescribir sus datos de diseño.
+      setTimeout(() => {
+        const card = document.getElementById(`order-card-${docId}`);
+        if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 50);
+      return;
+    }
     editOrder(docId);
   }
 
@@ -533,6 +544,7 @@
   }
 
   function orderCard(o) {
+    if (o.kind === "placa-personalizada") return designRequestCard(o);
     const date = formatDate(o.createdAt);
     const status = o.status || "pendiente";
     const shippingCost = Number(o.shippingCost) || 0;
@@ -553,7 +565,7 @@
     const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
 
     return `
-      <article class="order-card status-${escapeAttr(status)}">
+      <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
         <div class="order-card-head">
           <div class="order-head-title">
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
@@ -590,6 +602,55 @@
             ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
             <div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
             ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
+            ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function designRequestCard(o) {
+    const date = formatDate(o.createdAt);
+    const status = o.status || "pendiente";
+    const c = o.customer || {};
+    const s = o.shipping || {};
+    const d = o.design || {};
+    const material = (o.material && o.material.label) || "Sin especificar";
+    const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
+
+    return `
+      <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
+        <div class="order-card-head">
+          <div class="order-head-title">
+            <b>${escapeHtml(o.orderCode || o.docId)}</b>
+            <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
+            <span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 Placa personalizada</span>
+            <span class="order-date">${date}</span>
+          </div>
+          <div class="order-head-actions">
+            <select id="status-${escapeAttr(o.docId)}" class="order-status-select">
+              ${["pendiente", "confirmado", "enviado", "entregado", "cancelado"]
+                .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
+                .join("")}
+            </select>
+            ${d.fileData ? `<a class="small-btn" href="${escapeAttr(d.fileData)}" download="${escapeAttr(d.fileName || "diseno")}" title="Descargar el archivo original subido por el cliente">📥 Descargar diseño</a>` : ""}
+            ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
+            <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
+          </div>
+        </div>
+        <div class="order-card-body">
+          <div class="order-items-block">
+            ${d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño sobre la placa" style="width:100%;max-width:260px;border-radius:10px;border:1px solid var(--color-border)">` : ""}
+            <div class="order-totals">
+              <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
+              ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
+              ${d.fileTooLargeToEmbed ? `<p class="help-text">El archivo original era demasiado grande para adjuntarlo aquí: pide al cliente que te lo reenvíe por WhatsApp o email.</p>` : ""}
+            </div>
+          </div>
+          <div class="order-customer">
+            <div class="order-customer-name">${escapeHtml(c.name || "-")}</div>
+            <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
+            ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
             ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
           </div>
         </div>
