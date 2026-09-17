@@ -351,10 +351,10 @@
     "category": "Cuerno",
     "subcategory": "Silleta",
     "stock": 138,
+    "discountPercent": null,
     "images": [
-      "images/products/989e95a1-1ba0-4676-8527-237253ee5257_0.jpg",
-      "images/products/989e95a1-1ba0-4676-8527-237253ee5257_1.jpg",
-      "images/products/989e95a1-1ba0-4676-8527-237253ee5257_2.jpg"
+      "images/products/989e95a1-1ba0-4676-8527-237253ee5257_1789650157617_0.jpg",
+      "images/products/989e95a1-1ba0-4676-8527-237253ee5257_1789650160444_1.jpg"
     ]
   },
   {
