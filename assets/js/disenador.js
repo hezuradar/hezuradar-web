@@ -535,18 +535,55 @@
     ctx.font = "600 14px Inter, sans-serif";
     ctx.textAlign = "center";
 
-    const hy = Math.min(maxY + 12, PLATE_PX - 6);
-    ctx.textBaseline = "top";
-    drawDimLine(ctx, minX, hy, maxX, hy, true);
-    ctx.fillText(widthMm.toFixed(1) + " mm", (minX + maxX) / 2, hy + 4);
+    // Las líneas se colocan preferentemente debajo/a la derecha del diseño, pero si ahí no
+    // hay hueco (el diseño llega casi al borde de la placa) se pasan al otro lado, para que
+    // el número siempre quede visible dentro de la placa y no se corte.
+    const margin = 12;
+    const labelGap = 5;
+    const textH = 14;
+    const edgePad = 4;
+    const needed = margin + labelGap + textH + edgePad;
 
-    const vx = Math.min(maxX + 12, PLATE_PX - 6);
+    const widthLabel = widthMm.toFixed(1) + " mm";
+    const widthLabelW = ctx.measureText(widthLabel).width;
+    let hy, hLabelY;
+    if (PLATE_PX - maxY >= needed) {
+      hy = maxY + margin;
+      ctx.textBaseline = "top";
+      hLabelY = hy + labelGap;
+    } else if (minY >= needed) {
+      hy = minY - margin;
+      ctx.textBaseline = "bottom";
+      hLabelY = hy - labelGap;
+    } else {
+      hy = clamp(maxY + margin, edgePad, PLATE_PX - textH - edgePad);
+      ctx.textBaseline = "top";
+      hLabelY = hy + labelGap;
+    }
+    const hLabelX = clamp((minX + maxX) / 2, widthLabelW / 2 + edgePad, PLATE_PX - widthLabelW / 2 - edgePad);
+    drawDimLine(ctx, minX, hy, maxX, hy, true);
+    ctx.fillText(widthLabel, hLabelX, hLabelY);
+
+    const heightLabel = heightMm.toFixed(1) + " mm";
+    const heightLabelW = ctx.measureText(heightLabel).width;
+    let vx, vSide;
+    if (PLATE_PX - maxX >= needed) {
+      vx = maxX + margin;
+      vSide = 1;
+    } else if (minX >= needed) {
+      vx = minX - margin;
+      vSide = -1;
+    } else {
+      vx = clamp(maxX + margin, edgePad, PLATE_PX - textH - edgePad);
+      vSide = 1;
+    }
+    const vLabelY = clamp((minY + maxY) / 2, heightLabelW / 2 + edgePad, PLATE_PX - heightLabelW / 2 - edgePad);
     drawDimLine(ctx, vx, minY, vx, maxY, false);
     ctx.save();
-    ctx.translate(vx + 4, (minY + maxY) / 2);
+    ctx.translate(vx + vSide * labelGap, vLabelY);
     ctx.rotate(-Math.PI / 2);
-    ctx.textBaseline = "bottom";
-    ctx.fillText(heightMm.toFixed(1) + " mm", 0, 0);
+    ctx.textBaseline = vSide === 1 ? "bottom" : "top";
+    ctx.fillText(heightLabel, 0, 0);
     ctx.restore();
 
     ctx.restore();
