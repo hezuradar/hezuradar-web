@@ -7,17 +7,22 @@
   const MAX_EMBED_BYTES = 700 * 1024; // por encima de esto, no se intenta adjuntar el archivo original al pedido
 
   const MATERIALS = [
-    { id: "madreperla", label: "Resina madre perla", img: "images/site/materials/madreperla.jpg" },
-    { id: "negro", label: "Cuerno de buey negro", img: "images/site/materials/negro.jpg" },
-    { id: "ambar", label: "Cuerno de buey ámbar", img: "images/site/materials/ambar.jpg" },
-    { id: "blanco", label: "Hueso blanco", img: "images/site/materials/blanco.jpg" },
-    { id: "ankola", label: "Cuerno de buey ankola", img: "images/site/materials/ankola.jpg" },
+    { id: "madreperla", label: "Resina madre perla", img: "images/site/materials/madreperla.jpg", contrast: "#161616" },
+    { id: "negro", label: "Cuerno de buey negro", img: "images/site/materials/negro.jpg", contrast: "#f7f7f5" },
+    { id: "ambar", label: "Cuerno de buey ámbar", img: "images/site/materials/ambar.jpg", contrast: "#161616" },
+    { id: "blanco", label: "Hueso blanco", img: "images/site/materials/blanco.jpg", contrast: "#161616" },
+    { id: "ankola", label: "Cuerno de buey ankola", img: "images/site/materials/ankola.jpg", contrast: "#161616" },
   ];
+
+  function materialById(id) {
+    return MATERIALS.find((m) => m.id === id) || MATERIALS[0];
+  }
 
   const state = {
     materialId: "madreperla",
     materialImg: null,
-    logoCanvas: null, // canvas ya recortado con el diseño renderizado
+    logoCanvas: null, // canvas recortado y recoloreado (el que se dibuja sobre la placa)
+    logoCanvasRaw: null, // canvas recortado SIN recolorear (para poder recalcular al cambiar de material)
     logoFile: null, // { name, type, dataUrl } del archivo original, si es razonable adjuntarlo
     fitPxSize: 0, // tamaño (lado mayor) al que se dibuja el logo con scale=1
     offsetX: 0, // desplazamiento del centro del logo respecto al centro de la placa, en px de plate-canvas
@@ -74,6 +79,7 @@
         state.materialImg = materialImages[state.materialId] || null;
         $("material-swatches").querySelectorAll(".material-swatch").forEach((b) => b.classList.remove("selected"));
         btn.classList.add("selected");
+        applyContrastColor();
         drawPlate();
       });
     });
@@ -169,8 +175,10 @@
       } else {
         throw new Error("Formato no admitido. Sube un archivo .pdf o .dxf.");
       }
+      canvas = deriveInkMask(canvas);
       canvas = trimCanvas(canvas);
-      state.logoCanvas = canvas;
+      state.logoCanvasRaw = canvas;
+      applyContrastColor();
       state.logoFile = await maybeReadAsEmbeddableFile(file);
       applyAutoFit();
       $("remove-design-btn").style.display = "inline-block";
@@ -220,8 +228,8 @@
     canvas.width = Math.ceil(viewport.width);
     canvas.height = Math.ceil(viewport.height);
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Sin fondo blanco: se deja transparente para poder recolorear el trazo después (el color
+    // de contraste se aplica usando el canal alfa como máscara).
     await withTimeout(page.render({ canvasContext: ctx, viewport }).promise, 20000, timeoutMsg);
     return canvas;
   }
@@ -234,6 +242,57 @@
     const canvas = window.HA_DXF.renderDxfToCanvas(entities, 900);
     if (!canvas) throw new Error("No se ha podido interpretar la geometría de este DXF.");
     return canvas;
+  }
+
+  // pdf.js siempre pinta un fondo opaco (blanco) al renderizar una página, aunque el canvas
+  // partiera transparente. Para poder recolorear solo el "trazo" del diseño, se deriva una
+  // máscara de opacidad a partir de lo oscuro que es cada píxel: blanco puro pasa a transparente
+  // y el negro se queda opaco: así, tanto en PDF como en DXF, solo el dibujo real se recolorea.
+  function deriveInkMask(canvas) {
+    const ctx = canvas.getContext("2d");
+    const { width, height } = canvas;
+    if (width < 1 || height < 1) return canvas;
+    let imgData;
+    try {
+      imgData = ctx.getImageData(0, 0, width, height);
+    } catch (e) {
+      return canvas;
+    }
+    const data = imgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i + 3];
+      if (a === 0) continue;
+      const luminance = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      const inkAlpha = Math.round(255 - luminance);
+      data[i + 3] = Math.min(a, inkAlpha);
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return canvas;
+  }
+
+  // Recolorea el diseño cargado (state.logoCanvasRaw) con el color de contraste del material
+  // actual, y lo deja listo en state.logoCanvas para dibujarlo. Se puede llamar tantas veces como
+  // se quiera (al cargar el archivo, o cada vez que se cambia de material) porque siempre parte
+  // del canvas SIN colorear.
+  function applyContrastColor() {
+    if (!state.logoCanvasRaw) return;
+    const material = materialById(state.materialId);
+    state.logoCanvas = recolor(state.logoCanvasRaw, material.contrast);
+  }
+
+  // Sustituye el color del dibujo por un color plano, conservando su forma (usa el canal alfa
+  // del original como máscara) — así el trazo siempre contrasta con el material de la placa,
+  // sea cual sea el color con el que se dibujó originalmente el PDF o el DXF.
+  function recolor(canvas, color) {
+    const out = document.createElement("canvas");
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const ctx = out.getContext("2d");
+    ctx.fillStyle = color;
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.globalCompositeOperation = "destination-in";
+    ctx.drawImage(canvas, 0, 0);
+    return out;
   }
 
   // Recorta los márgenes en blanco/transparentes alrededor del contenido real.
@@ -296,6 +355,7 @@
 
   function removeDesign() {
     state.logoCanvas = null;
+    state.logoCanvasRaw = null;
     state.logoFile = null;
     state.offsetX = 0;
     state.offsetY = 0;
