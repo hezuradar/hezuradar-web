@@ -189,6 +189,7 @@
           products = await res.json();
           renderTable();
           fillDatalists();
+          maybeSuggestSku();
         }
       } catch (e) {}
       return;
@@ -206,6 +207,7 @@
       setStatus("p-status", "", "");
       renderTable();
       fillDatalists();
+      maybeSuggestSku();
     } catch (e) {
       setStatus("p-status", "err", "Error cargando catálogo: " + e.message);
     }
@@ -234,6 +236,25 @@
     });
     $("cat-list").innerHTML = Array.from(cats).map((c) => `<option value="${escapeAttr(c)}">`).join("");
     $("subcat-list").innerHTML = Array.from(subs).map((c) => `<option value="${escapeAttr(c)}">`).join("");
+  }
+
+  function nextSku() {
+    const nums = products
+      .map((p) => p.sku)
+      .filter(Boolean)
+      .map((s) => {
+        const m = String(s).match(/^RR(\d+)$/);
+        return m ? parseInt(m[1], 10) : null;
+      })
+      .filter((n) => n !== null);
+    const next = (nums.length ? Math.max(...nums) : 0) + 1;
+    return "RR" + String(next).padStart(4, "0");
+  }
+
+  function maybeSuggestSku() {
+    if (editingId) return;
+    if ($("p-sku").value.trim()) return;
+    $("p-sku").value = nextSku();
   }
 
   function renderTable() {
@@ -294,6 +315,7 @@
     );
     $("p-images").value = "";
     renderThumbPreview();
+    maybeSuggestSku();
     $("p-cancel").style.display = "none";
   }
 
