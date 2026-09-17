@@ -211,10 +211,18 @@
       applyContrastColor();
       state.logoFile = await readFileForRequest(file);
       applyAutoFit();
+      // Si el archivo trae una escala real conocida (DXF), se muestra directamente a su
+      // tamaño real sobre la placa de 32x32mm en vez del ajuste automático al 82%.
+      const real = applyRealSize();
       $("remove-design-btn").style.display = "inline-block";
       $("plate-controls").style.display = "block";
       $("plate-empty-hint").style.display = "none";
-      setFileStatus("ok", "Diseño cargado: " + file.name);
+      setFileStatus(
+        "ok",
+        real
+          ? `Diseño cargado: ${file.name} (a su tamaño real: ${real.mm.toFixed(1)} mm)`
+          : "Diseño cargado: " + file.name
+      );
       drawPlate();
     } catch (err) {
       console.error(err);
@@ -390,21 +398,38 @@
     $("rotate-range").value = 0;
   }
 
-  // Pone el logo a su tamaño real en mm (solo disponible para DXF, ver renderDxfFile).
-  // 1 mm de plate-canvas equivale a PLATE_PX/32 px; 1 mm del DXF equivale a dxfPxPerMm px
+  // Calcula (sin aplicar) el "scale" y los mm reales a los que correspondería el logo, a partir
+  // de las medidas del DXF cargado (ver renderDxfFile). Devuelve null si no hay esa información
+  // (por ejemplo, un PDF, que no tiene una escala física fiable).
+  // 1 mm de plate-canvas equivale a PLATE_PX_PER_MM px; 1 mm del DXF equivale a dxfPxPerMm px
   // de logoCanvas. A partir de ahí se despeja el "scale" que reproduce ese tamaño real.
+  function computeRealSize() {
+    if (!state.logoCanvas || !state.fitPxSize || !state.dxfPxPerMm) return null;
+    const rawScale = PLATE_PX_PER_MM / (state.dxfPxPerMm * state.fitPxSize);
+    const clampedScale = clamp(rawScale, mmToScale(SIZE_MM_MIN), mmToScale(SIZE_MM_MAX));
+    return { clampedScale, mm: scaleToMm(clampedScale), clipped: Math.abs(clampedScale - rawScale) > 0.001 };
+  }
+
+  // Aplica el tamaño real calculado por computeRealSize (si lo hay) al estado y al control de
+  // tamaño, sin redibujar ni tocar el mensaje de estado (lo decide quien la llama).
+  function applyRealSize() {
+    const real = computeRealSize();
+    if (!real) return null;
+    state.scale = real.clampedScale;
+    $("scale-range").value = real.mm.toFixed(1);
+    return real;
+  }
+
+  // Botón "Tamaño original": pone el logo a su tamaño real en mm (solo disponible para DXF).
   function setOriginalSize() {
     if (!state.logoCanvas || !state.fitPxSize) return;
-    if (!state.dxfPxPerMm) {
+    const real = applyRealSize();
+    if (!real) {
       setFileStatus("err", "El tamaño real solo se puede calcular para archivos DXF (en PDF no hay una escala fiable).");
       return;
     }
-    const rawScale = PLATE_PX_PER_MM / (state.dxfPxPerMm * state.fitPxSize);
-    const clamped = clamp(rawScale, mmToScale(SIZE_MM_MIN), mmToScale(SIZE_MM_MAX));
-    state.scale = clamped;
-    $("scale-range").value = scaleToMm(clamped).toFixed(1);
     drawPlate();
-    if (Math.abs(clamped - rawScale) > 0.001) {
+    if (real.clipped) {
       setFileStatus("info", "El tamaño real del diseño se sale del rango de ajuste permitido, se ha dejado en el máximo posible.");
     } else {
       setFileStatus("ok", "Diseño a su tamaño real (según las medidas del DXF).");
