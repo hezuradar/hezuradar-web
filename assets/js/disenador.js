@@ -560,7 +560,8 @@
       ctx.textBaseline = "top";
       hLabelY = hy + labelGap;
     }
-    const hLabelX = clamp((minX + maxX) / 2, widthLabelW / 2 + edgePad, PLATE_PX - widthLabelW / 2 - edgePad);
+    // Pegada al extremo izquierdo de la línea (no centrada), con un pequeño margen interior.
+    const hLabelX = clamp(minX + widthLabelW / 2 + 6, widthLabelW / 2 + edgePad, PLATE_PX - widthLabelW / 2 - edgePad);
     drawDimLine(ctx, minX, hy, maxX, hy, true);
     ctx.fillText(widthLabel, hLabelX, hLabelY);
 
@@ -577,7 +578,8 @@
       vx = clamp(maxX + margin, edgePad, PLATE_PX - textH - edgePad);
       vSide = 1;
     }
-    const vLabelY = clamp((minY + maxY) / 2, heightLabelW / 2 + edgePad, PLATE_PX - heightLabelW / 2 - edgePad);
+    // Pegada al extremo superior de la línea (no centrada), con un pequeño margen interior.
+    const vLabelY = clamp(minY + heightLabelW / 2 + 6, heightLabelW / 2 + edgePad, PLATE_PX - heightLabelW / 2 - edgePad);
     drawDimLine(ctx, vx, minY, vx, maxY, false);
     ctx.save();
     ctx.translate(vx + vSide * labelGap, vLabelY);
