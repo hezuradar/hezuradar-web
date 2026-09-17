@@ -485,6 +485,8 @@
       status: "pendiente",
       customer: { name, phone, email },
       shipping: { address: "", postalCode: "", city: "", province: "", notes },
+      items: [{ id: "placa-personalizada-" + material.id, title: `Placa personalizada — ${material.label}`, qty: 1, price: 0 }],
+      subtotal: 0,
       material: { id: material.id, label: material.label },
       design: {
         snapshot,
