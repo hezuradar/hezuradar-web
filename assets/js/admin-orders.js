@@ -208,7 +208,39 @@
       if (waAlbaranBtn) waAlbaranBtn.addEventListener("click", () => sendAlbaranWhatsApp(o.docId));
       const resendEmailBtn = document.getElementById(`resend-email-${o.docId}`);
       if (resendEmailBtn) resendEmailBtn.addEventListener("click", () => resendCustomerEmail(o.docId));
+      const viewDesignBtn = document.getElementById(`view-design-${o.docId}`);
+      if (viewDesignBtn) viewDesignBtn.addEventListener("click", () => viewDesign(o));
     });
+  }
+
+  function viewDesign(o) {
+    const d = o.design || {};
+    if (!d.snapshot) return;
+    const material = (o.material && o.material.label) || "";
+    const overlay = document.createElement("div");
+    overlay.className = "modal-backdrop";
+    overlay.innerHTML = `
+      <div class="design-view-box">
+        <button class="modal-close" id="design-view-close" aria-label="Cerrar">&times;</button>
+        <img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente sobre la placa">
+        <div class="design-view-caption">${escapeHtml(material)}${d.fileName ? " · " + escapeHtml(d.fileName) : ""}</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = "hidden";
+    function close() {
+      overlay.remove();
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+    }
+    function onKey(e) {
+      if (e.key === "Escape") close();
+    }
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+    overlay.querySelector("#design-view-close").addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
   }
 
   function renderRevenue() {
@@ -633,7 +665,8 @@
                 .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
                 .join("")}
             </select>
-            ${d.fileData ? `<a class="small-btn" href="${escapeAttr(d.fileData)}" download="${escapeAttr(d.fileName || "diseno")}" title="Descargar el archivo original subido por el cliente">📥 Descargar diseño</a>` : ""}
+            ${d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver la placa tal y como la configuró el cliente">👁️ Ver diseño</button>` : ""}
+            ${d.fileData ? `<a class="small-btn" href="${escapeAttr(d.fileData)}" download="${escapeAttr(d.fileName || "diseno")}" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</a>` : ""}
             ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
             <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
           </div>

@@ -4,7 +4,8 @@
   const $ = (id) => document.getElementById(id);
   const PLATE_PX = 480;
   const FIT_RATIO = 0.82; // el logo, al ajustarlo, ocupa como mucho este % del lado de la placa
-  const MAX_EMBED_BYTES = 700 * 1024; // por encima de esto, no se intenta adjuntar el archivo original al pedido
+  const HARD_MAX_FILE_BYTES = 15 * 1024 * 1024; // por encima de esto ni se intenta leer el archivo (evita colgar el navegador)
+  const SAFE_ORDER_BYTES = 950 * 1024; // margen de seguridad bajo el límite de 1 MiB por documento de Firestore
 
   const MATERIALS = [
     { id: "madreperla", label: "Resina madre perla", img: "images/site/materials/madreperla.jpg", contrast: "#161616" },
@@ -25,6 +26,7 @@
     logoCanvasRaw: null, // canvas recortado SIN recolorear (para poder recalcular al cambiar de material)
     logoFile: null, // { name, type, dataUrl } del archivo original, si es razonable adjuntarlo
     fitPxSize: 0, // tamaño (lado mayor) al que se dibuja el logo con scale=1
+    dxfPxPerMm: null, // solo para DXF: px de logoCanvas por mm real del dibujo (null si es un PDF)
     offsetX: 0, // desplazamiento del centro del logo respecto al centro de la placa, en px de plate-canvas
     offsetY: 0,
     scale: 1,
@@ -92,6 +94,7 @@
       applyAutoFit();
       drawPlate();
     });
+    $("original-size-btn").addEventListener("click", setOriginalSize);
 
     $("scale-range").addEventListener("input", (e) => {
       state.scale = parseFloat(e.target.value);
@@ -169,6 +172,7 @@
     try {
       let canvas;
       if (ext === "pdf") {
+        state.dxfPxPerMm = null;
         canvas = await renderPdfFile(file);
       } else if (ext === "dxf") {
         canvas = await renderDxfFile(file);
@@ -179,7 +183,7 @@
       canvas = trimCanvas(canvas);
       state.logoCanvasRaw = canvas;
       applyContrastColor();
-      state.logoFile = await maybeReadAsEmbeddableFile(file);
+      state.logoFile = await readFileForRequest(file);
       applyAutoFit();
       $("remove-design-btn").style.display = "inline-block";
       $("plate-controls").style.display = "block";
@@ -192,8 +196,8 @@
     }
   }
 
-  async function maybeReadAsEmbeddableFile(file) {
-    if (file.size > MAX_EMBED_BYTES) return { name: file.name, type: file.type, tooLarge: true };
+  async function readFileForRequest(file) {
+    if (file.size > HARD_MAX_FILE_BYTES) return { name: file.name, type: file.type, tooLarge: true };
     const dataUrl = await fileToDataUrl(file);
     return { name: file.name, type: file.type, dataUrl };
   }
@@ -239,8 +243,15 @@
     const text = await file.text();
     const entities = window.HA_DXF.parseDXF(text);
     if (!entities.length) throw new Error("No se han encontrado formas reconocibles en este DXF (líneas, círculos, arcos o polilíneas).");
-    const canvas = window.HA_DXF.renderDxfToCanvas(entities, 900);
+    const targetMax = 900;
+    const canvas = window.HA_DXF.renderDxfToCanvas(entities, targetMax);
     if (!canvas) throw new Error("No se ha podido interpretar la geometría de este DXF.");
+    // Se asume que el DXF está dibujado en milímetros reales (lo habitual en archivos para
+    // corte/grabado láser), para poder ofrecer luego el botón "Tamaño original".
+    const bounds = window.HA_DXF.computeBounds(entities);
+    const boundsW = bounds ? bounds.maxX - bounds.minX : 0;
+    const boundsH = bounds ? bounds.maxY - bounds.minY : 0;
+    state.dxfPxPerMm = bounds && Math.max(boundsW, boundsH) > 0 ? targetMax / Math.max(boundsW, boundsH) : null;
     return canvas;
   }
 
@@ -353,10 +364,33 @@
     $("rotate-range").value = 0;
   }
 
+  // Pone el logo a su tamaño real en mm (solo disponible para DXF, ver renderDxfFile).
+  // 1 mm de plate-canvas equivale a PLATE_PX/32 px; 1 mm del DXF equivale a dxfPxPerMm px
+  // de logoCanvas. A partir de ahí se despeja el "scale" que reproduce ese tamaño real.
+  function setOriginalSize() {
+    if (!state.logoCanvas || !state.fitPxSize) return;
+    if (!state.dxfPxPerMm) {
+      setFileStatus("err", "El tamaño real solo se puede calcular para archivos DXF (en PDF no hay una escala fiable).");
+      return;
+    }
+    const platePxPerMm = PLATE_PX / 32;
+    const rawScale = platePxPerMm / (state.dxfPxPerMm * state.fitPxSize);
+    const clamped = clamp(rawScale, 0.2, 3);
+    state.scale = clamped;
+    $("scale-range").value = clamped;
+    drawPlate();
+    if (Math.abs(clamped - rawScale) > 0.001) {
+      setFileStatus("info", "El tamaño real del diseño se sale del rango de ajuste permitido, se ha dejado en el máximo posible.");
+    } else {
+      setFileStatus("ok", "Diseño a su tamaño real (según las medidas del DXF).");
+    }
+  }
+
   function removeDesign() {
     state.logoCanvas = null;
     state.logoCanvasRaw = null;
     state.logoFile = null;
+    state.dxfPxPerMm = null;
     state.offsetX = 0;
     state.offsetY = 0;
     state.scale = 1;
@@ -478,6 +512,13 @@
     const snapshot = $("plate-canvas").toDataURL("image/jpeg", 0.85);
     const requestCode = genRequestCode();
 
+    // Solo adjuntamos el archivo original si, sumado a la miniatura, cabe con margen
+    // en el límite de 1 MiB por documento de Firestore. Se calcula aquí, con el tamaño
+    // real, en vez de con un límite fijo sobre el archivo en bruto.
+    const fileDataUrl = state.logoFile && !state.logoFile.tooLarge ? state.logoFile.dataUrl : null;
+    const usedBytes = new Blob([snapshot, fileDataUrl || ""]).size;
+    const fileFits = !!fileDataUrl && usedBytes <= SAFE_ORDER_BYTES;
+
     const order = {
       kind: "placa-personalizada",
       orderCode: requestCode,
@@ -492,8 +533,8 @@
         snapshot,
         fileName: (state.logoFile && state.logoFile.name) || "",
         fileType: (state.logoFile && state.logoFile.type) || "",
-        fileData: state.logoFile && !state.logoFile.tooLarge ? state.logoFile.dataUrl : null,
-        fileTooLargeToEmbed: !!(state.logoFile && state.logoFile.tooLarge),
+        fileData: fileFits ? fileDataUrl : null,
+        fileTooLargeToEmbed: !!(state.logoFile && state.logoFile.tooLarge) || (!!fileDataUrl && !fileFits),
       },
     };
 
