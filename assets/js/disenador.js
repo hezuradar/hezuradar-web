@@ -542,6 +542,12 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    // Fondo blanco fuera del contorno de la pieza (sobre todo visible en la púa, cuyo
+    // recorte deja zonas fuera de la silueta): sin esto, esas zonas quedan transparentes
+    // en el canvas y el JPEG que se guarda en el pedido las convierte en negro.
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
     ctx.save();
     platePath(ctx, 0, 0, canvas.width, canvas.height);
     ctx.clip();
