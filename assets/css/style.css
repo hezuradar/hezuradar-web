@@ -334,7 +334,6 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .hero{height:280px}
   .hero-logo-mark{max-width:85%;opacity:.35}
   .hero-copy h1{font-size:1.5rem}
-  .field-row{grid-template-columns:1fr}
 }
 
 @media (max-width:600px){
@@ -380,11 +379,14 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .field label{font-size:.82rem;font-weight:700;color:var(--color-ink)}
 .field input,.field textarea,.field select{
   width:100%;min-width:0;padding:10px 12px;border-radius:8px;border:1px solid var(--color-border);
-  font-size:.92rem;font-family:inherit;background:#fff;
+  font-size:1rem;font-family:inherit;background:#fff;
 }
 .field textarea{min-height:110px;resize:vertical}
 .field textarea.field-textarea-compact{min-height:64px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:0}
+@media (max-width:760px){
+  .field-row{grid-template-columns:1fr}
+}
 .card-panel{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius);padding:24px;margin-bottom:24px}
 .status-msg{padding:10px 14px;border-radius:8px;font-size:.85rem;margin-top:10px}
 .status-msg.ok{background:#e5f6ec;color:#1c7a3f}
