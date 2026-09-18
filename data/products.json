@@ -890,5 +890,20 @@
       "images/products/cff43c42-d4c1-49bf-843c-282906bfb087_1789715323311_0.jpeg",
       "images/products/cff43c42-d4c1-49bf-843c-282906bfb087_1789715326192_1.jpeg"
     ]
+  },
+  {
+    "id": "9cf44366-365b-4864-bf43-8559c5a2f91e",
+    "title": "Madre Perla Black",
+    "description": "Madre Perla Negra \n\n38× 25× 2,5 mm",
+    "price": 8,
+    "sku": "RR0056",
+    "category": "Madre Perla Y Abalone",
+    "subcategory": "Custom",
+    "stock": 5,
+    "discountPercent": null,
+    "images": [
+      "images/products/9cf44366-365b-4864-bf43-8559c5a2f91e_1789715933392_0.jpeg",
+      "images/products/9cf44366-365b-4864-bf43-8559c5a2f91e_1789715936092_1.jpeg"
+    ]
   }
 ]
