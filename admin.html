@@ -56,14 +56,20 @@
       Se genera en GitHub → Settings → Developer settings → Personal access tokens.
       El token se guarda únicamente en este navegador (localStorage), nunca se envía a ningún sitio salvo a la API de GitHub.
     </p>
+    <p class="help-text">
+      Estos tres primeros datos son siempre los mismos para esta web (ya vienen rellenos) — el
+      dueño y el nombre del repositorio son los que aparecen en la URL de GitHub
+      <code>github.com/hezuradar/hezuradar-web</code>, no tu usuario personal. Lo único que
+      tienes que rellenar tú es el token.
+    </p>
     <div class="field-row">
       <div class="field">
-        <label>Usuario/organización de GitHub</label>
-        <input id="gh-owner" placeholder="p.ej. hzabala">
+        <label>Propietario del repositorio en GitHub</label>
+        <input id="gh-owner" value="hezuradar" placeholder="hezuradar">
       </div>
       <div class="field">
         <label>Nombre del repositorio</label>
-        <input id="gh-repo" placeholder="p.ej. hezuradar-web">
+        <input id="gh-repo" value="hezuradar-web" placeholder="hezuradar-web">
       </div>
     </div>
     <div class="field-row">
@@ -109,13 +115,15 @@
     <div class="field-row">
       <div class="field">
         <label>Categoría</label>
-        <input id="p-category" list="cat-list" placeholder="p.ej. Hueso">
-        <datalist id="cat-list"></datalist>
+        <select id="p-category">
+          <option value="">Selecciona categoría</option>
+        </select>
       </div>
       <div class="field">
         <label>Subcategoría (opcional)</label>
-        <input id="p-subcategory" list="subcat-list" placeholder="p.ej. Cejuela">
-        <datalist id="subcat-list"></datalist>
+        <select id="p-subcategory">
+          <option value="">(sin subcategoría)</option>
+        </select>
       </div>
     </div>
     <div class="field">
@@ -370,7 +378,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>
 <script src="assets/js/emailjs-config.js?v=20260915l"></script>
 <script src="assets/js/emailjs-notify.js?v=20260915l"></script>
-<script src="assets/js/admin.js?v=20260915l"></script>
+<script src="assets/js/admin.js?v=20260916a"></script>
 <script src="assets/js/admin-orders.js?v=20260916a"></script>
 </body>
 </html>

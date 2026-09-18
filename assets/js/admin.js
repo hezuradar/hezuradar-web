@@ -21,8 +21,8 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     initLock();
-    $("gh-owner").value = localStorage.getItem(LS.owner) || "";
-    $("gh-repo").value = localStorage.getItem(LS.repo) || "";
+    $("gh-owner").value = localStorage.getItem(LS.owner) || "hezuradar";
+    $("gh-repo").value = localStorage.getItem(LS.repo) || "hezuradar-web";
     $("gh-branch").value = localStorage.getItem(LS.branch) || "main";
     $("gh-token").value = localStorage.getItem(LS.token) || "";
 
@@ -30,6 +30,7 @@
     $("p-save").addEventListener("click", saveProduct);
     $("p-cancel").addEventListener("click", resetForm);
     $("p-images").addEventListener("change", onFilesSelected);
+    $("p-category").addEventListener("change", () => updateSubcategoryOptions(""));
     $("p-filter").addEventListener("input", renderTable);
     $("logout-btn").addEventListener("click", () => {
       sessionStorage.removeItem(SS_UNLOCKED);
@@ -90,8 +91,8 @@
 
   function ghConfig() {
     return {
-      owner: localStorage.getItem(LS.owner) || "",
-      repo: localStorage.getItem(LS.repo) || "",
+      owner: localStorage.getItem(LS.owner) || "hezuradar",
+      repo: localStorage.getItem(LS.repo) || "hezuradar-web",
       branch: localStorage.getItem(LS.branch) || "main",
       token: localStorage.getItem(LS.token) || "",
     };
@@ -227,15 +228,37 @@
     }
   }
 
+  let categoryMap = {}; // categoría -> Set de subcategorías ya usadas con ella
+
   function fillDatalists() {
-    const cats = new Set();
-    const subs = new Set();
+    categoryMap = {};
     products.forEach((p) => {
-      if (p.category) cats.add(p.category);
-      if (p.subcategory) subs.add(p.subcategory);
+      if (!p.category) return;
+      if (!categoryMap[p.category]) categoryMap[p.category] = new Set();
+      if (p.subcategory) categoryMap[p.category].add(p.subcategory);
     });
-    $("cat-list").innerHTML = Array.from(cats).map((c) => `<option value="${escapeAttr(c)}">`).join("");
-    $("subcat-list").innerHTML = Array.from(subs).map((c) => `<option value="${escapeAttr(c)}">`).join("");
+    const cats = Object.keys(categoryMap).sort((a, b) => a.localeCompare(b));
+    const catSelect = $("p-category");
+    const prevCat = catSelect.value;
+    catSelect.innerHTML =
+      '<option value="">Selecciona categoría</option>' +
+      cats.map((c) => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("");
+    catSelect.value = cats.includes(prevCat) ? prevCat : "";
+    updateSubcategoryOptions();
+  }
+
+  // Rellena la subcategoría con solo las que ya se han usado dentro de la categoría elegida.
+  // Si se pasa selectedSubcategory se intenta dejarla marcada (usado al cargar un producto
+  // para editar); si no, se conserva la que ya estuviera seleccionada cuando siga siendo válida.
+  function updateSubcategoryOptions(selectedSubcategory) {
+    const cat = $("p-category").value;
+    const subSelect = $("p-subcategory");
+    const prevSub = selectedSubcategory != null ? selectedSubcategory : subSelect.value;
+    const subs = cat && categoryMap[cat] ? Array.from(categoryMap[cat]).sort((a, b) => a.localeCompare(b)) : [];
+    subSelect.innerHTML =
+      '<option value="">(sin subcategoría)</option>' +
+      subs.map((s) => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join("");
+    subSelect.value = subs.includes(prevSub) ? prevSub : "";
   }
 
   function nextSku() {
@@ -298,7 +321,7 @@
     $("p-stock").value = p.stock ?? "";
     $("p-discount").value = p.discountPercent ?? "";
     $("p-category").value = p.category || "";
-    $("p-subcategory").value = p.subcategory || "";
+    updateSubcategoryOptions(p.subcategory || "");
     $("p-sku").value = p.sku || "";
     $("p-cancel").style.display = "inline-block";
     renderThumbPreview();
@@ -310,9 +333,9 @@
     pendingFiles = [];
     currentImages = [];
     $("form-title").textContent = "Añadir producto";
-    ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-category", "p-subcategory", "p-sku"].forEach(
-      (id) => ($(id).value = "")
-    );
+    ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-sku"].forEach((id) => ($(id).value = ""));
+    $("p-category").value = "";
+    updateSubcategoryOptions("");
     $("p-images").value = "";
     renderThumbPreview();
     maybeSuggestSku();
