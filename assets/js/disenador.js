@@ -29,6 +29,7 @@
   const PLATE_W_MM = DESIGNER_CONFIG.plateWidthMm || 32;
   const PLATE_H_MM = DESIGNER_CONFIG.plateHeightMm || 32;
   const MIN_QTY = DESIGNER_CONFIG.minQty || 1;
+  const PRICE_PER_UNIT = DESIGNER_CONFIG.pricePerUnit || 0;
   const PLATE_W_PX = PLATE_W_MM * PX_PER_MM;
   const PLATE_H_PX = PLATE_H_MM * PX_PER_MM;
   const FIT_BASIS_MM = Math.min(PLATE_W_MM, PLATE_H_MM); // lado más corto: referencia para el ajuste automático
@@ -68,6 +69,7 @@
     preloadMaterialImages();
     renderRulers();
     bindEvents();
+    updateQtyTotal();
     drawPlate();
     if (window.pdfjsLib) {
       // El worker se sirve desde el propio dominio (no desde el CDN): un worker de otro origen
@@ -213,6 +215,28 @@
     );
 
     $("send-request-btn").addEventListener("click", sendRequest);
+
+    if ($("d-qty")) {
+      $("d-qty").addEventListener("input", updateQtyTotal);
+    }
+  }
+
+  // Muestra (y mantiene actualizado) el coste total según la cantidad que pida el cliente,
+  // en las páginas que tienen precio por unidad configurado (de momento, solo las púas).
+  function updateQtyTotal() {
+    const totalEl = $("d-qty-total");
+    if (!totalEl) return;
+    if (!PRICE_PER_UNIT) {
+      totalEl.textContent = "";
+      return;
+    }
+    const qtyInput = $("d-qty");
+    const qty = Math.max(0, parseInt((qtyInput && qtyInput.value) || "0", 10) || 0);
+    totalEl.textContent = `Total estimado: ${formatPrice(qty * PRICE_PER_UNIT)} (${formatPrice(PRICE_PER_UNIT)}/unidad)`;
+  }
+
+  function formatPrice(n) {
+    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n || 0);
   }
 
   function clamp(v, min, max) {
@@ -817,8 +841,8 @@
       status: "pendiente",
       customer: { name, phone, email },
       shipping: { address: "", postalCode: "", city: "", province: "", notes },
-      items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty, price: 0 }],
-      subtotal: 0,
+      items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty, price: PRICE_PER_UNIT }],
+      subtotal: qty * PRICE_PER_UNIT,
       material: { id: material.id, label: material.label },
       design: {
         snapshot,
@@ -868,6 +892,7 @@
       `Material: ${order.material.label}`,
       order.design.fileName ? `Archivo: ${order.design.fileName}` : null,
       order.items && order.items[0] && order.items[0].qty > 1 ? `Cantidad: ${order.items[0].qty} unidades` : null,
+      order.subtotal > 0 ? `Total estimado: ${formatPrice(order.subtotal)}` : null,
       "",
       `Nombre: ${c.name}`,
       `Teléfono: ${c.phone}`,

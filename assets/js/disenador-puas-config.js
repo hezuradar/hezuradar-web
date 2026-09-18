@@ -5,6 +5,7 @@ window.HA_DESIGNER_CONFIG = {
   plateWidthMm: 27,
   plateHeightMm: 32,
   minQty: 20,
+  pricePerUnit: 2.8,
   materials: [
     { id: "hueso", label: "Hueso y cuerno natural", img: "images/site/materials/pua.jpg", contrast: "#161616" },
   ],
