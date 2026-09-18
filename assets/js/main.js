@@ -256,6 +256,7 @@
   function openModal(id) {
     const p = state.products.find((x) => x.id === id);
     if (!p) return;
+    if (window.HA_ANALYTICS) window.HA_ANALYTICS.trackProductView(p.id, p.title);
     const images = p.images && p.images.length ? p.images : [""];
     const outOfStock = isOutOfStock(p);
     const hasDiscount = Number(p.discountPercent) > 0;

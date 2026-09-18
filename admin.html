@@ -8,7 +8,7 @@
 <title>Administración — HezurAdar</title>
 <link rel="icon" href="images/site/logo.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260916d">
+<link rel="stylesheet" href="assets/css/style.css?v=20260918a">
 <script src="assets/js/device.js?v=20260915l"></script>
 </head>
 <body class="admin-body">
@@ -44,6 +44,7 @@
     <button class="admin-tab active" data-tab="tab-products">Productos</button>
     <button class="admin-tab" data-tab="tab-orders">Pedidos<span class="tab-badge" id="orders-pending-badge" style="display:none"></span></button>
     <button class="admin-tab" data-tab="tab-customers">Clientes</button>
+    <button class="admin-tab" data-tab="tab-stats">Estadísticas</button>
   </div>
 
   <div id="tab-products" class="admin-tab-panel">
@@ -369,6 +370,57 @@
     </div>
   </div>
 
+  <div id="tab-stats" class="admin-tab-panel" style="display:none">
+    <div id="stats-login-notice" class="card-panel">
+      <p class="help-text">Inicia sesión en la pestaña "Pedidos" para ver las estadísticas.</p>
+    </div>
+    <div id="stats-panel" style="display:none">
+      <div class="card-panel">
+        <h3>Resumen (últimos 30 días)</h3>
+        <div class="revenue-summary">
+          <div class="revenue-stat"><span>Visitas a la web</span><b id="stat-visits">0</b></div>
+          <div class="revenue-stat"><span>Pedidos</span><b id="stat-orders">0</b></div>
+          <div class="revenue-stat"><span>Facturación</span><b id="stat-revenue">0,00&nbsp;€</b></div>
+          <div class="revenue-stat"><span>Ticket medio</span><b id="stat-avg">0,00&nbsp;€</b></div>
+          <div class="revenue-stat"><span>Tasa de conversión</span><b id="stat-conversion">-</b></div>
+          <div class="revenue-stat"><span>Solicitudes de diseño</span><b id="stat-design">0</b></div>
+        </div>
+        <p class="help-text" id="stats-visits-notice" style="display:none">
+          Todavía no se han registrado visitas. Si acabas de añadir esta sección, revisa que
+          las reglas de Firestore permiten escribir en la colección <code>analytics_daily</code>
+          (ver README).
+        </p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="card-panel">
+          <h3>Visitas por día</h3>
+          <div class="chart-wrap"><canvas id="chart-visits"></canvas></div>
+        </div>
+        <div class="card-panel">
+          <h3>Facturación por día</h3>
+          <div class="chart-wrap"><canvas id="chart-revenue"></canvas></div>
+        </div>
+        <div class="card-panel">
+          <h3>Pedidos por estado</h3>
+          <div class="chart-wrap"><canvas id="chart-status"></canvas></div>
+        </div>
+        <div class="card-panel">
+          <h3>Visitas por página</h3>
+          <div class="chart-wrap"><canvas id="chart-pages"></canvas></div>
+        </div>
+        <div class="card-panel">
+          <h3>Productos más vistos</h3>
+          <div class="chart-wrap chart-wrap-tall"><canvas id="chart-top-viewed"></canvas></div>
+        </div>
+        <div class="card-panel">
+          <h3>Productos más vendidos</h3>
+          <div class="chart-wrap chart-wrap-tall"><canvas id="chart-top-sold"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -379,6 +431,8 @@
 <script src="assets/js/emailjs-config.js?v=20260915l"></script>
 <script src="assets/js/emailjs-notify.js?v=20260915l"></script>
 <script src="assets/js/admin.js?v=20260916b"></script>
-<script src="assets/js/admin-orders.js?v=20260918a"></script>
+<script src="assets/js/admin-orders.js?v=20260918b"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="assets/js/admin-stats.js?v=20260918a"></script>
 </body>
 </html>

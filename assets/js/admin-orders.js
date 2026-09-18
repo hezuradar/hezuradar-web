@@ -166,6 +166,10 @@
           renderRevenue();
           renderCustomers();
           populateCustomerSelect();
+          // Deja los pedidos disponibles para otras pestañas del panel (p.ej. Estadísticas)
+          // sin que tengan que abrir su propia suscripción a Firestore.
+          window.HA_LATEST_ORDERS = orders;
+          window.dispatchEvent(new CustomEvent("ha-orders-updated", { detail: { orders } }));
         },
         (err) => {
           setAuthStatus("err", "Error leyendo pedidos: " + err.message);
