@@ -2,15 +2,10 @@
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-  const PLATE_PX = 480;
-  const PLATE_MM = 32;
-  const PLATE_PX_PER_MM = PLATE_PX / PLATE_MM;
-  const FIT_RATIO = 0.82; // el logo, al ajustarlo, ocupa como mucho este % del lado de la placa
-  const MM_PER_FIT_SCALE = PLATE_MM * FIT_RATIO; // mm reales (lado mayor) a las que corresponde scale=1
+  const PX_PER_MM = 15;
+  const FIT_RATIO = 0.82; // el logo, al ajustarlo, ocupa como mucho este % del lado más corto de la placa
   const SIZE_MM_MIN = 5;
   const SIZE_MM_MAX = 80;
-  const scaleToMm = (scale) => scale * MM_PER_FIT_SCALE;
-  const mmToScale = (mm) => mm / MM_PER_FIT_SCALE;
   const HARD_MAX_FILE_BYTES = 15 * 1024 * 1024; // por encima de esto ni se intenta leer el archivo (evita colgar el navegador)
   const SAFE_ORDER_BYTES = 950 * 1024; // margen de seguridad bajo el límite de 1 MiB por documento de Firestore
 
@@ -23,12 +18,22 @@
   ];
 
   // La página que carga este script puede definir window.HA_DESIGNER_CONFIG antes de este
-  // <script> para reutilizar el mismo editor con otros materiales y otro tipo de pedido
-  // (por ejemplo, "Personaliza tus púas" solo tiene un material y guarda kind:"pua-personalizada").
+  // <script> para reutilizar el mismo editor con otros materiales, otra forma/medidas de pieza
+  // y otro tipo de pedido (por ejemplo, "Personaliza tus púas" solo tiene un material, la
+  // pieza tiene forma de púa en vez de placa cuadrada, y guarda kind:"pua-personalizada").
   const DESIGNER_CONFIG = window.HA_DESIGNER_CONFIG || {};
   const MATERIALS = DESIGNER_CONFIG.materials || DEFAULT_MATERIALS;
   const ORDER_KIND = DESIGNER_CONFIG.kind || "placa-personalizada";
   const ITEM_LABEL = DESIGNER_CONFIG.itemLabel || "Placa personalizada";
+  const PLATE_SHAPE = DESIGNER_CONFIG.shape || "rect";
+  const PLATE_W_MM = DESIGNER_CONFIG.plateWidthMm || 32;
+  const PLATE_H_MM = DESIGNER_CONFIG.plateHeightMm || 32;
+  const PLATE_W_PX = PLATE_W_MM * PX_PER_MM;
+  const PLATE_H_PX = PLATE_H_MM * PX_PER_MM;
+  const FIT_BASIS_MM = Math.min(PLATE_W_MM, PLATE_H_MM); // lado más corto: referencia para el ajuste automático
+  const MM_PER_FIT_SCALE = FIT_BASIS_MM * FIT_RATIO; // mm reales (lado mayor del logo) a las que corresponde scale=1
+  const scaleToMm = (scale) => scale * MM_PER_FIT_SCALE;
+  const mmToScale = (mm) => mm / MM_PER_FIT_SCALE;
 
   function materialById(id) {
     return MATERIALS.find((m) => m.id === id) || MATERIALS[0];
@@ -85,20 +90,21 @@
     });
   }
 
-  // Regla de referencia alrededor de la placa: marca cada mm real (la placa mide 32x32mm),
-  // con ticks más largos y etiqueta cada 5mm. Se genera una sola vez, ya que el tamaño de la
-  // placa no cambia.
+  // Regla de referencia alrededor de la placa: marca cada mm real, con ticks más largos y
+  // etiqueta cada 5mm. Se genera una sola vez, ya que el tamaño de la placa no cambia.
   function renderRulers() {
-    const ticks = [];
-    for (let mm = 0; mm <= 32; mm++) ticks.push(mm);
-    const buildTick = (mm, axis) => {
-      const isMajor = mm % 5 === 0 || mm === 32;
-      const pct = (mm / 32) * 100;
-      const pos = axis === "h" ? `left:${pct}%` : `top:${pct}%`;
-      return `<span class="ruler-tick${isMajor ? " major" : ""}" style="${pos}">${isMajor ? `<span>${mm}</span>` : ""}</span>`;
+    const buildTicks = (totalMm, axis) => {
+      const out = [];
+      for (let mm = 0; mm <= totalMm; mm++) {
+        const isMajor = mm % 5 === 0 || mm === totalMm;
+        const pct = (mm / totalMm) * 100;
+        const pos = axis === "h" ? `left:${pct}%` : `top:${pct}%`;
+        out.push(`<span class="ruler-tick${isMajor ? " major" : ""}" style="${pos}">${isMajor ? `<span>${mm}</span>` : ""}</span>`);
+      }
+      return out.join("");
     };
-    $("ruler-bottom").innerHTML = ticks.map((mm) => buildTick(mm, "h")).join("");
-    $("ruler-side").innerHTML = ticks.map((mm) => buildTick(mm, "v")).join("");
+    $("ruler-bottom").innerHTML = buildTicks(PLATE_W_MM, "h");
+    $("ruler-side").innerHTML = buildTicks(PLATE_H_MM, "v");
   }
 
   function renderMaterialSwatches() {
@@ -413,7 +419,8 @@
   function applyAutoFit() {
     if (!state.logoCanvas) return;
     const maxDim = Math.max(state.logoCanvas.width, state.logoCanvas.height);
-    state.fitPxSize = (PLATE_PX * FIT_RATIO) / maxDim; // factor: px de plate-canvas por px de logoCanvas, a scale=1
+    const fitBasisPx = Math.min(PLATE_W_PX, PLATE_H_PX);
+    state.fitPxSize = (fitBasisPx * FIT_RATIO) / maxDim; // factor: px de plate-canvas por px de logoCanvas, a scale=1
     state.offsetX = 0;
     state.offsetY = 0;
     state.scale = 1;
@@ -470,11 +477,11 @@
   // Calcula (sin aplicar) el "scale" y los mm reales a los que correspondería el logo, a partir
   // de las medidas del DXF cargado (ver renderDxfFile). Devuelve null si no hay esa información
   // (por ejemplo, un PDF, que no tiene una escala física fiable).
-  // 1 mm de plate-canvas equivale a PLATE_PX_PER_MM px; 1 mm del DXF equivale a dxfPxPerMm px
+  // 1 mm de plate-canvas equivale a PX_PER_MM px; 1 mm del DXF equivale a dxfPxPerMm px
   // de logoCanvas. A partir de ahí se despeja el "scale" que reproduce ese tamaño real.
   function computeRealSize() {
     if (!state.logoCanvas || !state.fitPxSize || !state.dxfPxPerMm) return null;
-    const rawScale = PLATE_PX_PER_MM / (state.dxfPxPerMm * state.fitPxSize);
+    const rawScale = PX_PER_MM / (state.dxfPxPerMm * state.fitPxSize);
     const clampedScale = clamp(rawScale, mmToScale(SIZE_MM_MIN), mmToScale(SIZE_MM_MAX));
     return { clampedScale, mm: scaleToMm(clampedScale), clipped: Math.abs(clampedScale - rawScale) > 0.001 };
   }
@@ -534,9 +541,8 @@
     const ctx = canvas.getContext("2d");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const radius = 18;
     ctx.save();
-    roundedRectPath(ctx, 0, 0, canvas.width, canvas.height, radius);
+    platePath(ctx, 0, 0, canvas.width, canvas.height);
     ctx.clip();
 
     if (state.materialImg) {
@@ -571,7 +577,7 @@
 
     // Borde sutil de la placa
     ctx.save();
-    roundedRectPath(ctx, 1, 1, canvas.width - 2, canvas.height - 2, radius);
+    platePath(ctx, 1, 1, canvas.width - 2, canvas.height - 2);
     ctx.strokeStyle = "rgba(0,0,0,.25)";
     ctx.lineWidth = 2;
     ctx.stroke();
@@ -598,8 +604,8 @@
       maxX = Math.max(...xs);
     const minY = Math.min(...ys),
       maxY = Math.max(...ys);
-    const widthMm = (maxX - minX) / PLATE_PX_PER_MM;
-    const heightMm = (maxY - minY) / PLATE_PX_PER_MM;
+    const widthMm = (maxX - minX) / PX_PER_MM;
+    const heightMm = (maxY - minY) / PX_PER_MM;
 
     const dimColor = materialById(state.materialId).contrast;
     ctx.save();
@@ -621,7 +627,7 @@
     const widthLabel = widthMm.toFixed(1) + " mm";
     const widthLabelW = ctx.measureText(widthLabel).width;
     let hy, hLabelY;
-    if (PLATE_PX - maxY >= needed) {
+    if (PLATE_H_PX - maxY >= needed) {
       hy = maxY + margin;
       ctx.textBaseline = "top";
       hLabelY = hy + labelGap;
@@ -630,30 +636,30 @@
       ctx.textBaseline = "bottom";
       hLabelY = hy - labelGap;
     } else {
-      hy = clamp(maxY + margin, edgePad, PLATE_PX - textH - edgePad);
+      hy = clamp(maxY + margin, edgePad, PLATE_H_PX - textH - edgePad);
       ctx.textBaseline = "top";
       hLabelY = hy + labelGap;
     }
     // Pegada al extremo izquierdo de la línea (no centrada), con un pequeño margen interior.
-    const hLabelX = clamp(minX + widthLabelW / 2 + 6, widthLabelW / 2 + edgePad, PLATE_PX - widthLabelW / 2 - edgePad);
+    const hLabelX = clamp(minX + widthLabelW / 2 + 6, widthLabelW / 2 + edgePad, PLATE_W_PX - widthLabelW / 2 - edgePad);
     drawDimLine(ctx, minX, hy, maxX, hy, true);
     ctx.fillText(widthLabel, hLabelX, hLabelY);
 
     const heightLabel = heightMm.toFixed(1) + " mm";
     const heightLabelW = ctx.measureText(heightLabel).width;
     let vx, vSide;
-    if (PLATE_PX - maxX >= needed) {
+    if (PLATE_W_PX - maxX >= needed) {
       vx = maxX + margin;
       vSide = 1;
     } else if (minX >= needed) {
       vx = minX - margin;
       vSide = -1;
     } else {
-      vx = clamp(maxX + margin, edgePad, PLATE_PX - textH - edgePad);
+      vx = clamp(maxX + margin, edgePad, PLATE_W_PX - textH - edgePad);
       vSide = 1;
     }
     // Pegada al extremo superior de la línea (no centrada), con un pequeño margen interior.
-    const vLabelY = clamp(minY + heightLabelW / 2 + 6, heightLabelW / 2 + edgePad, PLATE_PX - heightLabelW / 2 - edgePad);
+    const vLabelY = clamp(minY + heightLabelW / 2 + 6, heightLabelW / 2 + edgePad, PLATE_H_PX - heightLabelW / 2 - edgePad);
     drawDimLine(ctx, vx, minY, vx, maxY, false);
     ctx.save();
     ctx.translate(vx + vSide * labelGap, vLabelY);
@@ -686,6 +692,16 @@
     ctx.stroke();
   }
 
+  // Contorno de la pieza sobre la que se dibuja el material: un rectángulo redondeado (placas)
+  // o la silueta de una púa (DESIGNER_CONFIG.shape === "pick"), según la página.
+  function platePath(ctx, x, y, w, h) {
+    if (PLATE_SHAPE === "pick") {
+      pickShapePath(ctx, x, y, w, h);
+    } else {
+      roundedRectPath(ctx, x, y, w, h, 18);
+    }
+  }
+
   function roundedRectPath(ctx, x, y, w, h, r) {
     ctx.beginPath();
     ctx.moveTo(x + r, y);
@@ -693,6 +709,19 @@
     ctx.arcTo(x + w, y + h, x, y + h, r);
     ctx.arcTo(x, y + h, x, y, r);
     ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  // Contorno aproximado de una púa: más ancha y redondeada en la parte de arriba, remate en
+  // punta redondeada abajo (como en la foto del material). w y h son el ancho y el alto del
+  // rectángulo que la contiene.
+  function pickShapePath(ctx, x, y, w, h) {
+    const cx = x + w / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, y + h);
+    ctx.bezierCurveTo(x + w * 0.02, y + h * 0.78, x, y + h * 0.42, x + w * 0.14, y + h * 0.2);
+    ctx.bezierCurveTo(x + w * 0.28, y - h * 0.02, x + w * 0.72, y - h * 0.02, x + w * 0.86, y + h * 0.2);
+    ctx.bezierCurveTo(x + w, y + h * 0.42, x + w * 0.98, y + h * 0.78, cx, y + h);
     ctx.closePath();
   }
 

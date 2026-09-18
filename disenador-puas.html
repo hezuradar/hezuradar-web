@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260916c">
+<link rel="stylesheet" href="assets/css/style.css?v=20260916d">
 <script src="assets/js/device.js?v=20260915q"></script>
 </head>
 <body>
@@ -31,8 +31,9 @@
 <main class="container designer-page">
   <div class="designer-intro">
     <h1>Personaliza tus púas</h1>
-    <p>Sube el logo de tu diseño en PDF o DXF y ajústalo sobre la púa de 32&nbsp;×&nbsp;32&nbsp;mm.
+    <p>Sube el logo de tu diseño en PDF o DXF y ajústalo sobre la púa de 27&nbsp;×&nbsp;32&nbsp;mm.
     Cuando lo tengas listo, nos lo envías y te preparamos un presupuesto.</p>
+    <p class="help-text"><b>Pedido mínimo: 20 unidades.</b></p>
   </div>
 
   <div class="designer-grid">
@@ -56,17 +57,17 @@
         <h3>3. Ajusta tu logo sobre la púa</h3>
         <p class="help-text">Arrastra el logo con el ratón (o el dedo) para moverlo. Usa los controles para
         agrandarlo, empequeñecerlo o girarlo. Un DXF se muestra directamente a su tamaño real sobre
-        la púa de 32×32&nbsp;mm; un PDF se ajusta automáticamente para que se vea bien.</p>
+        la púa de 27×32&nbsp;mm; un PDF se ajusta automáticamente para que se vea bien.</p>
 
         <div class="plate-stage">
-          <div class="plate-canvas-wrap">
-            <canvas id="plate-canvas" width="480" height="480"></canvas>
+          <div class="plate-canvas-wrap shape-pick">
+            <canvas id="plate-canvas" width="405" height="480"></canvas>
             <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la púa</div>
             <div class="plate-ruler plate-ruler-bottom" id="ruler-bottom"></div>
             <div class="plate-ruler plate-ruler-side" id="ruler-side"></div>
           </div>
         </div>
-        <p class="help-text">La regla marca milímetros reales de la púa (32 × 32 mm); las líneas sobre el diseño (con el color que mejor contraste con el material) indican el ancho y el alto reales de tu logo tal y como quedará.</p>
+        <p class="help-text">La regla marca milímetros reales de la púa (27 × 32 mm); las líneas sobre el diseño (con el color que mejor contraste con el material) indican el ancho y el alto reales de tu logo tal y como quedará.</p>
 
         <div class="plate-controls" id="plate-controls" style="display:none">
           <div class="plate-control-row">
@@ -98,6 +99,7 @@
 
       <div class="card-panel">
         <h3>4. Tus datos</h3>
+        <p class="help-text"><b>Recuerda:</b> el pedido mínimo de púas personalizadas es de 20 unidades. Indica la cantidad que necesitas en las notas.</p>
         <div class="field-row">
           <div class="field">
             <label>Nombre y apellidos *</label>
@@ -137,7 +139,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/js/firebase-config.js?v=20260915q"></script>
 <script src="assets/js/firebase-orders.js?v=20260915q"></script>
-<script src="assets/js/disenador-puas-config.js?v=20260916b"></script>
-<script src="assets/js/disenador.js?v=20260916b"></script>
+<script src="assets/js/disenador-puas-config.js?v=20260916c"></script>
+<script src="assets/js/disenador.js?v=20260916c"></script>
 </body>
 </html>

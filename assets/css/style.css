@@ -563,10 +563,11 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
 .plate-stage{position:relative;display:flex;justify-content:center;margin:16px 0}
 .plate-canvas-wrap{position:relative;width:100%;max-width:480px;margin-right:28px;margin-bottom:24px}
 #plate-canvas{
-  display:block;width:100%;aspect-ratio:1/1;touch-action:none;cursor:grab;
+  display:block;width:100%;height:auto;touch-action:none;cursor:grab;
   background:#e7e2da;border-radius:18px;box-shadow:var(--shadow);
 }
 #plate-canvas:active{cursor:grabbing}
+.plate-canvas-wrap.shape-pick #plate-canvas{background:none;border-radius:0;box-shadow:none}
 .plate-empty-hint{
   position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
   color:var(--color-muted);font-size:.85rem;text-align:center;padding:0 20px;pointer-events:none;
