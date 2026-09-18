@@ -38,6 +38,8 @@
     offsetY: 0,
     scale: 1,
     rotationDeg: 0,
+    duplicate: null, // { offsetX, offsetY, rotationDeg } de la pieza duplicada, o null si no hay copia
+    activePiece: 1, // 1 = pieza original, 2 = copia: a cuál afecta el control "Girar" ahora mismo
     dragging: false,
     dragStartX: 0,
     dragStartY: 0,
@@ -119,6 +121,8 @@
       drawPlate();
     });
     $("original-size-btn").addEventListener("click", setOriginalSize);
+    $("duplicate-btn").addEventListener("click", duplicatePiece);
+    $("remove-duplicate-btn").addEventListener("click", removeDuplicate);
 
     $("scale-range").addEventListener("input", (e) => {
       state.scale = mmToScale(parseFloat(e.target.value));
@@ -136,14 +140,15 @@
     });
 
     $("rotate-range").addEventListener("input", (e) => {
-      state.rotationDeg = parseFloat(e.target.value);
+      activePieceState().rotationDeg = parseFloat(e.target.value);
       drawPlate();
     });
     document.querySelectorAll("[data-rotate]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const dir = parseInt(btn.dataset.rotate, 10);
-        state.rotationDeg = ((state.rotationDeg + dir * 15) % 360 + 360) % 360;
-        $("rotate-range").value = state.rotationDeg;
+        const piece = activePieceState();
+        piece.rotationDeg = ((piece.rotationDeg + dir * 15) % 360 + 360) % 360;
+        $("rotate-range").value = piece.rotationDeg;
         drawPlate();
       });
     });
@@ -151,12 +156,22 @@
     const canvas = $("plate-canvas");
     canvas.addEventListener("pointerdown", (e) => {
       if (!state.logoCanvas) return;
-      state.dragging = true;
       const rect = canvas.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left) * (canvas.width / rect.width) - canvas.width / 2;
+      const clickY = (e.clientY - rect.top) * (canvas.height / rect.height) - canvas.height / 2;
+      // Con dos piezas, se arrastra la que esté más cerca del punto donde se toca.
+      if (state.duplicate) {
+        const d1 = Math.hypot(clickX - state.offsetX, clickY - state.offsetY);
+        const d2 = Math.hypot(clickX - state.duplicate.offsetX, clickY - state.duplicate.offsetY);
+        state.activePiece = d2 < d1 ? 2 : 1;
+        $("rotate-range").value = activePieceState().rotationDeg;
+      }
+      const piece = activePieceState();
+      state.dragging = true;
       state.dragStartX = e.clientX - rect.left;
       state.dragStartY = e.clientY - rect.top;
-      state.dragOffsetStartX = state.offsetX;
-      state.dragOffsetStartY = state.offsetY;
+      state.dragOffsetStartX = piece.offsetX;
+      state.dragOffsetStartY = piece.offsetY;
       try {
         canvas.setPointerCapture(e.pointerId);
       } catch (err) {
@@ -171,8 +186,9 @@
       const py = (e.clientY - rect.top) * (canvas.height / rect.height);
       const startPx = state.dragStartX * (canvas.width / rect.width);
       const startPy = state.dragStartY * (canvas.height / rect.height);
-      state.offsetX = state.dragOffsetStartX + (px - startPx);
-      state.offsetY = state.dragOffsetStartY + (py - startPy);
+      const piece = activePieceState();
+      piece.offsetX = state.dragOffsetStartX + (px - startPx);
+      piece.offsetY = state.dragOffsetStartY + (py - startPy);
       drawPlate();
     });
     ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
@@ -396,6 +412,51 @@
     state.rotationDeg = 0;
     $("scale-range").value = MM_PER_FIT_SCALE.toFixed(1);
     $("rotate-range").value = 0;
+    removeDuplicate();
+  }
+
+  // Devuelve el objeto de estado (offsetX/offsetY/rotationDeg) de la pieza que deba moverse o
+  // girarse ahora mismo: la copia si existe y está activa, o la pieza original en cualquier
+  // otro caso.
+  function activePieceState() {
+    return state.activePiece === 2 && state.duplicate ? state.duplicate : state;
+  }
+
+  // Crea una copia de la pieza cargada, con el mismo tamaño (que queda bloqueado mientras
+  // exista la copia) y un pequeño desplazamiento para que se vean como dos piezas distintas.
+  function duplicatePiece() {
+    if (!state.logoCanvas || state.duplicate) return;
+    const shift = 40;
+    state.duplicate = {
+      offsetX: state.offsetX + shift,
+      offsetY: state.offsetY + shift,
+      rotationDeg: state.rotationDeg,
+    };
+    state.activePiece = 2;
+    $("rotate-range").value = state.duplicate.rotationDeg;
+    setSizeControlsDisabled(true);
+    $("duplicate-btn").style.display = "none";
+    $("remove-duplicate-btn").style.display = "inline-block";
+    $("duplicate-hint").style.display = "block";
+    drawPlate();
+  }
+
+  // Quita la copia y devuelve los controles de tamaño a su estado normal.
+  function removeDuplicate() {
+    state.duplicate = null;
+    state.activePiece = 1;
+    $("rotate-range").value = state.rotationDeg;
+    setSizeControlsDisabled(false);
+    $("duplicate-btn").style.display = "inline-block";
+    $("remove-duplicate-btn").style.display = "none";
+    $("duplicate-hint").style.display = "none";
+    drawPlate();
+  }
+
+  function setSizeControlsDisabled(disabled) {
+    $("scale-range").disabled = disabled;
+    $("original-size-btn").disabled = disabled;
+    document.querySelectorAll("[data-scale]").forEach((btn) => (btn.disabled = disabled));
   }
 
   // Calcula (sin aplicar) el "scale" y los mm reales a los que correspondería el logo, a partir
@@ -445,6 +506,7 @@
     state.offsetY = 0;
     state.scale = 1;
     state.rotationDeg = 0;
+    removeDuplicate();
     $("design-file-input").value = "";
     $("remove-design-btn").style.display = "none";
     $("plate-controls").style.display = "none";
@@ -476,21 +538,25 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
 
-    let logoGeom = null;
+    const logoGeoms = [];
     if (state.logoCanvas) {
-      const cx = canvas.width / 2 + state.offsetX;
-      const cy = canvas.height / 2 + state.offsetY;
+      const pieces = [{ offsetX: state.offsetX, offsetY: state.offsetY, rotationDeg: state.rotationDeg }];
+      if (state.duplicate) pieces.push(state.duplicate);
       const maxDim = Math.max(state.logoCanvas.width, state.logoCanvas.height);
       const drawMax = state.fitPxSize * maxDim * state.scale;
       const w = drawMax * (state.logoCanvas.width / maxDim);
       const h = drawMax * (state.logoCanvas.height / maxDim);
-      const angleRad = (state.rotationDeg * Math.PI) / 180;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(angleRad);
-      ctx.drawImage(state.logoCanvas, -w / 2, -h / 2, w, h);
-      ctx.restore();
-      logoGeom = { cx, cy, w, h, angleRad };
+      pieces.forEach((piece) => {
+        const cx = canvas.width / 2 + piece.offsetX;
+        const cy = canvas.height / 2 + piece.offsetY;
+        const angleRad = (piece.rotationDeg * Math.PI) / 180;
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(angleRad);
+        ctx.drawImage(state.logoCanvas, -w / 2, -h / 2, w, h);
+        ctx.restore();
+        logoGeoms.push({ cx, cy, w, h, angleRad });
+      });
     }
 
     ctx.restore();
@@ -503,7 +569,7 @@
     ctx.stroke();
     ctx.restore();
 
-    if (logoGeom) drawDimensions(ctx, logoGeom);
+    logoGeoms.forEach((g) => drawDimensions(ctx, g));
   }
 
   // Cotas del diseño cargado: dos líneas con topes y una etiqueta en mm, siguiendo el

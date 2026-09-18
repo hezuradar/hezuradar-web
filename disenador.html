@@ -84,6 +84,14 @@
             <button type="button" class="btn btn-outline" id="reset-fit-btn">Centrar y ajustar a la placa</button>
             <button type="button" class="btn btn-outline" id="original-size-btn">Tamaño original</button>
           </div>
+          <div class="plate-control-row">
+            <button type="button" class="btn btn-outline" id="duplicate-btn">Duplicar pieza</button>
+            <button type="button" class="btn btn-outline" id="remove-duplicate-btn" style="display:none">✕ Quitar copia</button>
+          </div>
+          <p class="help-text" id="duplicate-hint" style="display:none">
+            Con la pieza duplicada no se puede cambiar el tamaño (las dos usan el mismo); arrastra
+            cada una para moverla y usa "Girar" sobre la que hayas tocado en último lugar.
+          </p>
         </div>
       </div>
 
@@ -128,6 +136,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/js/firebase-config.js?v=20260915q"></script>
 <script src="assets/js/firebase-orders.js?v=20260915q"></script>
-<script src="assets/js/disenador.js?v=20260915x"></script>
+<script src="assets/js/disenador.js?v=20260916a"></script>
 </body>
 </html>
