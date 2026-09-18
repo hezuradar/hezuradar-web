@@ -14,7 +14,7 @@
   const HARD_MAX_FILE_BYTES = 15 * 1024 * 1024; // por encima de esto ni se intenta leer el archivo (evita colgar el navegador)
   const SAFE_ORDER_BYTES = 950 * 1024; // margen de seguridad bajo el límite de 1 MiB por documento de Firestore
 
-  const MATERIALS = [
+  const DEFAULT_MATERIALS = [
     { id: "madreperla", label: "Resina madre perla", img: "images/site/materials/madreperla.jpg", contrast: "#161616" },
     { id: "negro", label: "Cuerno de buey negro", img: "images/site/materials/negro.jpg", contrast: "#f7f7f5" },
     { id: "ambar", label: "Cuerno de buey ámbar", img: "images/site/materials/ambar.jpg", contrast: "#161616" },
@@ -22,12 +22,20 @@
     { id: "ankola", label: "Cuerno de buey ankola", img: "images/site/materials/ankola.jpg", contrast: "#161616" },
   ];
 
+  // La página que carga este script puede definir window.HA_DESIGNER_CONFIG antes de este
+  // <script> para reutilizar el mismo editor con otros materiales y otro tipo de pedido
+  // (por ejemplo, "Personaliza tus púas" solo tiene un material y guarda kind:"pua-personalizada").
+  const DESIGNER_CONFIG = window.HA_DESIGNER_CONFIG || {};
+  const MATERIALS = DESIGNER_CONFIG.materials || DEFAULT_MATERIALS;
+  const ORDER_KIND = DESIGNER_CONFIG.kind || "placa-personalizada";
+  const ITEM_LABEL = DESIGNER_CONFIG.itemLabel || "Placa personalizada";
+
   function materialById(id) {
     return MATERIALS.find((m) => m.id === id) || MATERIALS[0];
   }
 
   const state = {
-    materialId: "madreperla",
+    materialId: MATERIALS[0].id,
     materialImg: null,
     logoCanvas: null, // canvas recortado y recoloreado (el que se dibuja sobre la placa)
     logoCanvasRaw: null, // canvas recortado SIN recolorear (para poder recalcular al cambiar de material)
@@ -747,13 +755,13 @@
     const fileFits = !!fileDataUrl && usedBytes <= SAFE_ORDER_BYTES;
 
     const order = {
-      kind: "placa-personalizada",
+      kind: ORDER_KIND,
       orderCode: requestCode,
       createdAt: new Date().toISOString(),
       status: "pendiente",
       customer: { name, phone, email },
       shipping: { address: "", postalCode: "", city: "", province: "", notes },
-      items: [{ id: "placa-personalizada-" + material.id, title: `Placa personalizada — ${material.label}`, qty: 1, price: 0 }],
+      items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty: 1, price: 0 }],
       subtotal: 0,
       material: { id: material.id, label: material.label },
       design: {
@@ -799,7 +807,7 @@
   function buildWhatsAppMessage(order) {
     const c = order.customer;
     return [
-      `🎨 *Solicitud de placa personalizada ${order.orderCode}*`,
+      `🎨 *Solicitud de ${ITEM_LABEL.toLowerCase()} ${order.orderCode}*`,
       "",
       `Material: ${order.material.label}`,
       order.design.fileName ? `Archivo: ${order.design.fileName}` : null,
@@ -809,7 +817,7 @@
       c.email ? `Email: ${c.email}` : null,
       order.shipping.notes ? `Notas: ${order.shipping.notes}` : null,
       "",
-      "Adjunto también una captura del diseño ajustado sobre la placa.",
+      "Adjunto también una captura del diseño ajustado.",
     ]
       .filter((l) => l !== null)
       .join("\n");

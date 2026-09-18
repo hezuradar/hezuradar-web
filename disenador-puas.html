@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
-<title>Personaliza tu placa — HezurAdar</title>
-<meta name="description" content="Sube el logo de tu diseño (PDF o DXF) y ajústalo sobre una placa de 32×32 mm en 5 materiales distintos: resina madre perla, cuerno de buey (negro, ámbar, ankola) y hueso blanco.">
+<title>Personaliza tus púas — HezurAdar</title>
+<meta name="description" content="Sube el logo de tu diseño (PDF o DXF) y ajústalo sobre una púa de 32×32 mm en hueso y cuerno natural.">
 <link rel="icon" href="images/site/logo.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,7 +22,7 @@
       HezurAdar
     </a>
     <nav class="header-nav">
-      <a class="pill-btn" href="disenador-puas.html">Personaliza tus púas</a>
+      <a class="pill-btn" href="disenador.html">Personaliza tu placa</a>
       <a class="pill-btn" href="index.html">← Volver a la tienda</a>
     </nav>
   </div>
@@ -30,8 +30,8 @@
 
 <main class="container designer-page">
   <div class="designer-intro">
-    <h1>Personaliza tu placa</h1>
-    <p>Sube el logo de tu diseño en PDF o DXF, elige el material y ajústalo sobre la placa de 32&nbsp;×&nbsp;32&nbsp;mm.
+    <h1>Personaliza tus púas</h1>
+    <p>Sube el logo de tu diseño en PDF o DXF y ajústalo sobre la púa de 32&nbsp;×&nbsp;32&nbsp;mm.
     Cuando lo tengas listo, nos lo envías y te preparamos un presupuesto.</p>
   </div>
 
@@ -53,20 +53,20 @@
       </div>
 
       <div class="card-panel">
-        <h3>3. Ajusta tu logo sobre la placa</h3>
+        <h3>3. Ajusta tu logo sobre la púa</h3>
         <p class="help-text">Arrastra el logo con el ratón (o el dedo) para moverlo. Usa los controles para
         agrandarlo, empequeñecerlo o girarlo. Un DXF se muestra directamente a su tamaño real sobre
-        la placa de 32×32&nbsp;mm; un PDF se ajusta automáticamente para que se vea bien.</p>
+        la púa de 32×32&nbsp;mm; un PDF se ajusta automáticamente para que se vea bien.</p>
 
         <div class="plate-stage">
           <div class="plate-canvas-wrap">
             <canvas id="plate-canvas" width="480" height="480"></canvas>
-            <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la placa</div>
+            <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la púa</div>
             <div class="plate-ruler plate-ruler-bottom" id="ruler-bottom"></div>
             <div class="plate-ruler plate-ruler-side" id="ruler-side"></div>
           </div>
         </div>
-        <p class="help-text">La regla marca milímetros reales de la placa (32 × 32 mm); las líneas sobre el diseño (con el color que mejor contraste con el material) indican el ancho y el alto reales de tu logo tal y como quedará.</p>
+        <p class="help-text">La regla marca milímetros reales de la púa (32 × 32 mm); las líneas sobre el diseño (con el color que mejor contraste con el material) indican el ancho y el alto reales de tu logo tal y como quedará.</p>
 
         <div class="plate-controls" id="plate-controls" style="display:none">
           <div class="plate-control-row">
@@ -82,7 +82,7 @@
             <button type="button" class="small-btn" data-rotate="1">15° ↷</button>
           </div>
           <div class="plate-control-row">
-            <button type="button" class="btn btn-outline" id="reset-fit-btn">Centrar y ajustar a la placa</button>
+            <button type="button" class="btn btn-outline" id="reset-fit-btn">Centrar y ajustar a la púa</button>
             <button type="button" class="btn btn-outline" id="original-size-btn">Tamaño original</button>
           </div>
           <div class="plate-control-row">
@@ -137,6 +137,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/js/firebase-config.js?v=20260915q"></script>
 <script src="assets/js/firebase-orders.js?v=20260915q"></script>
+<script src="assets/js/disenador-puas-config.js?v=20260916b"></script>
 <script src="assets/js/disenador.js?v=20260916b"></script>
 </body>
 </html>

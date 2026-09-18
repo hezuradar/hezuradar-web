@@ -3,6 +3,13 @@
 
   const $ = (id) => document.getElementById(id);
   const CORREOS_TRACKING_URL = "https://www.correos.es/es/es/herramientas/localizador/envios/detalle?tracking-number=";
+  // Pedidos que vienen del personalizador (placas, púas...): mismo formato de tarjeta,
+  // solo cambia la etiqueta según el "kind" guardado en el pedido.
+  const DESIGN_KINDS = {
+    "placa-personalizada": "Placa personalizada",
+    "pua-personalizada": "Púa personalizada",
+  };
+  const isDesignOrder = (o) => !!DESIGN_KINDS[o && o.kind];
   let orders = [];
   let catalogProducts = [];
   let statusFilter = "";
@@ -262,7 +269,7 @@
     overlay.innerHTML = `
       <div class="design-view-box">
         <button class="modal-close" id="design-view-close" aria-label="Cerrar">&times;</button>
-        <img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente sobre la placa">
+        <img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente">
         <div class="design-view-caption">${escapeHtml(material)}${d.fileName ? " · " + escapeHtml(d.fileName) : ""}</div>
       </div>
     `;
@@ -287,7 +294,7 @@
     const from = $("revenue-from").value ? new Date($("revenue-from").value + "T00:00:00") : null;
     const to = $("revenue-to").value ? new Date($("revenue-to").value + "T23:59:59") : null;
     const included = orders.filter((o) => {
-      if (o.kind === "placa-personalizada") return false;
+      if (isDesignOrder(o)) return false;
       if (o.status === "cancelado") return false;
       const created = o.createdAt ? new Date(o.createdAt) : null;
       if (!created) return false;
@@ -505,8 +512,8 @@
   function openCustomerOrder(docId) {
     const o = orders.find((x) => x.docId === docId);
     document.querySelector('[data-tab="tab-orders"]').click();
-    if (o && o.kind === "placa-personalizada") {
-      // Las solicitudes de placa personalizada no usan el formulario de pedido manual:
+    if (isDesignOrder(o)) {
+      // Las solicitudes de diseño personalizado no usan el formulario de pedido manual:
       // solo se desplaza hasta su tarjeta, para no sobrescribir sus datos de diseño.
       setTimeout(() => {
         const card = document.getElementById(`order-card-${docId}`);
@@ -616,7 +623,7 @@
   }
 
   function orderCard(o) {
-    if (o.kind === "placa-personalizada") return designRequestCard(o);
+    if (isDesignOrder(o)) return designRequestCard(o);
     const date = formatDate(o.createdAt);
     const status = o.status || "pendiente";
     const shippingCost = Number(o.shippingCost) || 0;
@@ -696,7 +703,7 @@
           <div class="order-head-title">
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
             <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
-            <span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 Placa personalizada</span>
+            <span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 ${escapeHtml(DESIGN_KINDS[o.kind] || "Diseño personalizado")}</span>
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
@@ -705,7 +712,7 @@
                 .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
                 .join("")}
             </select>
-            ${d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver la placa tal y como la configuró el cliente">👁️ Ver diseño</button>` : ""}
+            ${d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver el diseño tal y como lo configuró el cliente">👁️ Ver diseño</button>` : ""}
             ${d.fileData ? `<button class="small-btn" id="download-design-${escapeAttr(o.docId)}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</button>` : ""}
             ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
             <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
@@ -713,7 +720,7 @@
         </div>
         <div class="order-card-body">
           <div class="order-items-block">
-            ${d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño sobre la placa" style="width:100%;max-width:260px;border-radius:10px;border:1px solid var(--color-border)">` : ""}
+            ${d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente" style="width:100%;max-width:260px;border-radius:10px;border:1px solid var(--color-border)">` : ""}
             <div class="order-totals">
               <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
               ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
