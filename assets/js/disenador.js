@@ -218,6 +218,14 @@
 
     if ($("d-qty")) {
       $("d-qty").addEventListener("input", updateQtyTotal);
+      $("d-qty").addEventListener("blur", () => {
+        const el = $("d-qty");
+        const qty = parseInt(el.value, 10) || 0;
+        if (qty < MIN_QTY) {
+          el.value = MIN_QTY;
+          updateQtyTotal();
+        }
+      });
     }
   }
 
@@ -809,6 +817,7 @@
     const city = $("d-city").value.trim();
     const province = $("d-province").value.trim();
     const notes = $("d-notes").value.trim();
+    const paymentInputs = document.querySelectorAll('input[name="d-payment"]');
     const paymentMethod = (document.querySelector('input[name="d-payment"]:checked') || {}).value || "";
     const qtyInput = $("d-qty");
     const qty = qtyInput ? parseInt(qtyInput.value, 10) || 0 : MIN_QTY;
@@ -817,7 +826,7 @@
       setRequestStatus("err", "Rellena los campos obligatorios (*).");
       return;
     }
-    if (!paymentMethod) {
+    if (paymentInputs.length && !paymentMethod) {
       setRequestStatus("err", "Elige una forma de pago.");
       return;
     }
@@ -906,8 +915,8 @@
       order.design.fileName ? `Archivo: ${order.design.fileName}` : null,
       order.items && order.items[0] && order.items[0].qty > 1 ? `Cantidad: ${order.items[0].qty} unidades` : null,
       order.subtotal > 0 ? `Total estimado: ${formatPrice(order.subtotal)}` : null,
-      "",
-      `Forma de pago: ${PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-"}`,
+      order.paymentMethod ? "" : null,
+      order.paymentMethod ? `Forma de pago: ${PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod}` : null,
       "",
       "Datos de envío:",
       `Nombre: ${c.name}`,
