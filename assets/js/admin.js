@@ -184,15 +184,7 @@
     const cfg = ghConfig();
     if (!cfg.owner || !cfg.repo || !cfg.token) {
       setStatus("p-status", "info", "Configura la conexión con GitHub para cargar y publicar productos.");
-      try {
-        const res = await fetch(PRODUCTS_PATH + "?v=" + Date.now(), { cache: "no-store" });
-        if (res.ok) {
-          products = await res.json();
-          renderTable();
-          fillDatalists();
-          maybeSuggestSku();
-        }
-      } catch (e) {}
+      await loadProductsFromLiveSite();
       return;
     }
     try {
@@ -210,8 +202,24 @@
       fillDatalists();
       maybeSuggestSku();
     } catch (e) {
-      setStatus("p-status", "err", "Error cargando catálogo: " + e.message);
+      setStatus("p-status", "err", "Error cargando catálogo desde GitHub: " + e.message);
+      // Aunque falle la conexión con GitHub, se intenta rellenar la tabla y los desplegables
+      // de categoría/subcategoría con el catálogo público de la web ya publicada, para no
+      // dejarlos vacíos mientras se soluciona la conexión.
+      await loadProductsFromLiveSite();
     }
+  }
+
+  async function loadProductsFromLiveSite() {
+    try {
+      const res = await fetch(PRODUCTS_PATH + "?v=" + Date.now(), { cache: "no-store" });
+      if (res.ok) {
+        products = await res.json();
+        renderTable();
+        fillDatalists();
+        maybeSuggestSku();
+      }
+    } catch (e) {}
   }
 
   async function putProductsFile(mutate, message) {
