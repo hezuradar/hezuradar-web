@@ -4,6 +4,7 @@ window.HA_DESIGNER_CONFIG = {
   shape: "pick",
   plateWidthMm: 27,
   plateHeightMm: 32,
+  minQty: 20,
   materials: [
     { id: "hueso", label: "Hueso y cuerno natural", img: "images/site/materials/pua.jpg", contrast: "#161616" },
   ],

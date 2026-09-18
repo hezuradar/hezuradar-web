@@ -510,17 +510,7 @@
   }
 
   function openCustomerOrder(docId) {
-    const o = orders.find((x) => x.docId === docId);
     document.querySelector('[data-tab="tab-orders"]').click();
-    if (isDesignOrder(o)) {
-      // Las solicitudes de diseño personalizado no usan el formulario de pedido manual:
-      // solo se desplaza hasta su tarjeta, para no sobrescribir sus datos de diseño.
-      setTimeout(() => {
-        const card = document.getElementById(`order-card-${docId}`);
-        if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 50);
-      return;
-    }
     editOrder(docId);
   }
 
@@ -623,7 +613,7 @@
   }
 
   function orderCard(o) {
-    if (isDesignOrder(o)) return designRequestCard(o);
+    const design = isDesignOrder(o);
     const date = formatDate(o.createdAt);
     const status = o.status || "pendiente";
     const shippingCost = Number(o.shippingCost) || 0;
@@ -641,7 +631,10 @@
       .join("");
     const c = o.customer || {};
     const s = o.shipping || {};
+    const d = o.design || {};
+    const material = (o.material && o.material.label) || "Sin especificar";
     const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
+    const priced = itemsSum > 0;
 
     return `
       <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
@@ -649,6 +642,7 @@
           <div class="order-head-title">
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
             <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
+            ${design ? `<span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 ${escapeHtml(DESIGN_KINDS[o.kind] || "Diseño personalizado")}</span>` : ""}
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
@@ -657,9 +651,11 @@
                 .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
                 .join("")}
             </select>
+            ${design && d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver el diseño tal y como lo configuró el cliente">👁️ Ver diseño</button>` : ""}
+            ${design && d.fileData ? `<button class="small-btn" id="download-design-${escapeAttr(o.docId)}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</button>` : ""}
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
             <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
-            ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el albarán por WhatsApp al cliente">📲 Albarán WhatsApp</button>` : ""}
+            ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el presupuesto/albarán por WhatsApp al cliente">📲 ${design ? "Presupuesto" : "Albarán"} WhatsApp</button>` : ""}
             ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
             ${o.trackingNumber ? `<a class="small-btn" href="${escapeAttr(CORREOS_TRACKING_URL + encodeURIComponent(o.trackingNumber))}" target="_blank" rel="noopener" title="Ver seguimiento del envío en Correos">🚚 Seguimiento</a>` : ""}
             <button class="small-btn" id="edit-${escapeAttr(o.docId)}" type="button">✏️ Editar</button>
@@ -668,69 +664,33 @@
         </div>
         <div class="order-card-body">
           <div class="order-items-block">
-            <div class="order-items">${itemsHtml}</div>
+            ${design && d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
+            ${
+              design
+                ? `<div class="order-totals">
+              <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
+              ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
+            </div>`
+                : ""
+            }
+            ${design && d.fileTooLargeToEmbed ? `<p class="help-text">El archivo original era demasiado grande para adjuntarlo aquí: pide al cliente que te lo reenvíe por WhatsApp o email.</p>` : ""}
+            ${
+              design && !priced
+                ? `<p class="help-text">Todavía sin presupuestar: pulsa "✏️ Editar" para introducir el precio de las unidades y el envío.</p>`
+                : `<div class="order-items">${itemsHtml}</div>
             <div class="order-totals">
               <div class="order-total-row"><span>Productos</span><span>${formatPrice(itemsSum)}</span></div>
               ${shippingCost > 0 ? `<div class="order-total-row"><span>Envío</span><span>${formatPrice(shippingCost)}</span></div>` : ""}
               <div class="order-total-row order-total-grand"><span>Total</span><b>${formatPrice(total)}</b></div>
-            </div>
+            </div>`
+            }
           </div>
           <div class="order-customer">
             <div class="order-customer-name">${escapeHtml(c.name || "-")}</div>
             <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
             ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
-            <div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
+            ${s.address ? `<div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>` : ""}
             ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
-            ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
-          </div>
-        </div>
-      </article>
-    `;
-  }
-
-  function designRequestCard(o) {
-    const date = formatDate(o.createdAt);
-    const status = o.status || "pendiente";
-    const c = o.customer || {};
-    const s = o.shipping || {};
-    const d = o.design || {};
-    const material = (o.material && o.material.label) || "Sin especificar";
-    const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
-
-    return `
-      <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
-        <div class="order-card-head">
-          <div class="order-head-title">
-            <b>${escapeHtml(o.orderCode || o.docId)}</b>
-            <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
-            <span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 ${escapeHtml(DESIGN_KINDS[o.kind] || "Diseño personalizado")}</span>
-            <span class="order-date">${date}</span>
-          </div>
-          <div class="order-head-actions">
-            <select id="status-${escapeAttr(o.docId)}" class="order-status-select">
-              ${["pendiente", "confirmado", "enviado", "entregado", "cancelado"]
-                .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
-                .join("")}
-            </select>
-            ${d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver el diseño tal y como lo configuró el cliente">👁️ Ver diseño</button>` : ""}
-            ${d.fileData ? `<button class="small-btn" id="download-design-${escapeAttr(o.docId)}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</button>` : ""}
-            ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
-            <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
-          </div>
-        </div>
-        <div class="order-card-body">
-          <div class="order-items-block">
-            ${d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente" style="width:100%;max-width:260px;border-radius:10px;border:1px solid var(--color-border)">` : ""}
-            <div class="order-totals">
-              <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
-              ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
-              ${d.fileTooLargeToEmbed ? `<p class="help-text">El archivo original era demasiado grande para adjuntarlo aquí: pide al cliente que te lo reenvíe por WhatsApp o email.</p>` : ""}
-            </div>
-          </div>
-          <div class="order-customer">
-            <div class="order-customer-name">${escapeHtml(c.name || "-")}</div>
-            <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
-            ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
             ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
           </div>
         </div>
@@ -837,27 +797,39 @@ ${bodyHtml}
   function albaranWhatsAppText(o) {
     const c = o.customer || {};
     const s = o.shipping || {};
+    const d = o.design || {};
+    const design = isDesignOrder(o);
     const shippingCost = Number(o.shippingCost) || 0;
     const itemsSum = (o.items || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
     const total = orderTotal(o);
     const lines = (o.items || [])
-      .map((it) => `- ${it.qty}x ${it.title} — ${formatPrice(it.price * it.qty)}`)
+      .map((it) => `▫️ ${it.qty}x ${it.title} — *${formatPrice(it.price * it.qty)}*`)
       .join("\n");
+    const address = [s.address, [s.postalCode, s.city].filter(Boolean).join(" "), s.province]
+      .filter(Boolean)
+      .join(", ");
+
     return [
-      `📄 *Albarán de entrega · Pedido ${o.orderCode || o.docId}*`,
+      design
+        ? `🎨 *Presupuesto · ${DESIGN_KINDS[o.kind] || "Diseño personalizado"}*`
+        : `📄 *Albarán de entrega*`,
+      `Pedido ${o.orderCode || o.docId}`,
       "",
-      "Productos:",
+      design ? `🧩 Material: ${(o.material && o.material.label) || "-"}` : null,
+      design && d.fileName ? `📎 Archivo: ${d.fileName}` : null,
+      design ? "" : null,
+      "🛒 *Detalle:*",
       lines,
-      "",
-      `Productos: ${formatPrice(itemsSum)}`,
+      "―――――――――――――",
+      `Subtotal: ${formatPrice(itemsSum)}`,
       shippingCost > 0 ? `Envío: ${formatPrice(shippingCost)}` : null,
-      `Total: ${formatPrice(total)}`,
+      `*Total: ${formatPrice(total)}*`,
       "",
-      "Enviar a:",
-      c.name || "",
-      `${s.address || ""}, ${s.postalCode || ""} ${s.city || ""}${s.province ? " (" + s.province + ")" : ""}`,
+      address ? "📍 *Enviar a:*" : null,
+      address ? c.name || "" : null,
+      address || null,
       "",
-      "Gracias por su compra — HezurAdar",
+      "Gracias por confiar en HezurAdar 🦴",
     ]
       .filter((l) => l !== null)
       .join("\n");
@@ -1210,6 +1182,15 @@ ${bodyHtml}
         notes: $("o-notes").value.trim(),
       },
     };
+
+    // Las solicitudes de diseño (placas, púas...) guardan además el material y el diseño
+    // subido por el cliente: al editarlas (p.ej. para poner precio y envío) hay que
+    // conservar esos campos, que el formulario de pedido normal no gestiona.
+    if (existing && isDesignOrder(existing)) {
+      order.kind = existing.kind;
+      order.design = existing.design;
+      order.material = existing.material;
+    }
 
     setOrderFormStatus("info", "Guardando...");
     $("order-save").disabled = true;

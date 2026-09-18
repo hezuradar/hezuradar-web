@@ -99,7 +99,7 @@
 
       <div class="card-panel">
         <h3>4. Tus datos</h3>
-        <p class="help-text"><b>Recuerda:</b> el pedido mínimo de púas personalizadas es de 20 unidades. Indica la cantidad que necesitas en las notas.</p>
+        <p class="help-text"><b>Recuerda:</b> el pedido mínimo de púas personalizadas es de 20 unidades; si quieres más, indícalo abajo.</p>
         <div class="field-row">
           <div class="field">
             <label>Nombre y apellidos *</label>
@@ -110,13 +110,19 @@
             <input id="d-phone" placeholder="+34 600 000 000">
           </div>
         </div>
-        <div class="field">
-          <label>Email (opcional)</label>
-          <input id="d-email" type="email" placeholder="tucorreo@ejemplo.com">
+        <div class="field-row">
+          <div class="field">
+            <label>Email (opcional)</label>
+            <input id="d-email" type="email" placeholder="tucorreo@ejemplo.com">
+          </div>
+          <div class="field">
+            <label>Cantidad de púas *</label>
+            <input id="d-qty" type="number" min="20" step="1" value="20">
+          </div>
         </div>
         <div class="field">
           <label>Notas (opcional)</label>
-          <textarea id="d-notes" placeholder="Cantidad, plazo, acabado que buscas..."></textarea>
+          <textarea id="d-notes" placeholder="Plazo, acabado que buscas..."></textarea>
         </div>
         <button class="btn btn-primary" id="send-request-btn" type="button" style="width:100%">Enviar solicitud</button>
         <div id="request-status"></div>
@@ -139,7 +145,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/js/firebase-config.js?v=20260915q"></script>
 <script src="assets/js/firebase-orders.js?v=20260915q"></script>
-<script src="assets/js/disenador-puas-config.js?v=20260916c"></script>
-<script src="assets/js/disenador.js?v=20260916c"></script>
+<script src="assets/js/disenador-puas-config.js?v=20260918a"></script>
+<script src="assets/js/disenador.js?v=20260918a"></script>
 </body>
 </html>

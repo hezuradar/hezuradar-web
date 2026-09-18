@@ -28,6 +28,7 @@
   const PLATE_SHAPE = DESIGNER_CONFIG.shape || "rect";
   const PLATE_W_MM = DESIGNER_CONFIG.plateWidthMm || 32;
   const PLATE_H_MM = DESIGNER_CONFIG.plateHeightMm || 32;
+  const MIN_QTY = DESIGNER_CONFIG.minQty || 1;
   const PLATE_W_PX = PLATE_W_MM * PX_PER_MM;
   const PLATE_H_PX = PLATE_H_MM * PX_PER_MM;
   const FIT_BASIS_MM = Math.min(PLATE_W_MM, PLATE_H_MM); // lado más corto: referencia para el ajuste automático
@@ -712,16 +713,30 @@
     ctx.closePath();
   }
 
-  // Contorno aproximado de una púa: más ancha y redondeada en la parte de arriba, remate en
-  // punta redondeada abajo (como en la foto del material). w y h son el ancho y el alto del
+  // Silueta real de la púa, trazada a partir de la foto del material (fotosHuesos/Pua.JPG):
+  // puntos normalizados (0..1) del contorno, en orden. w y h son el ancho y el alto del
   // rectángulo que la contiene.
+  const PICK_SILHOUETTE = [
+    [0.5323, 0.0229], [0.8403, 0.0857], [0.9507, 0.1714], [0.9891, 0.2571],
+    [0.9971, 0.3429], [0.9831, 0.4286], [0.9528, 0.5143], [0.9116, 0.6],
+    [0.8581, 0.6857], [0.7924, 0.7714], [0.7147, 0.8571], [0.6091, 0.9429],
+    [0.4776, 0.9771], [0.3457, 0.9143], [0.2379, 0.8286], [0.1533, 0.7429],
+    [0.0861, 0.6571], [0.0339, 0.5714], [0.0375, 0.4857], [0.043, 0.4],
+    [0.0635, 0.3143], [0.0968, 0.2286], [0.1023, 0.1429], [0.196, 0.0571],
+  ];
+
   function pickShapePath(ctx, x, y, w, h) {
-    const cx = x + w / 2;
+    const pts = PICK_SILHOUETTE.map(([nx, ny]) => [x + nx * w, y + ny * h]);
+    const n = pts.length;
+    const mid = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    let cur = mid(pts[0], pts[1]);
     ctx.beginPath();
-    ctx.moveTo(cx, y + h);
-    ctx.bezierCurveTo(x + w * 0.02, y + h * 0.78, x, y + h * 0.42, x + w * 0.14, y + h * 0.2);
-    ctx.bezierCurveTo(x + w * 0.28, y - h * 0.02, x + w * 0.72, y - h * 0.02, x + w * 0.86, y + h * 0.2);
-    ctx.bezierCurveTo(x + w, y + h * 0.42, x + w * 0.98, y + h * 0.78, cx, y + h);
+    ctx.moveTo(cur[0], cur[1]);
+    for (let i = 0; i < n; i++) {
+      const ctrl = pts[i];
+      const next = mid(pts[i], pts[(i + 1) % n]);
+      ctx.quadraticCurveTo(ctrl[0], ctrl[1], next[0], next[1]);
+    }
     ctx.closePath();
   }
 
@@ -758,9 +773,15 @@
     const phone = $("d-phone").value.trim();
     const email = $("d-email").value.trim();
     const notes = $("d-notes").value.trim();
+    const qtyInput = $("d-qty");
+    const qty = qtyInput ? parseInt(qtyInput.value, 10) || 0 : MIN_QTY;
 
     if (!name || !phone) {
       setRequestStatus("err", "Rellena tu nombre y teléfono.");
+      return;
+    }
+    if (qtyInput && qty < MIN_QTY) {
+      setRequestStatus("err", `El pedido mínimo es de ${MIN_QTY} unidades.`);
       return;
     }
     if (!state.logoCanvas) {
@@ -790,7 +811,7 @@
       status: "pendiente",
       customer: { name, phone, email },
       shipping: { address: "", postalCode: "", city: "", province: "", notes },
-      items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty: 1, price: 0 }],
+      items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty, price: 0 }],
       subtotal: 0,
       material: { id: material.id, label: material.label },
       design: {
@@ -840,6 +861,7 @@
       "",
       `Material: ${order.material.label}`,
       order.design.fileName ? `Archivo: ${order.design.fileName}` : null,
+      order.items && order.items[0] && order.items[0].qty > 1 ? `Cantidad: ${order.items[0].qty} unidades` : null,
       "",
       `Nombre: ${c.name}`,
       `Teléfono: ${c.phone}`,
