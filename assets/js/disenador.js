@@ -798,16 +798,27 @@
     return `HA-DIS-${ymd}-${rand}`;
   }
 
+  const PAYMENT_LABELS = { paypal: "PayPal", bizum: "Bizum", otros: "Otros" };
+
   async function sendRequest() {
     const name = $("d-name").value.trim();
     const phone = $("d-phone").value.trim();
     const email = $("d-email").value.trim();
+    const address = $("d-address").value.trim();
+    const postalCode = $("d-postal").value.trim();
+    const city = $("d-city").value.trim();
+    const province = $("d-province").value.trim();
     const notes = $("d-notes").value.trim();
+    const paymentMethod = (document.querySelector('input[name="d-payment"]:checked') || {}).value || "";
     const qtyInput = $("d-qty");
     const qty = qtyInput ? parseInt(qtyInput.value, 10) || 0 : MIN_QTY;
 
-    if (!name || !phone) {
-      setRequestStatus("err", "Rellena tu nombre y teléfono.");
+    if (!name || !phone || !address || !postalCode || !city) {
+      setRequestStatus("err", "Rellena los campos obligatorios (*).");
+      return;
+    }
+    if (!paymentMethod) {
+      setRequestStatus("err", "Elige una forma de pago.");
       return;
     }
     if (qtyInput && qty < MIN_QTY) {
@@ -840,7 +851,8 @@
       createdAt: new Date().toISOString(),
       status: "pendiente",
       customer: { name, phone, email },
-      shipping: { address: "", postalCode: "", city: "", province: "", notes },
+      shipping: { address, postalCode, city, province, notes },
+      paymentMethod,
       items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty, price: PRICE_PER_UNIT }],
       subtotal: qty * PRICE_PER_UNIT,
       material: { id: material.id, label: material.label },
@@ -886,6 +898,7 @@
 
   function buildWhatsAppMessage(order) {
     const c = order.customer;
+    const s = order.shipping;
     return [
       `🎨 *Solicitud de ${ITEM_LABEL.toLowerCase()} ${order.orderCode}*`,
       "",
@@ -894,10 +907,14 @@
       order.items && order.items[0] && order.items[0].qty > 1 ? `Cantidad: ${order.items[0].qty} unidades` : null,
       order.subtotal > 0 ? `Total estimado: ${formatPrice(order.subtotal)}` : null,
       "",
+      `Forma de pago: ${PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-"}`,
+      "",
+      "Datos de envío:",
       `Nombre: ${c.name}`,
       `Teléfono: ${c.phone}`,
       c.email ? `Email: ${c.email}` : null,
-      order.shipping.notes ? `Notas: ${order.shipping.notes}` : null,
+      `Dirección: ${s.address}, ${s.postalCode} ${s.city}${s.province ? " (" + s.province + ")" : ""}`,
+      s.notes ? `Notas: ${s.notes}` : null,
       "",
       "Adjunto también una captura del diseño ajustado.",
     ]

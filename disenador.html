@@ -98,24 +98,59 @@
 
       <div class="card-panel">
         <h3>4. Tus datos</h3>
+        <div class="field">
+          <label>Nombre y apellidos *</label>
+          <input id="d-name" placeholder="Nombre completo">
+        </div>
         <div class="field-row">
-          <div class="field">
-            <label>Nombre y apellidos *</label>
-            <input id="d-name" placeholder="Nombre completo">
-          </div>
           <div class="field">
             <label>Teléfono *</label>
             <input id="d-phone" placeholder="+34 600 000 000">
           </div>
+          <div class="field">
+            <label>Email</label>
+            <input id="d-email" type="email" placeholder="tucorreo@ejemplo.com">
+          </div>
         </div>
         <div class="field">
-          <label>Email (opcional)</label>
-          <input id="d-email" type="email" placeholder="tucorreo@ejemplo.com">
+          <label>Dirección de envío *</label>
+          <input id="d-address" placeholder="Calle, número, piso">
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Código postal *</label>
+            <input id="d-postal" placeholder="20230">
+          </div>
+          <div class="field">
+            <label>Ciudad *</label>
+            <input id="d-city" placeholder="Legazpi">
+          </div>
         </div>
         <div class="field">
-          <label>Notas (opcional)</label>
-          <textarea id="d-notes" placeholder="Cantidad, plazo, acabado que buscas..."></textarea>
+          <label>Provincia</label>
+          <input id="d-province" placeholder="Gipuzkoa">
         </div>
+        <div class="field">
+          <label>Notas del pedido (opcional)</label>
+          <textarea id="d-notes" placeholder="Plazo, acabado que buscas..."></textarea>
+        </div>
+
+        <h4 class="checkout-section-title">Forma de pago *</h4>
+        <div class="payment-methods">
+          <label class="payment-method-btn">
+            <input type="radio" name="d-payment" value="paypal">
+            <img src="images/site/payment/paypal.png" alt="PayPal">
+          </label>
+          <label class="payment-method-btn">
+            <input type="radio" name="d-payment" value="bizum">
+            <img src="images/site/payment/bizum.png" alt="Bizum">
+          </label>
+          <label class="payment-method-btn">
+            <input type="radio" name="d-payment" value="otros">
+            <img src="images/site/payment/otros.png" alt="Otros">
+          </label>
+        </div>
+
         <button class="btn btn-primary" id="send-request-btn" type="button" style="width:100%">Enviar solicitud</button>
         <div id="request-status"></div>
       </div>
@@ -137,6 +172,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="assets/js/firebase-config.js?v=20260915q"></script>
 <script src="assets/js/firebase-orders.js?v=20260915q"></script>
-<script src="assets/js/disenador.js?v=20260918d"></script>
+<script src="assets/js/disenador.js?v=20260918e"></script>
 </body>
 </html>
