@@ -875,5 +875,20 @@
       "images/products/7995a685-3dca-4cec-a824-bcf89a6e2d40_1789651615405_0.jpg",
       "images/products/7995a685-3dca-4cec-a824-bcf89a6e2d40_1789651618438_1.jpg"
     ]
+  },
+  {
+    "id": "cff43c42-d4c1-49bf-843c-282906bfb087",
+    "title": "Madre Perla Gold",
+    "description": "Madre Perla dorada \n\n38× 25× 2,5 mm",
+    "price": 8,
+    "sku": "RR0001",
+    "category": "Otros",
+    "subcategory": null,
+    "stock": 5,
+    "discountPercent": null,
+    "images": [
+      "images/products/cff43c42-d4c1-49bf-843c-282906bfb087_1789715323311_0.jpeg",
+      "images/products/cff43c42-d4c1-49bf-843c-282906bfb087_1789715326192_1.jpeg"
+    ]
   }
 ]
