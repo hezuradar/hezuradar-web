@@ -109,12 +109,12 @@
     });
     const topViewed = Object.entries(viewTotals)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
+      .slice(0, 8);
     const topViewedTitles = topViewed.length ? topViewed.map(([id]) => viewTitles[id] || id) : ["Sin datos"];
     upsertChart("chart-top-viewed", {
       type: "bar",
       data: {
-        labels: topViewedTitles.map(truncateLabel),
+        labels: topViewedTitles.map((t) => wrapLabel(t)),
         datasets: [
           {
             label: "Vistas",
@@ -127,13 +127,32 @@
     });
   }
 
-  // Los nombres de producto pueden ser largos y no caben en el eje de las gráficas de
-  // barras horizontales, sobre todo en móvil: se recortan para el eje y se muestran
-  // completos en el tooltip al tocar/pasar el ratón por encima.
-  function truncateLabel(str, max) {
-    max = max || 22;
-    if (!str || str.length <= max) return str;
-    return str.slice(0, max - 1) + "…";
+  // Los nombres de producto pueden ser largos y no caben en una sola línea del eje de
+  // las gráficas de barras horizontales: en vez de cortarlos, se parten en varias líneas
+  // (Chart.js admite un array de líneas por etiqueta) para que se lean completos.
+  function wrapLabel(str, maxLineLen, maxLines) {
+    maxLineLen = maxLineLen || 24;
+    maxLines = maxLines || 2;
+    if (!str) return str;
+    const words = str.split(" ");
+    const lines = [];
+    let current = "";
+    words.forEach((w) => {
+      const test = current ? current + " " + w : w;
+      if (test.length > maxLineLen && current) {
+        lines.push(current);
+        current = w;
+      } else {
+        current = test;
+      }
+    });
+    if (current) lines.push(current);
+    if (lines.length > maxLines) {
+      const shown = lines.slice(0, maxLines);
+      shown[maxLines - 1] = shown[maxLines - 1].replace(/.{3}$/, "") + "…";
+      return shown;
+    }
+    return lines;
   }
 
   function formatDayLabel(dateKey) {
@@ -235,12 +254,12 @@
       });
     const topSold = Object.entries(soldTotals)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
+      .slice(0, 8);
     const topSoldTitles = topSold.length ? topSold.map(([id]) => soldTitles[id] || id) : ["Sin datos"];
     upsertChart("chart-top-sold", {
       type: "bar",
       data: {
-        labels: topSoldTitles.map(truncateLabel),
+        labels: topSoldTitles.map((t) => wrapLabel(t)),
         datasets: [
           {
             label: "Unidades vendidas",
@@ -335,7 +354,7 @@
       },
       scales: {
         x: { beginAtZero: true, ticks: { precision: 0 } },
-        y: { ticks: { font: { size: 11 } } },
+        y: { ticks: { font: { size: 10 }, autoSkip: false } },
       },
     };
   }
