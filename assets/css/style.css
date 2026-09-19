@@ -543,7 +543,12 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
   .order-item-edit-row .oi-remove{margin-left:0;width:100%}
   .orders-toolbar{flex-direction:column;align-items:stretch}
   .orders-toolbar-actions{flex-direction:column;align-items:stretch}
-  .revenue-stat{min-width:0}
+  .revenue-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .revenue-stat{min-width:0;padding:12px 14px}
+  .revenue-stat b{font-size:1.2rem}
+  .stats-grid{gap:16px}
+  .chart-wrap{height:220px}
+  .chart-wrap-tall{height:280px}
   .order-card-head{flex-direction:column;align-items:stretch}
   .order-head-actions{justify-content:flex-start}
   #tab-orders .field input,#tab-orders .field select,#tab-orders .field textarea{font-size:16px}

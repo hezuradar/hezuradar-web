@@ -110,10 +110,11 @@
     const topViewed = Object.entries(viewTotals)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
+    const topViewedTitles = topViewed.length ? topViewed.map(([id]) => viewTitles[id] || id) : ["Sin datos"];
     upsertChart("chart-top-viewed", {
       type: "bar",
       data: {
-        labels: topViewed.length ? topViewed.map(([id]) => viewTitles[id] || id) : ["Sin datos"],
+        labels: topViewedTitles.map(truncateLabel),
         datasets: [
           {
             label: "Vistas",
@@ -122,8 +123,17 @@
           },
         ],
       },
-      options: baseHBarOptions(),
+      options: baseHBarOptions(topViewedTitles),
     });
+  }
+
+  // Los nombres de producto pueden ser largos y no caben en el eje de las gráficas de
+  // barras horizontales, sobre todo en móvil: se recortan para el eje y se muestran
+  // completos en el tooltip al tocar/pasar el ratón por encima.
+  function truncateLabel(str, max) {
+    max = max || 22;
+    if (!str || str.length <= max) return str;
+    return str.slice(0, max - 1) + "…";
   }
 
   function formatDayLabel(dateKey) {
@@ -226,10 +236,11 @@
     const topSold = Object.entries(soldTotals)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10);
+    const topSoldTitles = topSold.length ? topSold.map(([id]) => soldTitles[id] || id) : ["Sin datos"];
     upsertChart("chart-top-sold", {
       type: "bar",
       data: {
-        labels: topSold.length ? topSold.map(([id]) => soldTitles[id] || id) : ["Sin datos"],
+        labels: topSoldTitles.map(truncateLabel),
         datasets: [
           {
             label: "Unidades vendidas",
@@ -238,7 +249,7 @@
           },
         ],
       },
-      options: baseHBarOptions(),
+      options: baseHBarOptions(topSoldTitles),
     });
   }
 
@@ -311,13 +322,21 @@
     };
   }
 
-  function baseHBarOptions() {
+  function baseHBarOptions(fullTitles) {
     return {
       indexAxis: "y",
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: { x: { beginAtZero: true, ticks: { precision: 0 } } },
+      plugins: {
+        legend: { display: false },
+        tooltip: fullTitles
+          ? { callbacks: { title: (items) => (fullTitles[items[0].dataIndex] || "") } }
+          : {},
+      },
+      scales: {
+        x: { beginAtZero: true, ticks: { precision: 0 } },
+        y: { ticks: { font: { size: 11 } } },
+      },
     };
   }
 })();
