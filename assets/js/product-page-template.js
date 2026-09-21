@@ -231,7 +231,7 @@
       '<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20260915l"></script>\n' +
       '<script src="/assets/js/emailjs-notify.js?v=20260915l"></script>\n' +
-      '<script src="/assets/js/cart.js?v=20260921e"></script>\n' +
+      '<script src="/assets/js/cart.js?v=20260921f"></script>\n' +
       '<script src="/assets/js/product-page.js?v=20260921a" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
       "</body>\n" +
       "</html>\n"

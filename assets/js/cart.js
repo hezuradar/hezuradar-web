@@ -3,7 +3,7 @@
 
   const LS_CART = "ha_cart";
   const SHIPPING_COST = 5.5;
-  const SHIPPING_FREE_MAX_ITEMS = 2;
+  const SHIPPING_FREE_MAX_ITEMS = 1;
   let cart = loadCart();
   let view = "cart"; // 'cart' | 'checkout' | 'success'
   let lastOrder = null;
