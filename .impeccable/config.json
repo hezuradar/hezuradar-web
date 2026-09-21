@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "assets/css/style.css"
+        ],
+        "createdAt": "2026-09-21T09:02:18.050Z",
+        "reason": "Agent: pre-existing order-card status border-left is the documented Status Pill component in DESIGN.md ('la misma paleta reaparece como borde izquierdo de 4px'), not AI slop introduced this session"
+      },
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-09-21T09:02:23.958Z",
+        "reason": "Agent: DESIGN.md documents Inter as the deliberate 'Regla de un Solo Tipo' choice for this brand, pre-existing before this session"
+      }
+    ]
+  }
+}
