@@ -5,6 +5,8 @@
   "use strict";
 
   var SITE_URL = "https://hezuradar.com";
+  var STANDARD_SHIPPING_EUR = "5.50"; // Coincide con SHIPPING_COST en assets/js/cart.js
+  var RETURN_WINDOW_DAYS = 5;
 
   function slugify(str) {
     return String(str || "")
@@ -76,6 +78,17 @@
         price: effectivePrice(product).toFixed(2),
         availability: isOutOfStock(product) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
         itemCondition: "https://schema.org/NewCondition",
+        shippingDetails: {
+          "@type": "OfferShippingDetails",
+          shippingRate: { "@type": "MonetaryAmount", value: STANDARD_SHIPPING_EUR, currency: "EUR" },
+          shippingDestination: { "@type": "DefinedRegion", addressCountry: "ES" },
+        },
+        hasMerchantReturnPolicy: {
+          "@type": "MerchantReturnPolicy",
+          applicableCountry: "ES",
+          returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+          merchantReturnDays: RETURN_WINDOW_DAYS,
+        },
       },
     };
     return JSON.stringify(data, null, 2);
