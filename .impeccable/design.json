@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-21T00:00:00.000Z",
+  "title": "Design System: HezurAdar",
+  "extensions": {
+    "colorMeta": {
+      "taller-acero": { "role": "primary", "displayName": "Azul Acero de Taller", "canonical": "#4581B9", "tonalRamp": ["#152738", "#254664", "#366591", "#4984bb", "#76a2cc", "#a2c0dc", "#cfdeed", "#ecf2f8"] },
+      "taller-acero-profundo": { "role": "primary", "displayName": "Azul Acero de Taller — Profundo", "canonical": "#245F96", "tonalRamp": ["#0f273e", "#1b466f", "#2666a0", "#3585cf", "#67a3da", "#98c1e6", "#cadff2", "#eaf3fa"] },
+      "tinta-nocturna": { "role": "neutral", "displayName": "Tinta Nocturna", "canonical": "#1c2b36", "tonalRamp": ["#1a2832", "#2f485b", "#446883", "#5a88aa", "#83a5bf", "#abc2d3", "#d3dfe8", "#eef3f6"] },
+      "grafito": { "role": "neutral", "displayName": "Grafito", "canonical": "#33424c", "tonalRamp": ["#1f282e", "#374852", "#506777", "#69879b", "#8ea4b3", "#b3c2cc", "#d7dfe4", "#f0f3f5"] },
+      "peltre-apagado": { "role": "neutral", "displayName": "Peltre Apagado", "canonical": "#6c7d89", "tonalRamp": ["#22272b", "#3d464d", "#58656f", "#738591", "#95a3ac", "#b8c1c7", "#dadfe2", "#f1f3f4"] },
+      "niebla-taller": { "role": "neutral", "displayName": "Niebla de Taller", "canonical": "#e1e8ed", "tonalRamp": ["#1d2830", "#344856", "#4b687c", "#6387a1", "#89a5b8", "#afc2cf", "#d6dfe6", "#eff3f5"] },
+      "lienzo": { "role": "neutral", "displayName": "Lienzo", "canonical": "#f5f7f9", "tonalRamp": ["#1d2630", "#344556", "#4b637c", "#6382a1", "#89a1b8", "#afbfcf", "#d6dee6", "#eff2f5"] },
+      "blanco-ficha": { "role": "neutral", "displayName": "Blanco Ficha", "canonical": "#ffffff", "tonalRamp": ["#262626", "#454545", "#636363", "#828282", "#a1a1a1", "#bfbfbf", "#dedede", "#f2f2f2"] },
+      "verde-whatsapp": { "role": "tertiary", "displayName": "Verde WhatsApp (marca ajena)", "canonical": "#25D366", "tonalRamp": ["#0b411f", "#157539", "#1ea952", "#2ada6c", "#5ee390", "#93ecb4", "#c7f5d8", "#e9fbf0"] },
+      "exito": { "role": "semantic", "displayName": "Éxito", "canonical": "#1c7a3f", "tonalRamp": ["#0e3e20", "#1a703a", "#25a254", "#34d06e", "#66dc92", "#97e7b5", "#c9f3d9", "#eafaf0"] },
+      "alerta": { "role": "semantic", "displayName": "Alerta", "canonical": "#b3261e", "tonalRamp": ["#420e0b", "#761914", "#aa241d", "#db3329", "#e4655d", "#ed9792", "#f5c9c6", "#fbeae9"] },
+      "aviso-pendiente": { "role": "semantic", "displayName": "Aviso Pendiente", "canonical": "#8a6100", "tonalRamp": ["#4c3600", "#8a6100", "#c78c00", "#ffb505", "#ffc742", "#ffd980", "#ffebbd", "#fff7e5"] },
+      "enviado": { "role": "semantic", "displayName": "Enviado", "canonical": "#4a3592", "tonalRamp": ["#1c1438", "#332565", "#4a3592", "#6248bc", "#8875cd", "#afa1dd", "#d5ceed", "#efecf8"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Titular del hero de portada. Único uso a este tamaño en todo el sitio." },
+      "headline": { "displayName": "Headline", "purpose": "Títulos de sección e introducciones de página (p. ej. las páginas del diseñador)." },
+      "title": { "displayName": "Title", "purpose": "Títulos de tarjeta de producto, paneles y encabezados de modal." },
+      "body": { "displayName": "Body", "purpose": "Texto de descripción y prosa larga (Quiénes somos, descripción de producto)." },
+      "label": { "displayName": "Label", "purpose": "Etiquetas cortas: categoría sobre imagen, pills de estado, títulos de sección de checkout." }
+    },
+    "shadows": [
+      { "name": "reposo-elevado", "value": "0 2px 10px rgba(20,40,60,.08)", "purpose": "Elevación mínima para superficies ya destacadas por posición (cabecera, panel de PIN, tarjetas de estadísticas)." },
+      { "name": "flotante", "value": "0 12px 40px rgba(20,40,60,.18)", "purpose": "Hover de tarjeta de producto, modales y cajón del carrito — reservada a lo que literalmente flota sobre el resto del contenido." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(.23,1,.32,1)", "purpose": "Firma táctil del sistema: tap-scale en :active de botones, chips, tabs y swatches; también hover-lift de tarjetas." },
+      { "name": "ease-in", "value": "cubic-bezier(.4,0,1,1)", "purpose": "Salida rápida de modales y cajón del carrito al cerrarse (clase .closing)." },
+      { "name": "ease-in-out", "value": "cubic-bezier(.77,0,.175,1)", "purpose": "Transiciones simétricas de propósito general." },
+      { "name": "ease-drawer", "value": "cubic-bezier(.32,.72,0,1)", "purpose": "Deslizamiento de entrada del cajón del carrito desde el borde derecho." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "480px" },
+      { "name": "md", "value": "600px" },
+      { "name": "lg", "value": "760px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botón primario",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Acción principal (añadir al carrito, enviar solicitud). Pastilla completa, feedback táctil en :active.",
+      "html": "<button class=\"ds-btn ds-btn-primary\">Añadir</button>",
+      "css": ".ds-btn{border-radius:999px;padding:9px 14px;font-size:.85rem;font-weight:700;border:1px solid transparent;transition:background .15s ease,border-color .15s ease,color .15s ease,transform 120ms cubic-bezier(.23,1,.32,1);} .ds-btn:active{transform:scale(.97)} .ds-btn-primary{background:#4581B9;color:#fff} .ds-btn-primary:hover{background:#245F96} .ds-btn-primary:focus-visible{outline:2px solid #245F96;outline-offset:2px}"
+    },
+    {
+      "name": "Botón outline",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Acción secundaria (quitar diseño, centrar y ajustar, tamaño original).",
+      "html": "<button class=\"ds-btn ds-btn-outline\">Quitar diseño</button>",
+      "css": ".ds-btn{border-radius:999px;padding:9px 14px;font-size:.85rem;font-weight:700;border:1px solid transparent;transition:background .15s ease,border-color .15s ease,color .15s ease,transform 120ms cubic-bezier(.23,1,.32,1);} .ds-btn:active{transform:scale(.97)} .ds-btn-outline{background:#fff;border-color:#e1e8ed;color:#33424c} .ds-btn-outline:hover{border-color:#4581B9;color:#4581B9} .ds-btn-outline:focus-visible{outline:2px solid #4581B9;outline-offset:2px}"
+    },
+    {
+      "name": "Tarjeta de producto",
+      "kind": "card",
+      "refersTo": "card-product",
+      "description": "Unidad del catálogo: imagen 1:1, categoría en pastilla superpuesta, título, precio, acciones.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card-img\"><span class=\"ds-card-cat\">Accesorios</span></div><div class=\"ds-card-body\"><div class=\"ds-card-title\">5 Púas de Cuerno de Buey</div><div class=\"ds-card-price\">10,00 €</div></div></div>",
+      "css": ".ds-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(20,40,60,.08);border:1px solid #e1e8ed;transition:transform 180ms cubic-bezier(.23,1,.32,1),box-shadow 180ms cubic-bezier(.23,1,.32,1);} .ds-card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(20,40,60,.18)} .ds-card-img{aspect-ratio:1/1;background:#eef2f5;position:relative} .ds-card-cat{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);padding:3px 10px;border-radius:999px;font-size:.68rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:#245F96} .ds-card-body{padding:14px 14px 16px} .ds-card-title{font-size:.95rem;font-weight:600;color:#1c2b36;line-height:1.35;margin-bottom:8px} .ds-card-price{font-size:1.15rem;font-weight:700;color:#245F96}"
+    },
+    {
+      "name": "Chip de filtro",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Filtro de categoría; el estado activo invierte a fondo azul.",
+      "html": "<button class=\"ds-chip ds-chip-active\">Cuerno</button> <button class=\"ds-chip\">Hueso</button>",
+      "css": ".ds-chip{padding:8px 16px;border-radius:999px;border:1px solid #e1e8ed;background:#fff;font-size:.88rem;font-weight:600;color:#33424c;transition:background .15s ease,border-color .15s ease,color .15s ease,transform 120ms cubic-bezier(.23,1,.32,1);} .ds-chip:hover{border-color:#4581B9} .ds-chip:active{transform:scale(.96)} .ds-chip-active{background:#4581B9;border-color:#4581B9;color:#fff} .ds-chip:focus-visible{outline:2px solid #4581B9;outline-offset:2px}"
+    },
+    {
+      "name": "Campo de formulario",
+      "kind": "input",
+      "refersTo": "field-input",
+      "description": "Campo de texto estándar en formularios de checkout, admin y diseñador. El foco por defecto del navegador queda sin sustituir hoy — ver Do's and Don'ts.",
+      "html": "<label class=\"ds-field\"><span class=\"ds-field-label\">Nombre y apellidos *</span><input class=\"ds-field-input\" placeholder=\"Nombre completo\"></label>",
+      "css": ".ds-field{display:flex;flex-direction:column;gap:6px} .ds-field-label{font-size:.82rem;font-weight:700;color:#1c2b36} .ds-field-input{padding:10px 12px;border-radius:8px;border:1px solid #e1e8ed;font-size:1rem;background:#fff}"
+    },
+    {
+      "name": "Navegación de cabecera",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Cabecera sticky con enlaces en pastilla translúcida e iconos circulares.",
+      "html": "<nav class=\"ds-nav\"><a class=\"ds-pill-btn\" href=\"#\">Personaliza tu placa</a><button class=\"ds-icon-btn\" aria-label=\"Cesta\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"9\" cy=\"21\" r=\"1\"/><circle cx=\"20\" cy=\"21\" r=\"1\"/><path d=\"M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6\"/></svg></button></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:10px;background:#4581B9;padding:14px 20px} .ds-pill-btn{border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff;padding:8px 16px;border-radius:999px;font-size:.9rem;font-weight:600;transition:background .15s ease,transform 120ms cubic-bezier(.23,1,.32,1);} .ds-pill-btn:hover{background:rgba(255,255,255,.15)} .ds-icon-btn{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;transition:transform 120ms cubic-bezier(.23,1,.32,1),background .15s ease;} .ds-icon-btn:active{transform:scale(.96)}"
+    },
+    {
+      "name": "Pill de estado de pedido",
+      "kind": "custom",
+      "refersTo": "status-pill",
+      "description": "Componente de firma: codifica en color el estado de un pedido (pendiente/confirmado/enviado/entregado/cancelado) en el panel de administración.",
+      "html": "<span class=\"ds-status-pill ds-status-pendiente\">Pendiente</span> <span class=\"ds-status-pill ds-status-confirmado\">Confirmado</span> <span class=\"ds-status-pill ds-status-enviado\">Enviado</span> <span class=\"ds-status-pill ds-status-entregado\">Entregado</span>",
+      "css": ".ds-status-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;} .ds-status-pendiente{background:#fdf1d9;color:#8a6100} .ds-status-confirmado{background:#e3edf7;color:#245F96} .ds-status-enviado{background:#ece6fa;color:#4a3592} .ds-status-entregado{background:#e0f2e6;color:#1c7a3f}"
+    },
+    {
+      "name": "Selector de forma de pago",
+      "kind": "custom",
+      "refersTo": "payment-method-btn",
+      "description": "Componente de firma: tarjeta que envuelve un radio nativo oculto; el estado seleccionado se resuelve con :has(input:checked).",
+      "html": "<label class=\"ds-payment-btn ds-payment-selected\"><input type=\"radio\" name=\"ds-payment\" checked><img src=\"https://dummyimage.com/60x26/ffffff/33424c&text=PayPal\" alt=\"PayPal\"></label> <label class=\"ds-payment-btn\"><input type=\"radio\" name=\"ds-payment\"><img src=\"https://dummyimage.com/60x26/ffffff/33424c&text=Bizum\" alt=\"Bizum\"></label>",
+      "css": ".ds-payment-btn{position:relative;display:flex;align-items:center;justify-content:center;border:2px solid #e1e8ed;border-radius:12px;padding:14px 10px;background:#fff;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform 120ms cubic-bezier(.23,1,.32,1);} .ds-payment-btn:hover{border-color:#4581B9} .ds-payment-btn:active{transform:scale(.97)} .ds-payment-btn img{height:26px;width:auto;display:block} .ds-payment-btn input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none} .ds-payment-btn:has(input:checked),.ds-payment-selected{border-color:#245F96;box-shadow:0 0 0 3px rgba(69,129,185,.18);background:#f3f8fc}"
+    }
+  ],
+  "narrative": {
+    "northStar": "El Atelier",
+    "overview": "HezurAdar vende materia prima real —hueso, cuerno, madre perla— a luthiers que trabajan con precisión. La interfaz elegida para ello no imita el taller: es el catálogo de un atelier de confianza, un mostrador limpio y bien fichado que deja que el material (fotografiado, no ilustrado) sea lo único con textura. El azul de acero, las tarjetas blancas y las esquinas en pastilla no buscan calidez rústica; buscan la seriedad de una ficha técnica bien hecha, con un punto de calidez que evita la frialdad clínica. Todo el sistema comparte un mismo gesto de interacción: casi cualquier control activo (botón, chip, tab, swatch) responde con un scale(.96–.97) breve al pulsarlo. Es la firma táctil del sistema — confirmación inmediata, nunca decorativa.",
+    "keyCharacteristics": [
+      "Cálido pero contenido: color y movimiento discretos, nunca vistosos.",
+      "Capas tonales antes que sombra: la profundidad se lee por diferencia de color de superficie, no por decoración.",
+      "Un único gesto táctil (tap-scale) repetido en todo el sistema en vez de una librería de microinteracciones distintas.",
+      "Fotografía real del material como único elemento con textura; todo lo demás es plano y geométrico."
+    ],
+    "rules": [
+      { "name": "La Regla del Verde Ajeno", "body": "#25D366 (verde WhatsApp) es un color de marca de terceros, no un acento propio del sistema. Se usa únicamente en el botón flotante de WhatsApp y en .btn-whatsapp; nunca se adopta como color de estado o de acento general.", "section": "colors" },
+      { "name": "La Regla del Doble Rojo (deuda observada)", "body": "El sistema usa dos rojos distintos para semántica negativa: #b3261e (errores, cancelado, eliminar) y #c0392b (descuento, sin stock). Cualquier componente nuevo debe elegir uno de los dos existentes; una limpieza futura debería unificarlos.", "section": "colors" },
+      { "name": "La Regla de un Solo Tipo", "body": "Ninguna familia secundaria, ni siquiera monoespaciada para SKU o precios: todo es Inter con variación de peso y tamaño.", "section": "typography" },
+      { "name": "La Regla de la Sombra Ganada", "body": "Una superficie nueva no lleva --shadow-lg por defecto; se gana al flotar sobre el resto del contenido (modal, drawer) o al responder a una interacción (hover de tarjeta). Todo lo demás se apoya en el contraste Lienzo/Blanco Ficha.", "section": "elevation" },
+      { "name": "La Regla Pastilla-o-Panel", "body": "Si el elemento es algo que se pulsa para actuar o filtrar, es pastilla (999px). Si el elemento es algo que contiene contenido, es panel de 12px (o 16–18px si flota). Nada a medio camino.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do usar la diferencia de color Lienzo/Blanco Ficha como primer recurso de profundidad antes de recurrir a --shadow o --shadow-lg.",
+      "Do dar feedback táctil con scale(.96–.97) en :active a cualquier control nuevo, usando --ease-out — es la firma de interacción de todo el sistema.",
+      "Do respetar prefers-reduced-motion: el sistema ya pausa el carrusel del hero y desactiva los transform de hover/entrada bajo esa media query; cualquier animación nueva debe registrarse ahí también.",
+      "Do reservar la pastilla completa (999px) para controles de acción/filtro y el panel de 12px+ para contenedores de contenido."
+    ],
+    "donts": [
+      "Don't introducir texturas de madera, tipografía manuscrita o iconografía \"hecho a mano\" — es la anti-referencia confirmada de \"El Atelier\".",
+      "Don't añadir un tercer rojo de estado. Elige #b3261e o #c0392b según el patrón más cercano ya existente.",
+      "Don't usar #25D366 (verde WhatsApp) fuera del botón flotante y .btn-whatsapp; es un color de marca ajeno, no un acento del sistema.",
+      "Don't dar a un campo de formulario nuevo un tratamiento de foco distinto al del resto (ninguno, salvo el buscador) sin decidir explícitamente cerrar esa brecha de accesibilidad en todos los campos a la vez."
+    ]
+  }
+}
