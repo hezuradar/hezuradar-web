@@ -728,8 +728,16 @@
     .albaran-table tfoot td{border-bottom:none;padding-top:8px}
     .albaran-total-row td{font-weight:800;font-size:14.5px;border-top:2px solid #245F96;padding-top:10px}
     .albaran-footer{margin-top:24px;font-size:11.5px;color:#777;text-align:center}
+    .albaran-payment-note{margin-top:14px;padding:10px 12px;border:1px solid #245F96;border-radius:6px;background:#eaf2fb;font-size:12.5px;color:#1c2b36}
     @media print{ .albaran{margin-bottom:0} }
   `;
+
+  function paymentInstructions(method) {
+    const CONFIRM = "Te enviaremos la confirmación por WhatsApp en breve.";
+    if (method === "bizum") return `Realiza el Bizum al número 653713428. ${CONFIRM}`;
+    if (method === "paypal") return `Envía el pago de PayPal a hezuradar@gmail.com como familiar o amigo. ${CONFIRM}`;
+    return null;
+  }
 
   function albaranHtml(o) {
     const c = o.customer || {};
@@ -762,6 +770,7 @@
         ${o.paymentMethod ? `<div>Forma de pago: ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
         ${s.notes ? `<div class="albaran-notes">Notas: ${escapeHtml(s.notes)}</div>` : ""}
       </div>
+      ${paymentInstructions(o.paymentMethod) ? `<div class="albaran-payment-note">${escapeHtml(paymentInstructions(o.paymentMethod))}</div>` : ""}
       <table class="albaran-table">
         <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th></tr></thead>
         <tbody>${rows}</tbody>
@@ -829,6 +838,8 @@ ${bodyHtml}
       shippingCost > 0 ? `Envío: ${formatPrice(shippingCost)}` : null,
       `*Total: ${formatPrice(total)}*`,
       "",
+      paymentInstructions(o.paymentMethod) ? `💳 ${paymentInstructions(o.paymentMethod)}` : null,
+      paymentInstructions(o.paymentMethod) ? "" : null,
       address ? "📍 *Enviar a:*" : null,
       address ? c.name || "" : null,
       address || null,

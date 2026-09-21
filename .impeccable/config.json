@@ -26,6 +26,15 @@
         ],
         "createdAt": "2026-09-21T09:43:54.415Z",
         "reason": "hero full-bleed background montage (hero-montage inset:0) is intentional edge-to-edge hero banner design; actual text (.hero-copy) has 28px padding, not flush to edge"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "arial",
+        "files": [
+          "assets/js/admin-orders.js"
+        ],
+        "createdAt": "2026-09-21T17:52:20.343Z",
+        "reason": "print-only windows (albaran, etiquetas de envio) intentionally use a system font instead of the site's web font, standard practice for printed documents across browsers/printers"
       }
     ]
   }
