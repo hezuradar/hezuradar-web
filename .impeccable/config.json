@@ -17,6 +17,15 @@
         "value": "inter",
         "createdAt": "2026-09-21T09:02:23.958Z",
         "reason": "Agent: DESIGN.md documents Inter as the deliberate 'Regla de un Solo Tipo' choice for this brand, pre-existing before this session"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          "index.html"
+        ],
+        "createdAt": "2026-09-21T09:43:54.415Z",
+        "reason": "hero full-bleed background montage (hero-montage inset:0) is intentional edge-to-edge hero banner design; actual text (.hero-copy) has 28px padding, not flush to edge"
       }
     ]
   }
