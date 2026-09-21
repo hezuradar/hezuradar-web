@@ -2,11 +2,11 @@
 name: HezurAdar
 description: Catálogo artesanal de hueso y cuerno natural para luthería, con herramientas de personalización a medida.
 colors:
-  taller-acero: "#4581B9"
+  taller-acero: "#4076AA"
   taller-acero-profundo: "#245F96"
   tinta-nocturna: "#1c2b36"
   grafito: "#33424c"
-  peltre-apagado: "#6c7d89"
+  peltre-apagado: "#62727d"
   niebla-taller: "#e1e8ed"
   lienzo: "#f5f7f9"
   blanco-ficha: "#ffffff"
@@ -20,6 +20,7 @@ colors:
   aviso-pendiente-superficie: "#fdf1d9"
   enviado: "#4a3592"
   enviado-superficie: "#ece6fa"
+  texto-pie: "#c9d4db"
 typography:
   display:
     fontFamily: "Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
@@ -112,16 +113,17 @@ Todo el sistema comparte un mismo gesto de interacción: casi cualquier control 
 Paleta corta y funcional: un azul de marca con su variante oscura, una escala de neutros fríos, y colores semánticos reservados casi en exclusiva a los paneles de administración de pedidos.
 
 ### Primary
-- **Azul Acero de Taller** (`#4581B9`): color de marca. Cabecera del sitio, botones primarios, bordes de foco, estado activo de chips y tabs.
+- **Azul Acero de Taller** (`#4076AA`): color de marca. Cabecera del sitio, botones primarios, bordes de foco, estado activo de chips y tabs. Ajustado en la auditoría técnica de 2026-09-21 desde `#4581B9` para cumplir contraste AA (4.5:1) como texto blanco sobre este fondo.
 - **Azul Acero de Taller — Profundo** (`#245F96`): hover de los elementos anteriores, precios (`.card-price`, `.modal-price`), texto de énfasis sobre fondo claro (categorías, títulos de sección de checkout).
 
 ### Neutral
 - **Tinta Nocturna** (`#1c2b36`): titulares (h1–h3), pie de página (fondo).
 - **Grafito** (`#33424c`): texto de cuerpo por defecto.
-- **Peltre Apagado** (`#6c7d89`): texto secundario/metadatos (precios tachados, fechas, ayudas, SKU).
+- **Peltre Apagado** (`#62727d`): texto secundario/metadatos (precios tachados, fechas, ayudas, SKU). Ajustado en la auditoría técnica de 2026-09-21 desde `#6c7d89` para cumplir contraste AA (4.5:1) sobre Blanco Ficha y Lienzo.
 - **Niebla de Taller** (`#e1e8ed`): bordes y separadores en toda la interfaz.
 - **Lienzo** (`#f5f7f9`): fondo de página; la capa "de suelo" sobre la que flotan las superficies blancas.
 - **Blanco Ficha** (`#ffffff`): superficie de tarjetas, paneles, modales y campos.
+- **Texto de Pie** (`#c9d4db`): único uso — texto del pie de página sobre fondo Tinta Nocturna (antes un literal sin token; tokenizado como `--color-footer-text` en la auditoría técnica de 2026-09-21).
 
 ### Named Rules
 **La Regla del Verde Ajeno.** `#25D366` (verde WhatsApp) es un color de marca de terceros, no un acento propio del sistema. Se usa únicamente en el botón flotante de WhatsApp y en `.btn-whatsapp`; nunca se adopta como color de estado o de acento general.
