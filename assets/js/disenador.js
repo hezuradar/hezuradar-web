@@ -70,6 +70,7 @@
     renderRulers();
     bindEvents();
     updateQtyTotal();
+    updateEmptyHintColor();
     drawPlate();
     if (window.pdfjsLib) {
       // El worker se sirve desde el propio dominio (no desde el CDN): un worker de otro origen
@@ -125,6 +126,7 @@
         $("material-swatches").querySelectorAll(".material-swatch").forEach((b) => b.classList.remove("selected"));
         btn.classList.add("selected");
         applyContrastColor();
+        updateEmptyHintColor();
         drawPlate();
       });
     });
@@ -386,6 +388,13 @@
     if (!state.logoCanvasRaw) return;
     const material = materialById(state.materialId);
     state.logoCanvas = recolor(state.logoCanvasRaw, material.contrast);
+  }
+
+  // El aviso "Sube un diseño..." se superpone directamente a la textura de la placa, así que
+  // necesita el mismo color de contraste por material que usan las líneas de medida (nunca un
+  // gris fijo: sobre materiales oscuros como el cuerno negro quedaría ilegible).
+  function updateEmptyHintColor() {
+    $("plate-empty-hint").style.color = materialById(state.materialId).contrast;
   }
 
   // Sustituye el color del dibujo por un color plano, conservando su forma (usa el canal alfa
