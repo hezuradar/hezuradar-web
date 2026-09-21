@@ -344,10 +344,10 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .payment-method-btn img{height:26px;width:auto;max-width:100%;display:block}
 .payment-method-btn input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
 .payment-method-btn:has(input:checked){
-  border-color:var(--color-primary-dark);box-shadow:0 0 0 3px rgba(69,129,185,.18);background:#f3f8fc;
+  border-color:var(--color-primary-dark);box-shadow:0 0 0 3px rgba(64,118,170,.18);background:#f3f8fc;
 }
 .payment-method-btn.selected{
-  border-color:var(--color-primary-dark);box-shadow:0 0 0 3px rgba(69,129,185,.18);background:#f3f8fc;
+  border-color:var(--color-primary-dark);box-shadow:0 0 0 3px rgba(64,118,170,.18);background:#f3f8fc;
 }
 
 /* Checkout as a centered modal on desktop */
