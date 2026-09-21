@@ -32,32 +32,28 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 /* Header */
 .site-header{
   position:sticky;top:0;z-index:40;
-  background:rgba(255,255,255,.82);
-  -webkit-backdrop-filter:saturate(180%) blur(20px);
-  backdrop-filter:saturate(180%) blur(20px);
-  color:var(--color-ink);
-  box-shadow:0 1px 0 rgba(20,40,60,.08);
+  background:var(--color-primary);
+  color:#fff;
+  box-shadow:0 1px 0 rgba(0,0,0,.08);
 }
 .site-header .container{display:flex;align-items:center;gap:14px;height:64px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.15rem;margin-right:auto}
-.brand img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#fff;border:1px solid var(--color-border)}
+.brand img{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#fff}
 .header-nav{display:flex;align-items:center;gap:10px}
 .header-links{display:flex;align-items:center;gap:10px}
 .header-icons{display:flex;align-items:center;gap:10px}
 .pill-btn{
-  border:1px solid var(--color-border);
-  background:transparent;color:var(--color-ink);
+  border:1px solid rgba(255,255,255,.55);
+  background:transparent;color:#fff;
   padding:8px 16px;border-radius:999px;font-size:.9rem;font-weight:600;
-  transition:background .15s ease,border-color .15s ease,color .15s ease;
+  transition:background .15s ease;
   white-space:nowrap;
 }
-.pill-btn:hover{background:var(--color-bg);border-color:var(--color-primary)}
+.pill-btn:hover{background:rgba(255,255,255,.15)}
 .icon-btn{
   width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
-  border:1px solid var(--color-border);background:transparent;color:var(--color-ink);
-  transition:border-color .15s ease,color .15s ease;
+  border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;
 }
-.icon-btn:hover{border-color:var(--color-primary);color:var(--color-primary)}
 
 /* Hero */
 .hero{position:relative;height:420px;overflow:hidden;background:var(--color-primary-dark)}
@@ -82,11 +78,11 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 }
 .hero::after{
   content:"";position:absolute;inset:0;z-index:1;
-  background:linear-gradient(180deg,rgba(10,20,30,0) 38%,rgba(10,20,30,.6) 100%);
+  background:linear-gradient(180deg,rgba(10,25,40,.25),rgba(10,25,40,.65));
 }
-.hero-copy{position:absolute;left:0;right:0;bottom:0;padding:40px 0;color:#fff;z-index:3}
-.hero-copy h1{color:#fff;font-size:2.6rem;font-weight:800;letter-spacing:-.02em;margin-bottom:.2em;text-shadow:0 2px 16px rgba(0,0,0,.35)}
-.hero-copy p{margin:0;max-width:520px;color:#f2f6fa;font-size:1.05rem;text-shadow:0 1px 8px rgba(0,0,0,.35)}
+.hero-copy{position:absolute;left:0;right:0;bottom:0;padding:28px 0;color:#fff;z-index:3}
+.hero-copy h1{color:#fff;font-size:2rem;margin-bottom:.15em;text-shadow:0 2px 10px rgba(0,0,0,.4)}
+.hero-copy p{margin:0;max-width:520px;color:#eef4fa;font-size:.98rem;text-shadow:0 1px 6px rgba(0,0,0,.4)}
 
 /* Toolbar */
 .toolbar{
@@ -142,10 +138,9 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .card-img{aspect-ratio:1/1;background:#eef2f5;overflow:hidden;position:relative}
 .card-img img{width:100%;height:100%;object-fit:contain}
 .card-cat{
-  position:absolute;top:10px;left:10px;background:rgba(255,255,255,.85);
-  -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);
+  position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);
   padding:3px 10px;border-radius:999px;font-size:.68rem;font-weight:700;
-  letter-spacing:.04em;text-transform:uppercase;color:var(--color-muted);
+  letter-spacing:.02em;text-transform:uppercase;color:var(--color-primary-dark);
 }
 .card-img.has-stock-badge .card-cat{top:38px}
 .badge-outofstock{
@@ -244,8 +239,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .cart-icon-btn{position:relative}
 .cart-badge{
   position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 4px;
-  border-radius:999px;background:var(--color-primary);color:#fff;
-  box-shadow:0 0 0 2px rgba(255,255,255,.9);
+  border-radius:999px;background:#fff;color:var(--color-primary-dark);
   font-size:.68rem;font-weight:800;display:none;align-items:center;justify-content:center;
 }
 
@@ -339,8 +333,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   .toolbar{position:static}
   .hero{height:280px}
   .hero-logo-mark{max-width:85%;opacity:.35}
-  .hero-copy{padding:26px 0}
-  .hero-copy h1{font-size:1.6rem}
+  .hero-copy h1{font-size:1.5rem}
 }
 
 @media (max-width:600px){
