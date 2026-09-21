@@ -288,38 +288,40 @@
       <div class="modal-backdrop" id="modal-backdrop">
         <div class="modal">
           <button class="modal-close" id="modal-close" aria-label="Cerrar">&times;</button>
-          <div class="modal-gallery">
-            <img id="modal-main-img" src="${images[0]}" alt="${escapeAttr(p.title)}">
-            ${
-              images.length > 1
-                ? `<div class="modal-thumbs">${images
-                    .map(
-                      (im, i) =>
-                        `<img src="${im}" data-i="${i}" class="${i === 0 ? "active" : ""}">`
-                    )
-                    .join("")}</div>`
-                : ""
-            }
-          </div>
-          <div class="modal-info">
-            <div class="modal-cat">${escapeHtml(p.category)}${p.subcategory ? " · " + escapeHtml(p.subcategory) : ""}</div>
-            <h2>${escapeHtml(p.title)}</h2>
-            <div class="modal-price">${
-              hasDiscount
-                ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`
-                : formatPrice(p.price)
-            }</div>
-            ${outOfStock ? `<div class="status-msg err">Sin stock disponible.</div>` : ""}
-            <div class="modal-desc">${escapeHtml(p.description || "")}</div>
-            <div class="modal-sku">Ref. ${escapeHtml(p.sku || "-")}</div>
-            <div class="qty-stepper">
-              <button type="button" id="modal-qty-dec" aria-label="Menos" ${outOfStock ? "disabled" : ""}>&minus;</button>
-              <input type="number" id="modal-qty" value="1" min="1" inputmode="numeric" ${outOfStock ? "disabled" : ""}>
-              <button type="button" id="modal-qty-inc" aria-label="Más" ${outOfStock ? "disabled" : ""}>+</button>
+          <div class="modal-scroll">
+            <div class="modal-gallery">
+              <img id="modal-main-img" src="${images[0]}" alt="${escapeAttr(p.title)}">
+              ${
+                images.length > 1
+                  ? `<div class="modal-thumbs">${images
+                      .map(
+                        (im, i) =>
+                          `<img src="${im}" data-i="${i}" class="${i === 0 ? "active" : ""}">`
+                      )
+                      .join("")}</div>`
+                  : ""
+              }
             </div>
-            <div class="modal-actions">
-              <button class="btn btn-primary" id="modal-add-cart" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Sin stock" : "Añadir a la cesta"}</button>
-              <a class="btn btn-outline" target="_blank" rel="noopener" href="${productWaLink(p)}">Consultar por WhatsApp</a>
+            <div class="modal-info">
+              <div class="modal-cat">${escapeHtml(p.category)}${p.subcategory ? " · " + escapeHtml(p.subcategory) : ""}</div>
+              <h2>${escapeHtml(p.title)}</h2>
+              <div class="modal-price">${
+                hasDiscount
+                  ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`
+                  : formatPrice(p.price)
+              }</div>
+              ${outOfStock ? `<div class="status-msg err">Sin stock disponible.</div>` : ""}
+              <div class="modal-desc">${escapeHtml(p.description || "")}</div>
+              <div class="modal-sku">Ref. ${escapeHtml(p.sku || "-")}</div>
+              <div class="qty-stepper">
+                <button type="button" id="modal-qty-dec" aria-label="Menos" ${outOfStock ? "disabled" : ""}>&minus;</button>
+                <input type="number" id="modal-qty" value="1" min="1" inputmode="numeric" ${outOfStock ? "disabled" : ""}>
+                <button type="button" id="modal-qty-inc" aria-label="Más" ${outOfStock ? "disabled" : ""}>+</button>
+              </div>
+              <div class="modal-actions">
+                <button class="btn btn-primary" id="modal-add-cart" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Sin stock" : "Añadir a la cesta"}</button>
+                <a class="btn btn-outline" target="_blank" rel="noopener" href="${productWaLink(p)}">Consultar por WhatsApp</a>
+              </div>
             </div>
           </div>
         </div>

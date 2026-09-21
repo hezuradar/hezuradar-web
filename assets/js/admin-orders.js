@@ -273,8 +273,10 @@
     overlay.innerHTML = `
       <div class="design-view-box">
         <button class="modal-close" id="design-view-close" aria-label="Cerrar">&times;</button>
-        <img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente">
-        <div class="design-view-caption">${escapeHtml(material)}${d.fileName ? " · " + escapeHtml(d.fileName) : ""}</div>
+        <div class="design-view-scroll">
+          <img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente">
+          <div class="design-view-caption">${escapeHtml(material)}${d.fileName ? " · " + escapeHtml(d.fileName) : ""}</div>
+        </div>
       </div>
     `;
     document.body.appendChild(overlay);

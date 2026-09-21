@@ -137,7 +137,7 @@
       <div class="cart-backdrop${isCheckout}" id="cart-backdrop">
         <aside class="cart-drawer${isCheckout}">
           <button class="modal-close" id="cart-close" aria-label="Cerrar">&times;</button>
-          ${inner}
+          <div class="cart-scroll">${inner}</div>
         </aside>
       </div>
     `;
