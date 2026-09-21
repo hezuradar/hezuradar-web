@@ -69,7 +69,7 @@
 
   function hydrateStore(store) {
     if (!store) return;
-    if (els.aboutText) els.aboutText.textContent = store.aboutUs || "";
+    if (els.aboutText) renderAboutText(els.aboutText, store.aboutUs || "");
     if (els.waFloat && store.whatsapp) {
       els.waFloat.href = waLink(store.whatsapp, "Hola, tengo una consulta sobre vuestros productos.");
     }
@@ -82,6 +82,28 @@
         <li><b>Instagram</b><a href="${escapeAttr(store.instagram)}" target="_blank" rel="noopener">@hezuradar</a></li>
       `;
     }
+  }
+
+  function renderAboutText(el, text) {
+    const marker = "\n\nAbout us\n\n";
+    const idx = text.indexOf(marker);
+    if (idx === -1) {
+      el.lang = "es";
+      el.textContent = text;
+      return;
+    }
+    const es = text.slice(0, idx);
+    const en = text.slice(idx + marker.length);
+    el.innerHTML = "";
+    const esEl = document.createElement("span");
+    esEl.lang = "es";
+    esEl.className = "about-text-block";
+    esEl.textContent = es;
+    const enEl = document.createElement("span");
+    enEl.lang = "en";
+    enEl.className = "about-text-block";
+    enEl.textContent = en;
+    el.append(esEl, enEl);
   }
 
   function waLink(phone, text) {
@@ -214,7 +236,7 @@
           <img src="${img}" alt="${escapeAttr(p.title)}" loading="lazy">
         </div>
         <div class="card-body">
-          <div class="card-title">${escapeHtml(p.title)}</div>
+          <h3 class="card-title">${escapeHtml(p.title)}</h3>
           <div class="card-price">${
             hasDiscount
               ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`

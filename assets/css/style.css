@@ -232,6 +232,8 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .about{background:#fff;border-top:1px solid var(--color-border);padding:56px 0}
 .about-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:start}
 .about-text{white-space:pre-line;color:var(--color-text);line-height:1.7;font-size:.96rem}
+.about-text-block{display:block}
+.about-text-block+.about-text-block{margin-top:1.7em}
 .about-card{
   background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius);
   padding:24px;
