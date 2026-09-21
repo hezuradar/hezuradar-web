@@ -35,6 +35,15 @@
         ],
         "createdAt": "2026-09-21T17:52:20.343Z",
         "reason": "print-only windows (albaran, etiquetas de envio) intentionally use a system font instead of the site's web font, standard practice for printed documents across browsers/printers"
+      },
+      {
+        "rule": "overused-font",
+        "value": "arial",
+        "files": [
+          "assets/js/admin-orders.js"
+        ],
+        "createdAt": "2026-09-21T17:54:22.124Z",
+        "reason": "print-only windows (albaran, etiquetas de envio) intentionally use a system font instead of the site's web font; same rationale as the design-system-font exception already recorded for this file"
       }
     ]
   }
