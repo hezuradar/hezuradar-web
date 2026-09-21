@@ -104,8 +104,16 @@
   }
   function closeDrawer() {
     const root = document.getElementById("cart-root");
-    if (root) root.innerHTML = "";
+    const backdrop = root ? document.getElementById("cart-backdrop") : null;
     document.body.style.overflow = "";
+    if (!backdrop) {
+      if (root) root.innerHTML = "";
+      return;
+    }
+    backdrop.classList.add("closing");
+    setTimeout(() => {
+      if (backdrop.parentNode === root) root.innerHTML = "";
+    }, 220);
   }
 
   function renderDrawer() {

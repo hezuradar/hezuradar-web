@@ -328,8 +328,13 @@
   }
 
   function closeModal() {
-    els.modalRoot.innerHTML = "";
+    const backdrop = document.getElementById("modal-backdrop");
+    if (!backdrop) return;
+    backdrop.classList.add("closing");
     document.body.style.overflow = "";
+    setTimeout(() => {
+      if (backdrop.parentNode === els.modalRoot) els.modalRoot.innerHTML = "";
+    }, 160);
   }
 
   function escapeHtml(str) {
