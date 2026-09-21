@@ -97,6 +97,14 @@
     return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
   }
 
+  // Las rutas de imagen en products.json son relativas a la raíz del sitio (p.ej.
+  // "images/products/x.jpg"). El drawer del carrito puede abrirse desde páginas
+  // que no están en la raíz (p.ej. /productos/<slug>.html), así que se normalizan
+  // a absolutas para que no se resuelvan mal según la carpeta de la página actual.
+  function imgSrc(path) {
+    return path ? "/" + String(path).replace(/^\/+/, "") : "";
+  }
+
   function openDrawer(v) {
     view = v || "cart";
     renderDrawer();
@@ -155,7 +163,7 @@
           .map(
             (l) => `
           <div class="cart-line">
-            <img src="${(l.product.images && l.product.images[0]) || ""}" alt="">
+            <img src="${imgSrc(l.product.images && l.product.images[0])}" alt="">
             <div class="cart-line-info">
               <div class="cart-line-title">${escapeHtml(l.product.title)}</div>
               <div class="cart-line-price">${
@@ -214,7 +222,7 @@
             .map(
               (l) => `
             <div class="checkout-order-line">
-              <img src="${(l.product.images && l.product.images[0]) || ""}" alt="">
+              <img src="${imgSrc(l.product.images && l.product.images[0])}" alt="">
               <div class="checkout-order-line-info">
                 <div class="checkout-order-line-title">${escapeHtml(l.product.title)}</div>
                 <div class="checkout-order-line-qty">${l.qty} × ${formatPrice(l.price)}</div>

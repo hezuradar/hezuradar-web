@@ -234,6 +234,43 @@
       next = mutate(file ? JSON.parse(file.content) : []);
       await putFile(PRODUCTS_PATH, b64EncodeUnicode(JSON.stringify(next, null, 2)), message, file ? file.sha : null);
     }
+    return next;
+  }
+
+  /* ---------------- PÁGINA DE PRODUCTO + SITEMAP (SEO) ---------------- */
+
+  async function publishProductPage(product) {
+    if (!window.HA_TEMPLATE) throw new Error("No se pudo cargar la plantilla de página de producto.");
+    const storeFile = await getFile("data/store.json");
+    const store = storeFile ? JSON.parse(storeFile.content) : {};
+    const html = window.HA_TEMPLATE.buildProductHtml(product, store);
+    const pagePath = `productos/${product.slug}.html`;
+    const existingPage = await getFile(pagePath);
+    await putFile(pagePath, b64EncodeUnicode(html), `Publica página de producto: ${product.title}`, existingPage ? existingPage.sha : null);
+  }
+
+  async function deleteProductPage(product) {
+    if (!product || !product.slug) return;
+    const pagePath = `productos/${product.slug}.html`;
+    const existingPage = await getFile(pagePath);
+    if (existingPage) await deleteFile(pagePath, `Borra página de producto: ${product.title}`, existingPage.sha);
+  }
+
+  async function publishSitemap(allProducts) {
+    if (!window.HA_TEMPLATE) throw new Error("No se pudo cargar la plantilla de página de producto.");
+    const T = window.HA_TEMPLATE;
+    const entries = [
+      { loc: T.SITE_URL + "/", changefreq: "weekly", priority: "1.0" },
+      { loc: T.SITE_URL + "/disenador.html", changefreq: "monthly", priority: "0.7" },
+      { loc: T.SITE_URL + "/disenador-puas.html", changefreq: "monthly", priority: "0.7" },
+    ].concat(
+      allProducts
+        .filter((p) => p.slug)
+        .map((p) => ({ loc: T.SITE_URL + "/productos/" + p.slug + ".html", changefreq: "weekly", priority: "0.6" }))
+    );
+    const xml = T.buildSitemapXml(entries);
+    const existing = await getFile("sitemap.xml");
+    await putFile("sitemap.xml", b64EncodeUnicode(xml), "Actualiza sitemap.xml", existing ? existing.sha : null);
   }
 
   let categoryMap = {}; // categoría -> Set de subcategorías ya usadas con ella
@@ -425,6 +462,8 @@
         }
       }
 
+      const slug = (existing && existing.slug) || (window.HA_TEMPLATE && window.HA_TEMPLATE.slugFor({ id, title }));
+
       const product = {
         id,
         title,
@@ -437,10 +476,11 @@
         discountPercent:
           $("p-discount").value === "" ? null : Math.min(99, Math.max(0, parseInt($("p-discount").value, 10) || 0)),
         images,
+        slug,
       };
 
       setStatus("p-status", "info", "Actualizando catálogo...");
-      await putProductsFile((current) => {
+      const updatedProducts = await putProductsFile((current) => {
         const idx = current.findIndex((x) => x.id === id);
         if (idx >= 0) current[idx] = product;
         else current.push(product);
@@ -457,10 +497,19 @@
         }
       }
 
+      let seoWarning = "";
+      try {
+        setStatus("p-status", "info", "Publicando página del producto y sitemap...");
+        await publishProductPage(product);
+        await publishSitemap(updatedProducts);
+      } catch (e) {
+        seoWarning = " Aviso: el catálogo se publicó bien, pero no se pudo actualizar la página SEO del producto o el sitemap (" + e.message + "). Vuelve a guardar el producto para reintentarlo.";
+      }
+
       setStatus(
         "p-status",
-        "ok",
-        "Publicado correctamente. La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta."
+        seoWarning ? "err" : "ok",
+        "Publicado correctamente. La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta." + seoWarning
       );
       resetForm();
       await loadProducts();
@@ -477,7 +526,7 @@
     if (!confirm(`¿Borrar "${p.title}" del catálogo? Esta acción se publica de inmediato.`)) return;
     try {
       setStatus("p-status", "info", "Borrando...");
-      await putProductsFile((current) => current.filter((x) => x.id !== id), `Borra producto: ${p.title}`);
+      const updatedProducts = await putProductsFile((current) => current.filter((x) => x.id !== id), `Borra producto: ${p.title}`);
 
       for (const imgPath of p.images || []) {
         try {
@@ -488,7 +537,15 @@
         }
       }
 
-      setStatus("p-status", "ok", "Producto borrado y publicado.");
+      let seoWarning = "";
+      try {
+        await deleteProductPage(p);
+        await publishSitemap(updatedProducts);
+      } catch (e) {
+        seoWarning = " Aviso: no se pudo borrar la página SEO del producto o actualizar el sitemap (" + e.message + ").";
+      }
+
+      setStatus("p-status", seoWarning ? "err" : "ok", "Producto borrado y publicado." + seoWarning);
       await loadProducts();
     } catch (e) {
       setStatus("p-status", "err", e.message);

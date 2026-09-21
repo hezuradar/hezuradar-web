@@ -116,7 +116,7 @@
   }
 
   async function fetchJSON(path) {
-    const res = await fetch(path + "?v=" + Date.now(), { cache: "no-store" });
+    const res = await fetch(path, { cache: "no-cache" });
     if (!res.ok) throw new Error("No se pudo cargar " + path);
     return res.json();
   }
@@ -236,7 +236,9 @@
           <img src="${img}" alt="${escapeAttr(p.title)}" loading="lazy">
         </div>
         <div class="card-body">
-          <h3 class="card-title">${escapeHtml(p.title)}</h3>
+          <h3 class="card-title">${
+            p.slug ? `<a href="productos/${escapeAttr(p.slug)}.html">${escapeHtml(p.title)}</a>` : escapeHtml(p.title)
+          }</h3>
           <div class="card-price">${
             hasDiscount
               ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`
