@@ -266,7 +266,12 @@
     ].concat(
       allProducts
         .filter((p) => p.slug)
-        .map((p) => ({ loc: T.SITE_URL + "/productos/" + p.slug + ".html", changefreq: "weekly", priority: "0.6" }))
+        .map((p) => ({
+          loc: T.SITE_URL + "/productos/" + p.slug + ".html",
+          changefreq: "weekly",
+          priority: "0.6",
+          lastmod: p.updatedAt,
+        }))
     );
     const xml = T.buildSitemapXml(entries);
     const existing = await getFile("sitemap.xml");
@@ -464,6 +469,24 @@
 
       const slug = (existing && existing.slug) || (window.HA_TEMPLATE && window.HA_TEMPLATE.slugFor({ id, title }));
 
+      // Dimensiones reales de la imagen que queda en la posición principal (images[0]),
+      // para declarar og:image:width/height sin inventar valores. Si la principal es
+      // una foto nueva se leen sus bytes; si es una que ya existía, se reutilizan las
+      // que ya se calcularon para ella en un guardado anterior.
+      let mainImageDims = null;
+      if (currentImages.length > 0) {
+        if (existing && existing.images && existing.images[0] === currentImages[0] && existing.imageWidth && existing.imageHeight) {
+          mainImageDims = { width: existing.imageWidth, height: existing.imageHeight };
+        }
+      } else if (pendingFiles.length && window.HA_TEMPLATE) {
+        try {
+          const bytes = new Uint8Array(await pendingFiles[0].arrayBuffer());
+          mainImageDims = window.HA_TEMPLATE.imageDimensionsFromBytes(bytes);
+        } catch (e) {
+          /* si no se pueden leer, simplemente no se declaran */
+        }
+      }
+
       const product = {
         id,
         title,
@@ -477,6 +500,9 @@
           $("p-discount").value === "" ? null : Math.min(99, Math.max(0, parseInt($("p-discount").value, 10) || 0)),
         images,
         slug,
+        imageWidth: mainImageDims ? mainImageDims.width : undefined,
+        imageHeight: mainImageDims ? mainImageDims.height : undefined,
+        updatedAt: new Date().toISOString().slice(0, 10),
       };
 
       setStatus("p-status", "info", "Actualizando catálogo...");

@@ -58,11 +58,42 @@
     return "https://wa.me/" + String(phone || "").replace("+", "") + "?text=" + encodeURIComponent(text);
   }
 
+  // Lee las dimensiones reales de una imagen JPEG o PNG a partir de sus bytes,
+  // sin dependencias externas (funciona igual en Node con un Buffer que en el
+  // navegador con un Uint8Array leído de un File). Se usa para declarar
+  // og:image:width/height y el width/height del <img> principal sin inventar
+  // valores que no coincidan con el archivo real.
+  function imageDimensionsFromBytes(bytes) {
+    if (!bytes || bytes.length < 24) return null;
+    if (bytes[0] === 0xff && bytes[1] === 0xd8) {
+      var i = 2;
+      while (i + 8 < bytes.length) {
+        if (bytes[i] !== 0xff) { i++; continue; }
+        var marker = bytes[i + 1];
+        if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd9)) { i += 2; continue; }
+        var len = (bytes[i + 2] << 8) | bytes[i + 3];
+        var isSOF = marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
+        if (isSOF) {
+          return { height: (bytes[i + 5] << 8) | bytes[i + 6], width: (bytes[i + 7] << 8) | bytes[i + 8] };
+        }
+        i += 2 + len;
+      }
+      return null;
+    }
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) {
+      return {
+        width: ((bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]) >>> 0,
+        height: ((bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]) >>> 0,
+      };
+    }
+    return null;
+  }
+
   function buildProductJsonLd(product, canonicalUrl) {
     var images = (product.images || []).map(function (im) {
       return SITE_URL + "/" + im;
     });
-    var data = {
+    var productNode = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: product.title,
@@ -91,7 +122,22 @@
         },
       },
     };
-    return JSON.stringify(data, null, 2);
+    // Solo se incluyen los 2 niveles reales y navegables (Inicio y esta
+    // ficha): la categoría es un filtro en el cliente, no una URL propia,
+    // así que añadirla como posición intermedia apuntaría a un enlace falso.
+    var breadcrumbNode = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "Tienda", item: SITE_URL + "/" },
+        { "@type": "ListItem", position: 2, name: product.title, item: canonicalUrl },
+      ],
+    };
+    return [productNode, breadcrumbNode]
+      .map(function (node) {
+        return '<script type="application/ld+json">\n' + JSON.stringify(node, null, 2) + "\n</script>";
+      })
+      .join("\n");
   }
 
   function buildProductHtml(product, store) {
@@ -118,7 +164,10 @@
         ? '<div class="product-gallery-thumbs" id="product-thumbs">' +
           images
             .map(function (im, i) {
-              return '<img src="/' + escapeAttr(im) + '" class="' + (i === 0 ? "active" : "") + '" alt="">';
+              return (
+                '<img src="/' + escapeAttr(im) + '" class="' + (i === 0 ? "active" : "") + '"' +
+                ' alt="' + escapeAttr(product.title) + " - foto " + (i + 1) + '" loading="lazy">'
+              );
             })
             .join("") +
           "</div>"
@@ -140,6 +189,10 @@
       '<meta property="og:description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
       '<meta property="og:url" content="' + canonicalUrl + '">\n' +
       '<meta property="og:image" content="' + absMainImage + '">\n' +
+      (product.imageWidth && product.imageHeight
+        ? '<meta property="og:image:width" content="' + product.imageWidth + '">\n' +
+          '<meta property="og:image:height" content="' + product.imageHeight + '">\n'
+        : "") +
       '<meta property="og:locale" content="es_ES">\n' +
       '<meta property="product:price:amount" content="' + effectivePrice(product).toFixed(2) + '">\n' +
       '<meta property="product:price:currency" content="EUR">\n' +
@@ -153,14 +206,14 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20260921b">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20260922l">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
-      '<script type="application/ld+json">\n' + buildProductJsonLd(product, canonicalUrl) + "\n</script>\n" +
+      buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
       "<body>\n\n" +
       '<header class="site-header">\n' +
       '  <div class="container">\n' +
-      '    <a class="brand" href="/index.html">\n' +
+      '    <a class="brand" href="/">\n' +
       '      <img src="/images/site/logo.jpg" alt="Logo HezurAdar">\n' +
       "      HezurAdar\n" +
       "    </a>\n" +
@@ -168,7 +221,7 @@
       '      <div class="header-links">\n' +
       '        <a class="pill-btn" href="/disenador.html">Personaliza tu placa</a>\n' +
       '        <a class="pill-btn" href="/disenador-puas.html">Personaliza tus púas</a>\n' +
-      '        <a class="pill-btn" href="/index.html#about">Quiénes somos</a>\n' +
+      '        <a class="pill-btn" href="/#about">Quiénes somos</a>\n' +
       "      </div>\n" +
       '      <div class="header-icons">\n' +
       '        <a class="icon-btn" href="' + escapeAttr(instagram) + '" target="_blank" rel="noopener" aria-label="Instagram">\n' +
@@ -183,10 +236,12 @@
       "  </div>\n" +
       "</header>\n\n" +
       '<main class="container product-page">\n' +
-      '  <nav class="breadcrumb"><a href="/index.html">Tienda</a> › ' + escapeHtml(catLabel) + "</nav>\n" +
+      '  <nav class="breadcrumb"><a href="/">Tienda</a> › ' + escapeHtml(catLabel) + "</nav>\n" +
       '  <div class="product-detail">\n' +
       '    <div class="product-gallery-page">\n' +
-      '      <div class="product-gallery-main"><img id="product-main-img" src="/' + escapeAttr(mainImage) + '" alt="' + escapeAttr(product.title) + '"></div>\n' +
+      '      <div class="product-gallery-main"><img id="product-main-img" src="/' + escapeAttr(mainImage) + '" alt="' + escapeAttr(product.title) + '" fetchpriority="high"' +
+      (product.imageWidth && product.imageHeight ? ' width="' + product.imageWidth + '" height="' + product.imageHeight + '"' : "") +
+      "></div>\n" +
       "      " + thumbsHtml + "\n" +
       "    </div>\n" +
       '    <div class="product-info-page">\n' +
@@ -205,7 +260,7 @@
       '        <button class="btn btn-primary" id="product-add-btn"' + (outOfStock ? " disabled" : "") + ">" + (outOfStock ? "Sin stock" : "Añadir a la cesta") + "</button>\n" +
       '        <a class="btn btn-outline" target="_blank" rel="noopener" href="' + escapeAttr(waHref) + '">Consultar por WhatsApp</a>\n' +
       "      </div>\n" +
-      '      <a class="btn btn-outline" href="/index.html">← Volver al catálogo</a>\n' +
+      '      <a class="btn btn-outline" href="/">← Volver al catálogo</a>\n' +
       "    </div>\n" +
       "  </div>\n" +
       "</main>\n\n" +
@@ -213,7 +268,7 @@
       '  <div class="container">\n' +
       '    <span>&copy; <span id="year"></span> HezurAdar · Legazpi, Gipuzkoa</span>\n' +
       '    <div class="footer-links">\n' +
-      '      <a href="/index.html#about">Quiénes somos</a>\n' +
+      '      <a href="/#about">Quiénes somos</a>\n' +
       '      <a href="' + escapeAttr(instagram) + '" target="_blank" rel="noopener">Instagram</a>\n' +
       "    </div>\n" +
       "  </div>\n" +
@@ -244,6 +299,7 @@
         return (
           "  <url>\n" +
           "    <loc>" + e.loc + "</loc>\n" +
+          (e.lastmod ? "    <lastmod>" + e.lastmod + "</lastmod>\n" : "") +
           (e.changefreq ? "    <changefreq>" + e.changefreq + "</changefreq>\n" : "") +
           (e.priority ? "    <priority>" + e.priority + "</priority>\n" : "") +
           "  </url>"
@@ -267,6 +323,7 @@
     effectivePrice: effectivePrice,
     isOutOfStock: isOutOfStock,
     metaDescription: metaDescription,
+    imageDimensionsFromBytes: imageDimensionsFromBytes,
     buildProductHtml: buildProductHtml,
     buildSitemapXml: buildSitemapXml,
     SITE_URL: SITE_URL,
