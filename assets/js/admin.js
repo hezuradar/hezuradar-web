@@ -272,6 +272,7 @@
           changefreq: "weekly",
           priority: "0.6",
           lastmod: p.updatedAt,
+          images: (p.images || []).map((im) => T.SITE_URL + "/" + im),
         }))
     );
     const xml = T.buildSitemapXml(entries);

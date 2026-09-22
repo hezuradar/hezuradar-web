@@ -256,7 +256,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20260922n">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20260922o">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -348,19 +348,25 @@
   function buildSitemapXml(entries) {
     var body = entries
       .map(function (e) {
+        var imagesXml = (e.images || [])
+          .map(function (imgUrl) {
+            return "    <image:image>\n      <image:loc>" + imgUrl + "</image:loc>\n    </image:image>\n";
+          })
+          .join("");
         return (
           "  <url>\n" +
           "    <loc>" + e.loc + "</loc>\n" +
           (e.lastmod ? "    <lastmod>" + e.lastmod + "</lastmod>\n" : "") +
           (e.changefreq ? "    <changefreq>" + e.changefreq + "</changefreq>\n" : "") +
           (e.priority ? "    <priority>" + e.priority + "</priority>\n" : "") +
+          imagesXml +
           "  </url>"
         );
       })
       .join("\n");
     return (
       '<?xml version="1.0" encoding="UTF-8"?>\n' +
-      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
       body +
       "\n</urlset>\n"
     );

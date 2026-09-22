@@ -118,6 +118,7 @@ function main() {
       changefreq: "weekly",
       priority: "0.6",
       lastmod: p.updatedAt,
+      images: (p.images || []).map((im) => TEMPLATE.SITE_URL + "/" + im),
     }))
   );
   fs.writeFileSync(SITEMAP_PATH, TEMPLATE.buildSitemapXml(entries), "utf8");
