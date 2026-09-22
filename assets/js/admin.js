@@ -239,11 +239,11 @@
 
   /* ---------------- PÁGINA DE PRODUCTO + SITEMAP (SEO) ---------------- */
 
-  async function publishProductPage(product) {
+  async function publishProductPage(product, allProducts) {
     if (!window.HA_TEMPLATE) throw new Error("No se pudo cargar la plantilla de página de producto.");
     const storeFile = await getFile("data/store.json");
     const store = storeFile ? JSON.parse(storeFile.content) : {};
-    const html = window.HA_TEMPLATE.buildProductHtml(product, store);
+    const html = window.HA_TEMPLATE.buildProductHtml(product, store, allProducts);
     const pagePath = `productos/${product.slug}.html`;
     const existingPage = await getFile(pagePath);
     await putFile(pagePath, b64EncodeUnicode(html), `Publica página de producto: ${product.title}`, existingPage ? existingPage.sha : null);
@@ -263,6 +263,7 @@
       { loc: T.SITE_URL + "/", changefreq: "weekly", priority: "1.0" },
       { loc: T.SITE_URL + "/disenador.html", changefreq: "monthly", priority: "0.7" },
       { loc: T.SITE_URL + "/disenador-puas.html", changefreq: "monthly", priority: "0.7" },
+      { loc: T.SITE_URL + "/guia-hueso-vs-cuerno.html", changefreq: "monthly", priority: "0.5" },
     ].concat(
       allProducts
         .filter((p) => p.slug)
@@ -526,7 +527,7 @@
       let seoWarning = "";
       try {
         setStatus("p-status", "info", "Publicando página del producto y sitemap...");
-        await publishProductPage(product);
+        await publishProductPage(product, updatedProducts);
         await publishSitemap(updatedProducts);
       } catch (e) {
         seoWarning = " Aviso: el catálogo se publicó bien, pero no se pudo actualizar la página SEO del producto o el sitemap (" + e.message + "). Vuelve a guardar el producto para reintentarlo.";

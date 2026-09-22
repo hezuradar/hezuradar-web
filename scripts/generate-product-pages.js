@@ -77,7 +77,7 @@ function main() {
 
   const keepFiles = new Set();
   products.forEach((p) => {
-    const html = TEMPLATE.buildProductHtml(p, store);
+    const html = TEMPLATE.buildProductHtml(p, store, products);
     const fileName = p.slug + ".html";
     fs.writeFileSync(path.join(PRODUCTS_DIR, fileName), html, "utf8");
     keepFiles.add(fileName);
@@ -105,6 +105,12 @@ function main() {
       changefreq: "monthly",
       priority: "0.7",
       lastmod: gitLastModified("disenador-puas.html"),
+    },
+    {
+      loc: TEMPLATE.SITE_URL + "/guia-hueso-vs-cuerno.html",
+      changefreq: "monthly",
+      priority: "0.5",
+      lastmod: gitLastModified("guia-hueso-vs-cuerno.html"),
     },
   ].concat(
     products.map((p) => ({

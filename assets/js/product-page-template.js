@@ -140,7 +140,57 @@
       .join("\n");
   }
 
-  function buildProductHtml(product, store) {
+  // Hasta 4 productos de la misma subcategoría (o categoría, si hace falta
+  // completar) para enlazar internamente entre fichas de producto reales.
+  function relatedProducts(product, allProducts) {
+    if (!Array.isArray(allProducts)) return [];
+    var pool = allProducts.filter(function (p) {
+      return p.id !== product.id && p.slug;
+    });
+    var sameSub = product.subcategory
+      ? pool.filter(function (p) {
+          return p.subcategory === product.subcategory;
+        })
+      : [];
+    var sameCat = pool.filter(function (p) {
+      return p.category === product.category && p.subcategory !== product.subcategory;
+    });
+    var seen = {};
+    var result = [];
+    sameSub.concat(sameCat).forEach(function (p) {
+      if (result.length >= 4 || seen[p.id]) return;
+      seen[p.id] = true;
+      result.push(p);
+    });
+    return result;
+  }
+
+  function relatedProductsHtml(product, allProducts) {
+    var related = relatedProducts(product, allProducts);
+    if (!related.length) return "";
+    var cards = related
+      .map(function (p) {
+        var img = (p.images && p.images[0]) || "";
+        var href = "/productos/" + escapeAttr(p.slug) + ".html";
+        return (
+          '<a class="card" href="' + href + '">' +
+          '<div class="card-img"><span class="card-cat">' + escapeHtml(p.subcategory || p.category) + "</span>" +
+          '<img src="/' + escapeAttr(img) + '" alt="' + escapeAttr(p.title) + '" loading="lazy"></div>' +
+          '<div class="card-body"><h3 class="card-title">' + escapeHtml(p.title) + "</h3>" +
+          '<div class="card-price">' + formatPrice(effectivePrice(p)) + "</div></div>" +
+          "</a>"
+        );
+      })
+      .join("");
+    return (
+      '<section class="related-products container">\n' +
+      "  <h2>Productos relacionados</h2>\n" +
+      '  <div class="grid">' + cards + "</div>\n" +
+      "</section>\n\n"
+    );
+  }
+
+  function buildProductHtml(product, store, allProducts) {
     var slug = product.slug || slugFor(product);
     var canonicalUrl = SITE_URL + "/productos/" + slug + ".html";
     var images = product.images && product.images.length ? product.images : [""];
@@ -206,7 +256,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20260922l">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20260922n">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -263,12 +313,14 @@
       '      <a class="btn btn-outline" href="/">← Volver al catálogo</a>\n' +
       "    </div>\n" +
       "  </div>\n" +
+      relatedProductsHtml(product, allProducts) +
       "</main>\n\n" +
       '<footer class="site-footer">\n' +
       '  <div class="container">\n' +
       '    <span>&copy; <span id="year"></span> HezurAdar · Legazpi, Gipuzkoa</span>\n' +
       '    <div class="footer-links">\n' +
       '      <a href="/#about">Quiénes somos</a>\n' +
+      '      <a href="/guia-hueso-vs-cuerno.html">Hueso vs cuerno: guía de materiales</a>\n' +
       '      <a href="' + escapeAttr(instagram) + '" target="_blank" rel="noopener">Instagram</a>\n' +
       "    </div>\n" +
       "  </div>\n" +
