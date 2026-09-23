@@ -71,7 +71,7 @@
     document.querySelectorAll("#product-thumbs img").forEach((th) => {
       th.addEventListener("click", () => {
         if (!main) return;
-        main.src = th.src;
+        main.src = th.dataset.full || th.src;
         document.querySelectorAll("#product-thumbs img").forEach((t) => t.classList.remove("active"));
         th.classList.add("active");
       });

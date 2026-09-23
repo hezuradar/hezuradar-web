@@ -233,7 +233,7 @@
           ${outOfStock ? `<span class="badge-outofstock">Sin stock</span>` : ""}
           ${hasDiscount ? `<span class="badge-discount">-${p.discountPercent}%</span>` : ""}
           <span class="card-cat">${escapeHtml(p.subcategory || p.category)}</span>
-          <img src="${img}" alt="${escapeAttr(p.title)}" loading="lazy">
+          <img src="${thumbPath(img)}" alt="${escapeAttr(p.title)}" loading="lazy">
         </div>
         <div class="card-body">
           <h3 class="card-title">${
@@ -268,6 +268,15 @@
     return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
   }
 
+  // Ruta de la miniatura (~500px) de una foto de producto: se usa en el grid
+  // del catálogo y en la tira de miniaturas del modal, donde nunca hace falta
+  // la imagen a tamaño completo (esa se reserva para la vista principal).
+  function thumbPath(path) {
+    if (!path) return "";
+    const i = path.lastIndexOf(".");
+    return i === -1 ? path + "-thumb" : path.slice(0, i) + "-thumb" + path.slice(i);
+  }
+
   function effectivePrice(p) {
     const pct = Number(p.discountPercent) || 0;
     return pct > 0 ? Math.round(p.price * (1 - pct / 100) * 100) / 100 : p.price;
@@ -296,7 +305,7 @@
                   ? `<div class="modal-thumbs">${images
                       .map(
                         (im, i) =>
-                          `<img src="${im}" data-i="${i}" class="${i === 0 ? "active" : ""}">`
+                          `<img src="${thumbPath(im)}" data-full="${im}" data-i="${i}" class="${i === 0 ? "active" : ""}">`
                       )
                       .join("")}</div>`
                   : ""
@@ -333,7 +342,7 @@
     });
     els.modalRoot.querySelectorAll(".modal-thumbs img").forEach((th) => {
       th.addEventListener("click", () => {
-        document.getElementById("modal-main-img").src = th.src;
+        document.getElementById("modal-main-img").src = th.dataset.full || th.src;
         els.modalRoot.querySelectorAll(".modal-thumbs img").forEach((t) => t.classList.remove("active"));
         th.classList.add("active");
       });

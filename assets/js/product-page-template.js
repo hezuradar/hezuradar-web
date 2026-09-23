@@ -24,6 +24,16 @@
     return base + "-" + shortId;
   }
 
+  // Ruta de la miniatura (~500px) de una foto de producto, usada en el grid del
+  // catálogo, "productos relacionados" y la tira de miniaturas de la galería:
+  // sitios donde nunca hace falta la imagen a tamaño completo (esa se reserva
+  // para la vista principal de la ficha).
+  function thumbPath(path) {
+    if (!path) return "";
+    var i = path.lastIndexOf(".");
+    return i === -1 ? path + "-thumb" : path.slice(0, i) + "-thumb" + path.slice(i);
+  }
+
   function escapeHtml(str) {
     return String(str || "").replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -175,7 +185,7 @@
         return (
           '<a class="card" href="' + href + '">' +
           '<div class="card-img"><span class="card-cat">' + escapeHtml(p.subcategory || p.category) + "</span>" +
-          '<img src="/' + escapeAttr(img) + '" alt="' + escapeAttr(p.title) + '" loading="lazy"></div>' +
+          '<img src="/' + escapeAttr(thumbPath(img)) + '" alt="' + escapeAttr(p.title) + '" loading="lazy"></div>' +
           '<div class="card-body"><h3 class="card-title">' + escapeHtml(p.title) + "</h3>" +
           '<div class="card-price">' + formatPrice(effectivePrice(p)) + "</div></div>" +
           "</a>"
@@ -215,7 +225,8 @@
           images
             .map(function (im, i) {
               return (
-                '<img src="/' + escapeAttr(im) + '" class="' + (i === 0 ? "active" : "") + '"' +
+                '<img src="/' + escapeAttr(thumbPath(im)) + '" data-full="/' + escapeAttr(im) + '"' +
+                ' class="' + (i === 0 ? "active" : "") + '"' +
                 ' alt="' + escapeAttr(product.title) + " - foto " + (i + 1) + '" loading="lazy">'
               );
             })
@@ -339,7 +350,7 @@
       '<script src="/assets/js/emailjs-config.js?v=20260915l"></script>\n' +
       '<script src="/assets/js/emailjs-notify.js?v=20260915l"></script>\n' +
       '<script src="/assets/js/cart.js?v=20260921f"></script>\n' +
-      '<script src="/assets/js/product-page.js?v=20260921a" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
+      '<script src="/assets/js/product-page.js?v=20260923a" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
       "</body>\n" +
       "</html>\n"
     );
@@ -382,6 +393,7 @@
     isOutOfStock: isOutOfStock,
     metaDescription: metaDescription,
     imageDimensionsFromBytes: imageDimensionsFromBytes,
+    thumbPath: thumbPath,
     buildProductHtml: buildProductHtml,
     buildSitemapXml: buildSitemapXml,
     SITE_URL: SITE_URL,

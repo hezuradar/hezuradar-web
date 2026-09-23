@@ -438,6 +438,42 @@
     });
   }
 
+  // Reescala la imagen a maxWidth (via canvas) y la devuelve como JPEG en
+  // base64, para no publicar nunca una foto a tamaño completo donde solo
+  // hace falta una miniatura (grid del catálogo, productos relacionados).
+  function fileToThumbBase64(file, maxWidth) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.naturalWidth);
+        const w = Math.max(1, Math.round(img.naturalWidth * scale));
+        const h = Math.max(1, Math.round(img.naturalHeight * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) return reject(new Error("No se pudo generar la miniatura."));
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result.split(",")[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          },
+          "image/jpeg",
+          0.78
+        );
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("No se pudo leer la imagen."));
+      };
+      img.src = url;
+    });
+  }
+
   async function saveProduct() {
     try {
       const title = $("p-title").value.trim();
@@ -466,6 +502,17 @@
           const base64 = await fileToBase64(file);
           await putFile(path, base64, `Sube imagen de producto: ${title}`, null);
           images.push(path);
+
+          // Miniatura (~500px) para el grid del catálogo y "productos relacionados":
+          // si falla, la ficha usará la imagen a tamaño completo hasta el próximo
+          // guardado (no es un error que deba interrumpir la publicación).
+          try {
+            const thumbBase64 = await fileToThumbBase64(file, 500);
+            const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(path);
+            if (thumbPath) await putFile(thumbPath, thumbBase64, `Sube miniatura de producto: ${title}`, null);
+          } catch (e) {
+            /* sin miniatura, se usará la imagen completa */
+          }
         }
       }
 
@@ -523,6 +570,13 @@
         } catch (e) {
           /* ignore missing images */
         }
+        try {
+          const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(imgPath);
+          const thumbFile = thumbPath && (await getFile(thumbPath));
+          if (thumbFile) await deleteFile(thumbPath, `Borra miniatura quitada de: ${title}`, thumbFile.sha);
+        } catch (e) {
+          /* ignore missing thumbnails */
+        }
       }
 
       let seoWarning = "";
@@ -562,6 +616,13 @@
           if (imgFile) await deleteFile(imgPath, `Borra imagen de: ${p.title}`, imgFile.sha);
         } catch (e) {
           /* ignore missing images */
+        }
+        try {
+          const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(imgPath);
+          const thumbFile = thumbPath && (await getFile(thumbPath));
+          if (thumbFile) await deleteFile(thumbPath, `Borra miniatura de: ${p.title}`, thumbFile.sha);
+        } catch (e) {
+          /* ignore missing thumbnails */
         }
       }
 
