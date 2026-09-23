@@ -7,6 +7,14 @@
   var SITE_URL = "https://hezuradar.com";
   var STANDARD_SHIPPING_EUR = "5.50"; // Coincide con SHIPPING_COST en assets/js/cart.js
   var RETURN_WINDOW_DAYS = 5;
+  // Política real de devoluciones y envío (confirmada por el propietario, no
+  // inventada): el cliente paga el envío de vuelta, la devolución se hace por
+  // correo/mensajería, el pedido se prepara en 1-2 días laborables y el
+  // tránsito dentro de España peninsular es de 2-4 días laborables.
+  var RETURN_FEES = "https://schema.org/ReturnShippingFees";
+  var RETURN_METHOD = "https://schema.org/ReturnByMail";
+  var HANDLING_TIME_DAYS = { min: 1, max: 2 };
+  var TRANSIT_TIME_DAYS = { min: 2, max: 4 };
 
   function slugify(str) {
     return String(str || "")
@@ -123,12 +131,29 @@
           "@type": "OfferShippingDetails",
           shippingRate: { "@type": "MonetaryAmount", value: STANDARD_SHIPPING_EUR, currency: "EUR" },
           shippingDestination: { "@type": "DefinedRegion", addressCountry: "ES" },
+          deliveryTime: {
+            "@type": "ShippingDeliveryTime",
+            handlingTime: {
+              "@type": "QuantitativeValue",
+              minValue: HANDLING_TIME_DAYS.min,
+              maxValue: HANDLING_TIME_DAYS.max,
+              unitCode: "DAY",
+            },
+            transitTime: {
+              "@type": "QuantitativeValue",
+              minValue: TRANSIT_TIME_DAYS.min,
+              maxValue: TRANSIT_TIME_DAYS.max,
+              unitCode: "DAY",
+            },
+          },
         },
         hasMerchantReturnPolicy: {
           "@type": "MerchantReturnPolicy",
           applicableCountry: "ES",
           returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
           merchantReturnDays: RETURN_WINDOW_DAYS,
+          returnFees: RETURN_FEES,
+          returnMethod: RETURN_METHOD,
         },
       },
     };
