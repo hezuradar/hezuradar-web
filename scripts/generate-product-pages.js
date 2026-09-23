@@ -14,11 +14,13 @@ const { execSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
 const TEMPLATE = require(path.join(ROOT, "assets/js/product-page-template.js"));
+const CATALOG_TEMPLATE = require(path.join(ROOT, "assets/js/catalog-template.js"));
 
 const PRODUCTS_PATH = path.join(ROOT, "data/products.json");
 const STORE_PATH = path.join(ROOT, "data/store.json");
 const PRODUCTS_DIR = path.join(ROOT, "productos");
 const SITEMAP_PATH = path.join(ROOT, "sitemap.xml");
+const INDEX_PATH = path.join(ROOT, "index.html");
 
 // Fecha real del último commit que tocó el archivo, para <lastmod> en el sitemap.
 function gitLastModified(relPath) {
@@ -123,6 +125,10 @@ function main() {
   );
   fs.writeFileSync(SITEMAP_PATH, TEMPLATE.buildSitemapXml(entries), "utf8");
   console.log("sitemap.xml regenerado con " + entries.length + " URLs.");
+
+  const indexHtml = fs.readFileSync(INDEX_PATH, "utf8");
+  fs.writeFileSync(INDEX_PATH, CATALOG_TEMPLATE.injectHomepageMarkup(indexHtml, products), "utf8");
+  console.log("index.html regenerado con el catálogo (" + products.length + " productos).");
 }
 
 main();

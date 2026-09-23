@@ -256,6 +256,20 @@
     if (existingPage) await deleteFile(pagePath, `Borra página de producto: ${product.title}`, existingPage.sha);
   }
 
+  // Deja precalculado en index.html el estado inicial "Todo" del catálogo
+  // (chips, contador y tarjetas), para que el primer pintado de la portada
+  // ya muestre el catálogo real en vez de un grid vacío que main.js rellena
+  // después por JavaScript (esa sustitución es la que provocaba el salto de
+  // diseño que señalaba PageSpeed). Debe llamarse siempre que cambie
+  // data/products.json para que index.html no se quede desincronizado.
+  async function publishHomepage(allProducts) {
+    if (!window.HA_CATALOG_TEMPLATE) throw new Error("No se pudo cargar la plantilla del catálogo.");
+    const page = await getFile("index.html");
+    if (!page) throw new Error("No se ha encontrado index.html.");
+    const html = window.HA_CATALOG_TEMPLATE.injectHomepageMarkup(page.content, allProducts);
+    await putFile("index.html", b64EncodeUnicode(html), "Actualiza el catálogo de la portada", page.sha);
+  }
+
   async function publishSitemap(allProducts) {
     if (!window.HA_TEMPLATE) throw new Error("No se pudo cargar la plantilla de página de producto.");
     const T = window.HA_TEMPLATE;
@@ -581,8 +595,9 @@
 
       let seoWarning = "";
       try {
-        setStatus("p-status", "info", "Publicando página del producto y sitemap...");
+        setStatus("p-status", "info", "Publicando página del producto, portada y sitemap...");
         await publishProductPage(product, updatedProducts);
+        await publishHomepage(updatedProducts);
         await publishSitemap(updatedProducts);
       } catch (e) {
         seoWarning = " Aviso: el catálogo se publicó bien, pero no se pudo actualizar la página SEO del producto o el sitemap (" + e.message + "). Vuelve a guardar el producto para reintentarlo.";
@@ -629,6 +644,7 @@
       let seoWarning = "";
       try {
         await deleteProductPage(p);
+        await publishHomepage(updatedProducts);
         await publishSitemap(updatedProducts);
       } catch (e) {
         seoWarning = " Aviso: no se pudo borrar la página SEO del producto o actualizar el sitemap (" + e.message + ").";

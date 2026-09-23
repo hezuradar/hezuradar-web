@@ -1,6 +1,8 @@
 (function () {
   "use strict";
 
+  const CT = window.HA_CATALOG_TEMPLATE;
+
   const state = {
     products: [],
     store: null,
@@ -17,8 +19,17 @@
   async function init() {
     cacheEls();
     bindEvents();
-    renderSkeletonChips();
-    renderSkeletonGrid();
+    // El grid y los chips llegan ya renderizados con el catálogo real desde
+    // index.html (ver assets/js/catalog-template.js e injectHomepageMarkup):
+    // los "esqueletos" solo hacen falta como red de seguridad si, por lo que
+    // sea, ese HTML no se ha generado (p.ej. en local sin haber corrido el
+    // script de build). Pintarlos también en el caso normal metería un salto
+    // de diseño de más (real → esqueleto → real) en vez de evitarlo.
+    const prerendered = els.grid.dataset.prerendered === "true";
+    if (!prerendered) {
+      renderSkeletonChips();
+      renderSkeletonGrid();
+    }
     try {
       const [products, store] = await Promise.all([
         fetchJSON("data/products.json"),
@@ -30,16 +41,18 @@
       window.HA.products = products;
       window.HA.store = store;
       window.HA.waLink = waLink;
-      window.HA.formatPrice = formatPrice;
-      window.HA.effectivePrice = effectivePrice;
-      window.HA.isOutOfStock = isOutOfStock;
+      window.HA.formatPrice = CT.formatPrice;
+      window.HA.effectivePrice = CT.effectivePrice;
+      window.HA.isOutOfStock = CT.isOutOfStock;
       document.dispatchEvent(new CustomEvent("ha:ready"));
       hydrateStore(store);
       buildCategoryChips();
       render();
     } catch (err) {
-      els.grid.innerHTML =
-        '<div class="empty-state">No se ha podido cargar el catálogo. Comprueba que data/products.json existe.</div>';
+      if (!prerendered) {
+        els.grid.innerHTML =
+          '<div class="empty-state">No se ha podido cargar el catálogo. Comprueba que data/products.json existe.</div>';
+      }
       console.error(err);
     }
   }
@@ -134,13 +147,7 @@
 
   function buildCategoryChips() {
     const tree = categoryTree();
-    const cats = ["Todo", ...Object.keys(tree).sort()];
-    els.chips.innerHTML = cats
-      .map(
-        (c) =>
-          `<button class="chip${c === state.category ? " active" : ""}" data-cat="${escapeAttr(c)}">${escapeHtml(c)}</button>`
-      )
-      .join("");
+    els.chips.innerHTML = CT.buildChipsHtml(state.products, state.category);
     els.chips.querySelectorAll(".chip").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.category = btn.dataset.cat;
@@ -241,12 +248,12 @@
 
   function render() {
     const list = getFiltered();
-    els.resultsCount.textContent = `${list.length} producto${list.length === 1 ? "" : "s"}`;
+    els.resultsCount.textContent = CT.resultsCountText(list.length);
     if (!list.length) {
       els.grid.innerHTML = '<div class="empty-state">No hay productos que coincidan con la búsqueda.</div>';
       return;
     }
-    els.grid.innerHTML = list.map(cardTemplate).join("");
+    els.grid.innerHTML = CT.buildGridHtml(list);
     els.grid.querySelectorAll("[data-open]").forEach((el) => {
       el.addEventListener("click", () => openModal(el.dataset.open));
     });
@@ -258,40 +265,6 @@
     });
   }
 
-  function cardTemplate(p) {
-    const img = (p.images && p.images[0]) || "";
-    const outOfStock = isOutOfStock(p);
-    const hasDiscount = Number(p.discountPercent) > 0;
-    return `
-      <article class="card${outOfStock ? " out-of-stock" : ""}">
-        <div class="card-img${outOfStock ? " has-stock-badge" : ""}" data-open="${p.id}">
-          ${outOfStock ? `<span class="badge-outofstock">Sin stock</span>` : ""}
-          ${hasDiscount ? `<span class="badge-discount">-${p.discountPercent}%</span>` : ""}
-          <span class="card-cat">${escapeHtml(p.subcategory || p.category)}</span>
-          <img src="${thumbPath(img)}" alt="${escapeAttr(p.title)}" loading="lazy">
-        </div>
-        <div class="card-body">
-          <h3 class="card-title">${
-            p.slug ? `<a href="productos/${escapeAttr(p.slug)}.html">${escapeHtml(p.title)}</a>` : escapeHtml(p.title)
-          }</h3>
-          <div class="card-price">${
-            hasDiscount
-              ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`
-              : formatPrice(p.price)
-          }</div>
-          <div class="card-actions">
-            <button class="btn btn-outline" data-open="${p.id}">Más info</button>
-            ${
-              outOfStock
-                ? `<button class="btn btn-outline" disabled>Sin stock</button>`
-                : `<button class="btn btn-primary" data-add="${p.id}">Añadir</button>`
-            }
-          </div>
-        </div>
-      </article>
-    `;
-  }
-
   function productWaLink(p) {
     const phone = state.store ? state.store.whatsapp : "";
     const url = window.location.origin + window.location.pathname + "#producto-" + p.id;
@@ -299,34 +272,12 @@
     return waLink(phone, text);
   }
 
-  function formatPrice(n) {
-    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
-  }
-
-  // Ruta de la miniatura (~500px) de una foto de producto: se usa en el grid
-  // del catálogo y en la tira de miniaturas del modal, donde nunca hace falta
-  // la imagen a tamaño completo (esa se reserva para la vista principal).
-  function thumbPath(path) {
-    if (!path) return "";
-    const i = path.lastIndexOf(".");
-    return i === -1 ? path + "-thumb" : path.slice(0, i) + "-thumb" + path.slice(i);
-  }
-
-  function effectivePrice(p) {
-    const pct = Number(p.discountPercent) || 0;
-    return pct > 0 ? Math.round(p.price * (1 - pct / 100) * 100) / 100 : p.price;
-  }
-
-  function isOutOfStock(p) {
-    return typeof p.stock === "number" && p.stock <= 0;
-  }
-
   function openModal(id) {
     const p = state.products.find((x) => x.id === id);
     if (!p) return;
     if (window.HA_ANALYTICS) window.HA_ANALYTICS.trackProductView(p.id, p.title);
     const images = p.images && p.images.length ? p.images : [""];
-    const outOfStock = isOutOfStock(p);
+    const outOfStock = CT.isOutOfStock(p);
     const hasDiscount = Number(p.discountPercent) > 0;
     els.modalRoot.innerHTML = `
       <div class="modal-backdrop" id="modal-backdrop">
@@ -340,7 +291,7 @@
                   ? `<div class="modal-thumbs">${images
                       .map(
                         (im, i) =>
-                          `<img src="${thumbPath(im)}" data-full="${im}" data-i="${i}" class="${i === 0 ? "active" : ""}">`
+                          `<img src="${CT.thumbPath(im)}" data-full="${im}" data-i="${i}" class="${i === 0 ? "active" : ""}">`
                       )
                       .join("")}</div>`
                   : ""
@@ -351,8 +302,8 @@
               <h2>${escapeHtml(p.title)}</h2>
               <div class="modal-price">${
                 hasDiscount
-                  ? `<span class="price-old">${formatPrice(p.price)}</span> ${formatPrice(effectivePrice(p))}`
-                  : formatPrice(p.price)
+                  ? `<span class="price-old">${CT.formatPrice(p.price)}</span> ${CT.formatPrice(CT.effectivePrice(p))}`
+                  : CT.formatPrice(p.price)
               }</div>
               ${outOfStock ? `<div class="status-msg err">Sin stock disponible.</div>` : ""}
               <div class="modal-desc">${escapeHtml(p.description || "")}</div>
