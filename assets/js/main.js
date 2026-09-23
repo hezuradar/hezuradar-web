@@ -17,6 +17,7 @@
   async function init() {
     cacheEls();
     bindEvents();
+    renderSkeletonGrid();
     try {
       const [products, store] = await Promise.all([
         fetchJSON("data/products.json"),
@@ -202,6 +203,28 @@
         break;
     }
     return list;
+  }
+
+  // Ocupa de entrada, con marcadores de posición, aproximadamente el mismo
+  // espacio que ocuparán las tarjetas reales una vez lleguen products.json y
+  // las imágenes: sin esto, el grid arranca vacío y se llena de golpe al
+  // terminar la carga, empujando "Quiénes somos" y el footer hacia abajo (el
+  // salto de diseño que detectó PageSpeed).
+  function skeletonCardTemplate() {
+    return `
+      <article class="card is-skeleton" aria-hidden="true">
+        <div class="card-img skeleton-block"></div>
+        <div class="card-body">
+          <div class="skeleton-line skeleton-title"></div>
+          <div class="skeleton-line skeleton-price"></div>
+          <div class="skeleton-line skeleton-actions"></div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderSkeletonGrid() {
+    els.grid.innerHTML = Array.from({ length: 8 }, skeletonCardTemplate).join("");
   }
 
   function render() {
