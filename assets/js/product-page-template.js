@@ -267,7 +267,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20260922o">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20260923e">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
