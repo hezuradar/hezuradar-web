@@ -4,10 +4,16 @@
 // 1. Crea una cuenta gratis en https://www.emailjs.com
 // 2. Email Services -> Add new Email Service (conecta tu Gmail) -> copia el "Service ID"
 // 3. Email Templates -> Create new Template -> copia el "Template ID"
-//    Usa estas variables en el asunto/cuerpo de la plantilla:
-//    {{order_code}} {{items_text}} {{subtotal}} {{customer_name}} {{customer_phone}}
-//    {{customer_email}} {{shipping_address}} {{notes}}
+//    En el asunto puedes usar, por ejemplo: Nuevo pedido {{order_code}} - Hezur&Adar
 //    En "To Email" de la plantilla pon: hezuradar@gmail.com
+//    Para el CUERPO, para que salga visualmente maquetado (con el envío
+//    incluido, en vez de texto plano), cambia a la vista "Code editor" (HTML)
+//    y pon únicamente: {{{order_html}}}  (con triple llave, así EmailJS
+//    inserta el HTML ya maquetado tal cual, en vez de escaparlo como texto).
+//    Variables de texto plano disponibles por si prefieres una plantilla
+//    simple en vez de order_html: {{order_code}} {{items_text}} {{subtotal}}
+//    {{shipping_cost}} {{total}} {{payment_method}} {{customer_name}}
+//    {{customer_phone}} {{customer_email}} {{shipping_address}} {{notes}}
 // 4. Account -> General -> copia tu "Public Key"
 //
 // 5. (Opcional) Email de confirmación al CLIENTE: si el cliente rellena su email al

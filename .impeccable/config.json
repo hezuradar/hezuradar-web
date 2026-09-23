@@ -44,6 +44,15 @@
         ],
         "createdAt": "2026-09-21T17:54:22.124Z",
         "reason": "print-only windows (albaran, etiquetas de envio) intentionally use a system font instead of the site's web font; same rationale as the design-system-font exception already recorded for this file"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "arial",
+        "files": [
+          "assets/js/emailjs-notify.js"
+        ],
+        "createdAt": "2026-09-23T04:50:06.604Z",
+        "reason": "el HTML de los emails de pedido (dueño y cliente) usa una fuente de sistema a propósito: los clientes de correo (Gmail, Outlook) no cargan @font-face de terceros, así que un email en la tipografía web del sitio se degradaría de forma inconsistente"
       }
     ]
   }
