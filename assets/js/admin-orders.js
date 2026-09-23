@@ -10,6 +10,10 @@
     "pua-personalizada": "Púa personalizada",
   };
   const isDesignOrder = (o) => !!DESIGN_KINDS[o && o.kind];
+  // Número propio de HezurAdar (mismo que data/store.json → whatsapp), no el
+  // del cliente: "Enviar a cortar" se manda a este número para reenviarlo a
+  // quien corte la pieza, junto con el diseño y el archivo del cliente.
+  const OWNER_WHATSAPP = "34653713428";
   let orders = [];
   let catalogProducts = [];
   let statusFilter = "";
@@ -228,6 +232,8 @@
           downloadDesignFile(d.fileData, d.fileName, d.fileType);
         });
       }
+      const sendToCutBtn = document.getElementById(`send-to-cut-${o.docId}`);
+      if (sendToCutBtn) sendToCutBtn.addEventListener("click", () => sendToCut(o.docId));
     });
   }
 
@@ -659,6 +665,7 @@
             </select>
             ${design && d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver el diseño tal y como lo configuró el cliente">👁️ Ver diseño</button>` : ""}
             ${design && d.fileData ? `<button class="small-btn" id="download-design-${escapeAttr(o.docId)}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</button>` : ""}
+            ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Descarga el diseño y el archivo del cliente, y abre WhatsApp para enviarlos a cortar">✂️ Enviar a cortar</button>` : ""}
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
             <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
             ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el presupuesto/albarán por WhatsApp al cliente">📲 ${design ? "Presupuesto" : "Albarán"} WhatsApp</button>` : ""}
@@ -863,6 +870,43 @@ ${bodyHtml}
     const phone = waPhoneDigits(c.phone);
     const text = albaranWhatsAppText(o);
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  function sendToCutText(o) {
+    const c = o.customer || {};
+    const s = o.shipping || {};
+    const d = o.design || {};
+    return [
+      `✂️ *Enviar a cortar · ${DESIGN_KINDS[o.kind] || "Diseño personalizado"}*`,
+      `Pedido ${o.orderCode || o.docId}`,
+      "",
+      `👤 Cliente: ${c.name || "-"}`,
+      `🧩 Material: ${(o.material && o.material.label) || "-"}`,
+      d.fileName ? `📎 Archivo del cliente: ${d.fileName}` : null,
+      d.fileTooLargeToEmbed
+        ? "⚠️ El archivo original era demasiado grande para guardarlo: pide al cliente que te lo reenvíe."
+        : null,
+      s.notes ? `📝 Nota del pedido: ${s.notes}` : null,
+      "",
+      "(Adjunta aquí el diseño y el archivo que se acaban de descargar)",
+    ]
+      .filter((l) => l !== null)
+      .join("\n");
+  }
+
+  // Al no poder adjuntar archivos directamente en un enlace wa.me (la API de
+  // WhatsApp solo admite texto), se descargan primero el diseño y el archivo
+  // del cliente para que se puedan arrastrar/adjuntar a mano en el chat que
+  // se abre a continuación, dirigido al número propio de HezurAdar.
+  function sendToCut(docId) {
+    const o = orders.find((x) => x.docId === docId);
+    if (!o) return;
+    const d = o.design || {};
+    const base = o.orderCode || o.docId;
+    if (d.snapshot) downloadDesignFile(d.snapshot, base + "-diseno.jpg", "image/jpeg");
+    if (d.fileData) downloadDesignFile(d.fileData, d.fileName || base + "-archivo", d.fileType);
+    const text = sendToCutText(o);
+    window.open(`https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(text)}`, "_blank");
   }
 
   async function resendCustomerEmail(docId) {
