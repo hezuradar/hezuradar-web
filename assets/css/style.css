@@ -173,6 +173,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .skeleton-title{height:2.6em}
 .skeleton-price{height:1.15rem;width:55%;margin-top:auto}
 .skeleton-actions{height:38px;border-radius:999px;margin-top:4px}
+.skeleton-chip{width:78px;height:35px;border:none;padding:0}
 .card-img.skeleton-block,.skeleton-line{animation:skeleton-pulse 1.4s ease-in-out infinite}
 @keyframes skeleton-pulse{0%,100%{opacity:1}50%{opacity:.5}}
 @media (prefers-reduced-motion:reduce){

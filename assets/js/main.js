@@ -17,6 +17,7 @@
   async function init() {
     cacheEls();
     bindEvents();
+    renderSkeletonChips();
     renderSkeletonGrid();
     try {
       const [products, store] = await Promise.all([
@@ -203,6 +204,17 @@
         break;
     }
     return list;
+  }
+
+  // Igual que renderSkeletonGrid, pero para los chips de categoría: también
+  // arrancan vacíos y se rellenan tras cargar los datos, justo encima del
+  // catálogo y siempre dentro del viewport inicial (a diferencia del grid,
+  // que en buena parte queda fuera de pantalla al cargar).
+  function renderSkeletonChips() {
+    els.chips.innerHTML = Array.from(
+      { length: 4 },
+      () => '<span class="chip skeleton-line skeleton-chip" aria-hidden="true"></span>'
+    ).join("");
   }
 
   // Ocupa de entrada, con marcadores de posición, aproximadamente el mismo
