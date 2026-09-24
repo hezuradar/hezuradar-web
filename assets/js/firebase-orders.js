@@ -19,10 +19,11 @@
       throw new Error("La base de datos de pedidos no está configurada todavía.");
     }
     const db = firebase.firestore();
-    await db.collection("orders").add({
+    const ref = await db.collection("orders").add({
       ...order,
       createdAtServer: firebase.firestore.FieldValue.serverTimestamp(),
     });
+    return ref.id;
   }
 
   window.HA_DB = { saveOrder };

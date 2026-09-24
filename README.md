@@ -188,6 +188,55 @@ precio cerrado.
 > adicionales en la política de seguridad (CSP) que, según el navegador, pueden dejar la carga del
 > PDF colgada sin avisar. Alojarlo en local evita ese problema.
 
+## 7. Copia de los pedidos personalizados en Google Drive
+
+Cada pedido de placa o púa personalizada se copia a la carpeta compartida de Drive con esta
+estructura:
+
+```
+<carpeta compartida>/
+  <Nombre del cliente>/
+    <Código del pedido>/
+      HA-…-diseno.jpg          diseño ajustado sobre la pieza
+      <archivo del cliente>    PDF/DXF original que subió
+      HA-…-nota-pedido.pdf     nota del pedido (material, notas, detalle, cliente)
+```
+
+Se hace en dos momentos:
+
+- **Al cerrar el pedido** el cliente en `/disenador.html` o `/disenador-puas.html` (en segundo plano,
+  sin que el cliente vea nada).
+- **Al pulsar "✂️ Enviar a cortar"** en el panel: vuelve a subirlo con los datos actuales
+  (p.ej. ya presupuestado), reemplaza los archivos anteriores y abre la carpeta. Una vez exportado,
+  el pedido muestra también un botón "📁 Drive".
+
+Como GitHub Pages no tiene servidor, la subida la hace una aplicación web de Google Apps Script
+(`scripts/drive-export/`) que se ejecuta con tu cuenta de Google. La web solo le manda el ID del
+pedido; el script lo lee él mismo de Firestore, así que nadie puede usarlo para subir archivos
+arbitrarios a tu Drive.
+
+### Instalarlo (una sola vez, ~5 minutos)
+
+1. Entra en [script.google.com](https://script.google.com) con la cuenta de Google **dueña de la
+   carpeta de Drive y del proyecto Firebase** (`hezuradar-web`) → **Nuevo proyecto**. Llámalo, por
+   ejemplo, "HezurAdar Drive".
+2. Pega el contenido de `scripts/drive-export/Code.gs` en `Código.gs`.
+3. **Configuración del proyecto** (rueda dentada) → activa *Mostrar el archivo de manifiesto
+   "appsscript.json"* → vuelve al editor y sustituye ese archivo por `scripts/drive-export/appsscript.json`.
+4. **Implementar → Nueva implementación → Aplicación web**. *Ejecutar como*: **Yo**;
+   *Quién tiene acceso*: **Cualquier usuario**. Autoriza los permisos que pide (Drive, Firestore y
+   conexiones externas; Google avisará de que la app no está verificada: *Configuración avanzada →
+   Ir a HezurAdar Drive*).
+5. Copia la URL que termina en `/exec` y pégala en `DRIVE_EXPORT_URL` de `assets/js/drive-export.js`.
+   Sube el cambio.
+
+Si más adelante modificas `Code.gs`, publica los cambios con **Implementar → Gestionar
+implementaciones → Editar → Versión: nueva** para conservar la misma URL.
+
+Si "Enviar a cortar" da un error de Firestore (403), la cuenta del script no tiene acceso al
+proyecto Firebase: añádela en la consola de Firebase → *Configuración del proyecto → Usuarios y
+permisos* como Propietario o Editor.
+
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de

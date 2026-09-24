@@ -883,9 +883,10 @@
       },
     };
 
+    let orderId = null;
     try {
       if (window.HA_DB && window.HA_DB.saveOrder) {
-        await window.HA_DB.saveOrder(order);
+        orderId = await window.HA_DB.saveOrder(order);
       } else {
         throw new Error("La base de datos no está disponible ahora mismo.");
       }
@@ -895,6 +896,10 @@
       btn.disabled = false;
       return;
     }
+
+    // Copia el diseño, el archivo original y la nota del pedido a la carpeta
+    // compartida de Drive (cliente/pedido), sin esperar ni avisar al cliente.
+    if (window.HA_DRIVE) window.HA_DRIVE.exportOrderInBackground(orderId);
 
     try {
       const store = await fetch("data/store.json?v=" + Date.now(), { cache: "no-store" }).then((r) => r.json());

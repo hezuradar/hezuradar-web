@@ -10,10 +10,6 @@
     "pua-personalizada": "Púa personalizada",
   };
   const isDesignOrder = (o) => !!DESIGN_KINDS[o && o.kind];
-  // Número propio de HezurAdar (mismo que data/store.json → whatsapp), no el
-  // del cliente: "Enviar a cortar" se manda a este número para reenviarlo a
-  // quien corte la pieza, junto con el diseño y el archivo del cliente.
-  const OWNER_WHATSAPP = "34653713428";
   let orders = [];
   let catalogProducts = [];
   let statusFilter = "";
@@ -665,7 +661,8 @@
             </select>
             ${design && d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver el diseño tal y como lo configuró el cliente">👁️ Ver diseño</button>` : ""}
             ${design && d.fileData ? `<button class="small-btn" id="download-design-${escapeAttr(o.docId)}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</button>` : ""}
-            ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Descarga el diseño y el archivo del cliente, y abre WhatsApp para enviarlos a cortar">✂️ Enviar a cortar</button>` : ""}
+            ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Sube el diseño, el archivo del cliente y la nota del pedido a la carpeta compartida de Drive">✂️ Enviar a cortar</button>` : ""}
+            ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(o.driveFolderUrl)}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive">📁 Drive</a>` : ""}
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
             <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
             ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el presupuesto/albarán por WhatsApp al cliente">📲 ${design ? "Presupuesto" : "Albarán"} WhatsApp</button>` : ""}
@@ -872,41 +869,41 @@ ${bodyHtml}
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
   }
 
-  function sendToCutText(o) {
-    const c = o.customer || {};
-    const s = o.shipping || {};
-    const d = o.design || {};
-    return [
-      `✂️ *Enviar a cortar · ${DESIGN_KINDS[o.kind] || "Diseño personalizado"}*`,
-      `Pedido ${o.orderCode || o.docId}`,
-      "",
-      `👤 Cliente: ${c.name || "-"}`,
-      `🧩 Material: ${(o.material && o.material.label) || "-"}`,
-      d.fileName ? `📎 Archivo del cliente: ${d.fileName}` : null,
-      d.fileTooLargeToEmbed
-        ? "⚠️ El archivo original era demasiado grande para guardarlo: pide al cliente que te lo reenvíe."
-        : null,
-      s.notes ? `📝 Nota del pedido: ${s.notes}` : null,
-      "",
-      "(Adjunta aquí el diseño y el archivo que se acaban de descargar)",
-    ]
-      .filter((l) => l !== null)
-      .join("\n");
-  }
-
-  // Al no poder adjuntar archivos directamente en un enlace wa.me (la API de
-  // WhatsApp solo admite texto), se descargan primero el diseño y el archivo
-  // del cliente para que se puedan arrastrar/adjuntar a mano en el chat que
-  // se abre a continuación, dirigido al número propio de HezurAdar.
-  function sendToCut(docId) {
+  // Sube a la carpeta compartida de Drive (cliente/pedido) el diseño, el archivo
+  // original del cliente y la nota del pedido en PDF, y abre la carpeta. Lo hace
+  // la aplicación web de Apps Script (scripts/drive-export), que guarda además el
+  // enlace en driveFolderUrl. Si ya se exportó al cerrar el pedido, lo reemplaza
+  // con los datos actuales (p.ej. el precio del presupuesto).
+  async function sendToCut(docId) {
     const o = orders.find((x) => x.docId === docId);
     if (!o) return;
-    const d = o.design || {};
-    const base = o.orderCode || o.docId;
-    if (d.snapshot) downloadDesignFile(d.snapshot, base + "-diseno.jpg", "image/jpeg");
-    if (d.fileData) downloadDesignFile(d.fileData, d.fileName || base + "-archivo", d.fileType);
-    const text = sendToCutText(o);
-    window.open(`https://wa.me/${OWNER_WHATSAPP}?text=${encodeURIComponent(text)}`, "_blank");
+    if (!window.HA_DRIVE || !window.HA_DRIVE.enabled) {
+      alert("La exportación a Drive no está configurada todavía: sigue la sección 7 del README.");
+      return;
+    }
+    const btn = document.getElementById(`send-to-cut-${docId}`);
+    // La ventana se abre ya, dentro del clic, para que el navegador no la bloquee
+    // al abrirla después de la espera.
+    const win = window.open("", "_blank");
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "⏳ Subiendo a Drive...";
+    }
+    try {
+      const res = await window.HA_DRIVE.exportOrder(docId);
+      if (win) win.location.href = res.folderUrl;
+      if (res.fileMissing) {
+        alert("Subido a Drive, pero falta el archivo original del cliente (era demasiado grande): pídeselo y añádelo a la carpeta.");
+      }
+    } catch (e) {
+      if (win) win.close();
+      alert("No se pudo subir a Drive: " + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "✂️ Enviar a cortar";
+      }
+    }
   }
 
   async function resendCustomerEmail(docId) {
