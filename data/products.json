@@ -2,7 +2,7 @@
   {
     "id": "68e0d1e3-8ceb-4adf-896d-2fd5ce442a69",
     "title": "5 Puas de Buey Ambar Prime Horn",
-    "description": "Púa de cuerno de buey ámbar desarrollada a partir de la experiencia directa de músicos, refinada tras múltiples iteraciones basadas en feedback real. Esta nueva versión ofrece un equilibrio mejorado entre ataque, control y comodidad, permitiendo una respuesta más precisa y consistente en todo tipo de ejecución.\nFabricada en cuerno de buey ámbar natural, cada pieza presenta vetas y matices únicos propios de su origen natural, con una densidad y acabado optimizados para maximizar la transmisión del sonido, aportando claridad, definición y un tacto orgánico único. El resultado es una púa que no solo mejora el rendimiento, sino que también eleva la conexión entre el guitarrista y el instrumento.",
+    "description": "Set de 5 púas de cuerno de buey ámbar: tonos miel y ámbar translúcidos y, en alguna pieza, vetas más ahumadas en gris — el aspecto varía pieza a pieza por ser un material 100% natural. Frente al hueso, el cuerno aporta un matiz algo más cálido y ligeramente menos brillo en los agudos. Acabado pulido a mano, cómodo al tacto y sin cantos que enganchen la cuerda.",
     "price": 10,
     "sku": "RR0053",
     "category": "Accesorios",
@@ -22,7 +22,7 @@
   {
     "id": "806df2c5-2e3a-46c2-a653-5bb5423a7951",
     "title": "5 Puas de Cuerno de oveja latxa Prime Horn",
-    "description": "Púa de cuerno de oveja latxa desarrollada a partir de la experiencia directa de músicos, refinada tras múltiples iteraciones basadas en feedback real. Esta nueva versión ofrece un equilibrio mejorado entre ataque, control y comodidad, permitiendo una respuesta más precisa y consistente en todo tipo de ejecución.\nFabricada en cuerno de oveja latxa, raza autóctona del País Vasco, cada pieza conserva las vetas y matices naturales propios de este material, con una densidad y acabado optimizados para maximizar la transmisión del sonido, aportando claridad, definición y un tacto orgánico único. El resultado es una púa que no solo mejora el rendimiento, sino que también eleva la conexión entre el guitarrista y el instrumento.",
+    "description": "Set de 5 púas de cuerno de oveja latxa, raza autóctona del País Vasco: vetas más marcadas y contrastadas, alternando tonos tostados con bandas grises y oscuras, muy distintas del cuerno de buey. Frente al hueso, aporta un matiz algo más cálido y ligeramente menos brillo en los agudos. Acabado pulido a mano, cómodo al tacto y sin cantos que enganchen la cuerda.",
     "price": 10,
     "sku": "RR0057",
     "category": "Accesorios",
@@ -795,7 +795,7 @@
   {
     "id": "3c53dac4-2029-409d-a331-02df187fe56c",
     "title": "Hueso bovino blanco roto Natural Veta para cejuela",
-    "description": "Hueso bovino blanco roto Natural Veta55x6x10Precio unitario\t\t          3€     Precio 10 un                    2,76€  Precio 20 un                   2,70€  Precio mas de 30 un     2,55€",
+    "description": "Hueso bovino en bruto, variedad 'Natural Veta', de color blanco roto (un blanco cálido, no puro) con vetas naturales visibles y acabado mate sin pulir. Lista para tallar una cejuela.\n55 × 6 × 10 mm.\n\nPrecio por unidad: 3 €. A partir de 10 uds: 2,76 €/ud. A partir de 20 uds: 2,70 €/ud. A partir de 30 uds: 2,55 €/ud.",
     "price": 3,
     "sku": "RR0016",
     "category": "Hueso",
@@ -814,7 +814,7 @@
   {
     "id": "4a02d78d-72ff-496d-a3d3-66622ce8dd62",
     "title": "Hueso de Vaca Kobe para Cejuela",
-    "description": "Hueso de Vaca Kobe para Cejuela\n55x6x10",
+    "description": "Hueso de vaca en el acabado 'Kobe': un tono dorado-amarillento uniforme, distinto del blanco o marfil habitual del hueso, con vetas suaves en la misma gama de color. Pieza en bruto lista para tallar una cejuela.\n55 × 6 × 10 mm.",
     "price": 4,
     "sku": "RR0014",
     "category": "Hueso",
@@ -1115,7 +1115,7 @@
   {
     "id": "cff43c42-d4c1-49bf-843c-282906bfb087",
     "title": "Madre Perla Gold",
-    "description": "Madre Perla dorada \n\n38× 25× 2,5 mm",
+    "description": "Placa de madre perla en bruto, tono dorado con el brillo nacarado y las vetas cálidas propias de este acabado. Sin tallar: lista para incrustaciones, placas personalizadas o detalles decorativos.\n38 × 25 × 2,5 mm.",
     "price": 8,
     "sku": "RR0001",
     "category": "Madre Perla Y Abalone",
