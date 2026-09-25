@@ -419,6 +419,8 @@
         });
       const delBtn = document.getElementById(`cust-del-${c.key}`);
       if (delBtn) delBtn.addEventListener("click", () => deleteCustomer(c.key));
+      const mergeBtn = document.getElementById(`cust-merge-${c.key}`);
+      if (mergeBtn) mergeBtn.addEventListener("click", () => mergePendingOrders(c.key));
 
       if (editingCustomerKey === c.key) {
         const saveBtn = document.getElementById(`cedit-save-${c.key}`);
@@ -472,6 +474,7 @@
 
     const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
     const address = [c.address, [c.postalCode, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+    const mergeable = mergeablePendingOrders(c.key).length;
     const mainRow = `
       <tr>
         <td><b>${escapeHtml(c.name || "-")}</b></td>
@@ -485,6 +488,7 @@
         <td>${formatDate(c.lastOrderAt)}</td>
         <td class="row-actions">
           <button class="small-btn" id="cust-view-${key}" type="button">📦 Pedidos</button>
+          ${mergeable >= 2 ? `<button class="small-btn" id="cust-merge-${key}" type="button" title="Junta sus pedidos pendientes en uno solo, con un único envío">🔗 Agrupar pendientes (${mergeable})</button>` : ""}
           <button class="small-btn" id="cust-edit-${key}" type="button">✏️ Editar</button>
           <button class="small-btn danger" id="cust-del-${key}" type="button">🗑️ Borrar</button>
         </td>
@@ -542,6 +546,80 @@
       if (editingCustomerKey === key) editingCustomerKey = null;
     } catch (e) {
       alert("No se pudo borrar el cliente: " + e.message);
+    }
+  }
+
+  // Los pedidos del personalizador no se agrupan: cada uno lleva su propio diseño y
+  // archivo, y juntarlos podría pasar del límite de 1 MiB por documento de Firestore.
+  function mergeablePendingOrders(key) {
+    return ordersForCustomer(key)
+      .filter((o) => (o.status || "pendiente") === "pendiente" && !isDesignOrder(o))
+      .sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
+  }
+
+  // Suma en una sola línea el mismo producto al mismo precio y descuento.
+  function mergeItems(items) {
+    const out = [];
+    items.forEach((it) => {
+      const same = out.find(
+        (x) =>
+          (x.id || null) === (it.id || null) &&
+          (x.id || x.title === it.title) &&
+          Number(x.price) === Number(it.price) &&
+          (Number(x.discountPercent) || 0) === (Number(it.discountPercent) || 0)
+      );
+      if (same) same.qty = (Number(same.qty) || 0) + (Number(it.qty) || 0);
+      else out.push({ ...it });
+    });
+    return out;
+  }
+
+  // Se conserva el pedido más antiguo (su código y fecha) y los demás se borran. Los
+  // datos del cliente se toman del más reciente, las notas se juntan y el envío se
+  // cobra una sola vez (el más caro de los agrupados, para no quedarse corto).
+  async function mergePendingOrders(key) {
+    const group = mergeablePendingOrders(key);
+    if (group.length < 2) return;
+    const [target, ...rest] = group;
+    const newest = group[group.length - 1];
+    const items = mergeItems(group.flatMap((o) => o.items || []));
+    const subtotal = items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
+    const shippingCost = Math.max(...group.map((o) => Number(o.shippingCost) || 0));
+    const notes = [...new Set(group.map((o) => ((o.shipping && o.shipping.notes) || "").trim()).filter(Boolean))].join("\n");
+    const codes = group.map((o) => o.orderCode || o.docId);
+
+    if (
+      !confirm(
+        `¿Agrupar ${group.length} pedidos pendientes (${codes.join(", ")}) en el pedido ${codes[0]}?\n\n` +
+          `Total: ${formatPrice(subtotal + shippingCost)} (envío ${formatPrice(shippingCost)}, cobrado una sola vez).\n` +
+          `Los pedidos ${codes.slice(1).join(", ")} se borrarán.`
+      )
+    )
+      return;
+
+    const { docId, ...base } = target;
+    const merged = {
+      ...base,
+      items,
+      subtotal,
+      shippingCost,
+      total: subtotal + shippingCost,
+      paymentMethod: target.paymentMethod || (group.find((o) => o.paymentMethod) || {}).paymentMethod || "",
+      customer: { ...(target.customer || {}), ...(newest.customer || {}) },
+      shipping: { ...(target.shipping || {}), ...(newest.shipping || {}), notes },
+      mergedFrom: [...(target.mergedFrom || []), ...rest.flatMap((o) => [...(o.mergedFrom || []), o.orderCode || o.docId])],
+    };
+
+    try {
+      const db = firebase.firestore();
+      const batch = db.batch();
+      batch.set(db.collection("orders").doc(target.docId), merged);
+      rest.forEach((o) => batch.delete(db.collection("orders").doc(o.docId)));
+      await batch.commit();
+      if (group.some((o) => o.docId === editingDocId)) resetOrderForm();
+      expandedCustomerKey = key;
+    } catch (e) {
+      alert("No se pudieron agrupar los pedidos: " + e.message);
     }
   }
 
@@ -702,6 +780,7 @@
             ${s.address ? `<div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>` : ""}
             ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
             ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
+            ${o.mergedFrom && o.mergedFrom.length ? `<div class="order-customer-line">🔗 Agrupa también: ${escapeHtml(o.mergedFrom.join(", "))}</div>` : ""}
           </div>
         </div>
       </article>
