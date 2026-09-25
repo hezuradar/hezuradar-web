@@ -199,7 +199,8 @@ estructura:
     <Código del pedido>/
       HA-…-diseno.jpg          diseño ajustado sobre la pieza
       <archivo del cliente>    PDF/DXF original que subió
-      HA-…-nota-pedido.pdf     nota del pedido (material, notas, detalle, cliente)
+      HA-…-nota-pedido.pdf     nota del pedido (material, cantidad, notas y datos de contacto;
+                               sin importes ni dirección de envío)
 ```
 
 Se hace en dos momentos:
@@ -209,6 +210,10 @@ Se hace en dos momentos:
 - **Al pulsar "✂️ Enviar a cortar"** en el panel: vuelve a subirlo con los datos actuales
   (p.ej. ya presupuestado), reemplaza los archivos anteriores y abre la carpeta. Una vez exportado,
   el pedido muestra también un botón "📁 Drive".
+
+La primera exportación de cada pedido manda además un correo a hezuradar@gmail.com
+(`NOTIFY_EMAIL` en `Code.gs`) con la nota en PDF y el diseño adjuntos y el enlace a la carpeta.
+Las reexportaciones con "Enviar a cortar" no vuelven a avisar.
 
 Como GitHub Pages no tiene servidor, la subida la hace una aplicación web de Google Apps Script
 (`scripts/drive-export/`) que se ejecuta con tu cuenta de Google. La web solo le manda el ID del
@@ -224,8 +229,8 @@ arbitrarios a tu Drive.
 3. **Configuración del proyecto** (rueda dentada) → activa *Mostrar el archivo de manifiesto
    "appsscript.json"* → vuelve al editor y sustituye ese archivo por `scripts/drive-export/appsscript.json`.
 4. **Implementar → Nueva implementación → Aplicación web**. *Ejecutar como*: **Yo**;
-   *Quién tiene acceso*: **Cualquier usuario**. Autoriza los permisos que pide (Drive, Firestore y
-   conexiones externas; Google avisará de que la app no está verificada: *Configuración avanzada →
+   *Quién tiene acceso*: **Cualquier usuario**. Autoriza los permisos que pide (Drive, Firestore,
+   conexiones externas y enviar correo; Google avisará de que la app no está verificada: *Configuración avanzada →
    Ir a HezurAdar Drive*).
 5. Copia la URL que termina en `/exec` y pégala en `DRIVE_EXPORT_URL` de `assets/js/drive-export.js`.
    Sube el cambio.

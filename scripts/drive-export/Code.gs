@@ -14,16 +14,19 @@
  *
  * Si se vuelve a exportar el mismo pedido (p.ej. tras presupuestarlo), los
  * archivos con el mismo nombre se mandan a la papelera y se crean de nuevo.
+ *
+ * La primera vez que se exporta un pedido se manda un aviso a NOTIFY_EMAIL con
+ * la nota en PDF, el diseño y el enlace a la carpeta (las reexportaciones no avisan).
  * Instrucciones de instalación: README.md, sección 7.
  */
 
 const ROOT_FOLDER_ID = "1MML8aSlkTRKsJQjeQ8ukaGbSN1J_O_e4";
 const FIREBASE_PROJECT_ID = "hezuradar-web";
+const NOTIFY_EMAIL = "hezuradar@gmail.com";
 const DESIGN_KINDS = {
   "placa-personalizada": "Placa personalizada",
   "pua-personalizada": "Púa personalizada",
 };
-const PAYMENT_LABELS = { paypal: "PayPal", bizum: "Bizum", otros: "Otros" };
 
 function doPost(e) {
   try {
@@ -74,9 +77,8 @@ function exportOrder_(orderId) {
   const orderFolder = getOrCreateFolder_(clientFolder, code);
 
   const files = [];
-  if (d.snapshot) {
-    files.push(putFile_(orderFolder, dataUrlToBlob_(d.snapshot, "image/jpeg", code + "-diseno.jpg")));
-  }
+  const designJpg = d.snapshot ? dataUrlToBlob_(d.snapshot, "image/jpeg", code + "-diseno.jpg") : null;
+  if (designJpg) files.push(putFile_(orderFolder, designJpg));
   if (d.fileData) {
     const name = safeName_(d.fileName) || code + "-archivo-cliente";
     files.push(putFile_(orderFolder, dataUrlToBlob_(d.fileData, d.fileType, name)));
@@ -88,8 +90,38 @@ function exportOrder_(orderId) {
   files.push(putFile_(orderFolder, pdf));
 
   const folderUrl = orderFolder.getUrl();
+  // driveExportedAt se lee antes de marcarlo: así solo avisa la primera exportación,
+  // aunque el cliente y el admin la lancen a la vez (el bloqueo de doPost las ordena).
+  const isNew = !o.driveExportedAt;
   markExported_(orderId, folderUrl);
+  if (isNew) notifyNewOrder_(o, code, folderUrl, [pdf, designJpg].filter(Boolean));
   return { folderUrl, files, fileMissing: !d.fileData && !!d.fileTooLargeToEmbed };
+}
+
+/* ---------------- Aviso por email ---------------- */
+
+function notifyNewOrder_(o, code, folderUrl, attachments) {
+  const c = o.customer || {};
+  const notes = (o.shipping && o.shipping.notes) || "";
+  const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;font-size:14px">
+    <p><b>Nuevo pedido de ${esc_(DESIGN_KINDS[o.kind].toLowerCase())}: ${esc_(code)}</b></p>
+    <p>Material: ${esc_((o.material && o.material.label) || "-")}<br>Cantidad: ${esc_(qty_(o))}</p>
+    <p><b>${esc_(c.name || "-")}</b>${c.phone ? "<br>Tel: " + esc_(c.phone) : ""}${c.email ? "<br>Email: " + esc_(c.email) : ""}</p>
+    ${notes ? `<p><b>Nota del cliente:</b><br>${esc_(notes).replace(/\n/g, "<br>")}</p>` : ""}
+    <p><a href="${folderUrl}">📁 Abrir la carpeta del pedido en Drive</a></p>
+  </div>`;
+  try {
+    MailApp.sendEmail({
+      to: NOTIFY_EMAIL,
+      subject: `Nuevo pedido ${code} · ${DESIGN_KINDS[o.kind]} · ${c.name || "sin nombre"}`,
+      htmlBody: html,
+      attachments,
+      replyTo: c.email || undefined,
+    });
+  } catch (err) {
+    // Los archivos ya están en Drive: un fallo del correo no debe dar el pedido por fallido.
+    console.error("No se pudo enviar el aviso por email: " + err);
+  }
 }
 
 /* ---------------- Drive ---------------- */
@@ -182,21 +214,8 @@ function decodeValue_(v) {
 
 function noteHtml_(o, orderId) {
   const c = o.customer || {};
-  const s = o.shipping || {};
   const d = o.design || {};
-  const items = o.items || [];
-  const shippingCost = Number(o.shippingCost) || 0;
-  const itemsSum = items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
-  const total = typeof o.total === "number" ? o.total : (Number(o.subtotal) || 0) + shippingCost;
-  const rows = items
-    .map(
-      (it) =>
-        `<tr><td>${esc_(it.title)}</td><td class="num">${Number(it.qty) || 0}</td><td class="num">${price_(it.price)}</td><td class="num">${price_((Number(it.price) || 0) * (Number(it.qty) || 0))}</td></tr>`
-    )
-    .join("");
-  const address = [s.address, [s.postalCode, s.city].filter(Boolean).join(" "), s.province ? "(" + s.province + ")" : ""]
-    .filter(Boolean)
-    .join(", ");
+  const notes = (o.shipping && o.shipping.notes) || "";
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
     body{font-family:Arial,Helvetica,sans-serif;color:#222;font-size:13px}
@@ -204,10 +223,6 @@ function noteHtml_(o, orderId) {
     .brand{font-size:20px;font-weight:bold;color:#245F96}
     .doc{font-size:15px;font-weight:bold;margin-top:6px}
     h3{font-size:13px;color:#245F96;margin:16px 0 6px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:6px;border-bottom:1px solid #ddd;text-align:left}
-    .num{text-align:right}
-    .total td{font-weight:bold;border-top:2px solid #245F96}
     .notes{padding:8px 10px;border:1px solid #245F96;background:#eaf2fb}
     .warn{padding:8px 10px;border:1px solid #c0392b;background:#fdecea;color:#8a1f13}
     img{max-width:420px;border:1px solid #ddd}
@@ -220,28 +235,16 @@ function noteHtml_(o, orderId) {
 
     <h3>Pieza</h3>
     <div>Material: <b>${esc_((o.material && o.material.label) || "-")}</b></div>
+    <div>Cantidad: <b>${esc_(qty_(o))}</b></div>
     ${d.fileName ? `<div>Archivo del cliente: ${esc_(d.fileName)}</div>` : ""}
     ${d.fileTooLargeToEmbed ? `<p class="warn">El archivo original era demasiado grande para guardarlo: hay que pedírselo al cliente.</p>` : ""}
 
-    ${s.notes ? `<h3>Nota del cliente</h3><div class="notes">${esc_(s.notes)}</div>` : ""}
-
-    <h3>Detalle</h3>
-    <table>
-      <thead><tr><th>Concepto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot>
-        <tr><td colspan="3">Productos</td><td class="num">${price_(itemsSum)}</td></tr>
-        ${shippingCost > 0 ? `<tr><td colspan="3">Envío</td><td class="num">${price_(shippingCost)}</td></tr>` : ""}
-        <tr class="total"><td colspan="3">Total</td><td class="num">${price_(total)}</td></tr>
-      </tfoot>
-    </table>
+    ${notes ? `<h3>Nota del cliente</h3><div class="notes">${esc_(notes)}</div>` : ""}
 
     <h3>Cliente</h3>
     <div><b>${esc_(c.name || "-")}</b></div>
     ${c.phone ? `<div>Tel: ${esc_(c.phone)}</div>` : ""}
     ${c.email ? `<div>Email: ${esc_(c.email)}</div>` : ""}
-    ${address ? `<div>Dirección: ${esc_(address)}</div>` : ""}
-    ${o.paymentMethod ? `<div>Forma de pago: ${esc_(PAYMENT_LABELS[o.paymentMethod] || o.paymentMethod)}</div>` : ""}
 
     ${d.snapshot ? `<h3>Diseño</h3><img src="${d.snapshot}">` : ""}
   </body></html>`;
@@ -251,8 +254,8 @@ function esc_(str) {
   return String(str == null ? "" : str).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 }
 
-function price_(n) {
-  return (Number(n) || 0).toFixed(2).replace(".", ",") + " €";
+function qty_(o) {
+  return ((o.items || [])[0] || {}).qty || 1;
 }
 
 function date_(iso) {
