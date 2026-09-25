@@ -237,6 +237,10 @@ Si "Enviar a cortar" da un error de Firestore (403), la cuenta del script no tie
 proyecto Firebase: añádela en la consola de Firebase → *Configuración del proyecto → Usuarios y
 permisos* como Propietario o Editor.
 
+> Instalación actual: el script está en la cuenta **hezuradar@gmail.com** (dueña de la carpeta de
+> Drive), proyecto "HezurAdar Drive". El proyecto Firebase es de iotegi@gmail.com y hezuradar@gmail.com
+> se añadió como Editor para que el script pueda leer los pedidos.
+
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de

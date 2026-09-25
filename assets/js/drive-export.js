@@ -4,7 +4,8 @@
   // URL de la aplicación web de Apps Script (scripts/drive-export/Code.gs), la que
   // termina en /exec. Mientras esté vacía no se exporta nada a Drive.
   // Instrucciones: README.md, sección 7.
-  const DRIVE_EXPORT_URL = "";
+  const DRIVE_EXPORT_URL =
+    "https://script.google.com/macros/s/AKfycbx_pt9xLeoCZuohwVu3ylEFnjOzpx0nzwr1HLWm3sFNFynisApuRvVI-8MkNFKDj9qS/exec";
 
   // Se manda como text/plain para que sea una petición "simple" sin preflight CORS,
   // que Apps Script no sabe responder. Solo viaja el ID del documento de Firestore:

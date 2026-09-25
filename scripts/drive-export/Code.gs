@@ -49,6 +49,19 @@ function doGet() {
   return json_({ ok: true, service: "hezuradar-drive-export" });
 }
 
+// Ejecútala una vez desde el editor (▶ Ejecutar) al instalarlo: pide los permisos
+// y comprueba que la cuenta llega a la carpeta de Drive y a los pedidos de Firestore.
+function probarConexion() {
+  const folder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+  console.log("✅ Drive: carpeta \"" + folder.getName() + "\" accesible.");
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/orders?pageSize=1&mask.fieldPaths=orderCode`;
+  const res = UrlFetchApp.fetch(url, { headers: firestoreHeaders_(), muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) {
+    throw new Error("❌ Firestore respondió " + res.getResponseCode() + ": " + res.getContentText());
+  }
+  console.log("✅ Firestore: pedidos accesibles.");
+}
+
 function exportOrder_(orderId) {
   const o = getOrder_(orderId);
   if (!DESIGN_KINDS[o.kind]) throw new Error("Solo se exportan pedidos de placa o púa personalizada.");
