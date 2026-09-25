@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20260923e">
+<link rel="stylesheet" href="assets/css/style.css?v=20260925f">
 <script src="assets/js/device.js?v=20260915l"></script>
 </head>
 <body class="admin-body">
@@ -378,47 +378,114 @@
       <p class="help-text">Inicia sesión en la pestaña "Pedidos" para ver las estadísticas.</p>
     </div>
     <div id="stats-panel" style="display:none">
-      <div class="card-panel">
-        <h3>Resumen (últimos 30 días)</h3>
-        <div class="revenue-summary">
-          <div class="revenue-stat"><span>Visitas a la web</span><b id="stat-visits">0</b></div>
-          <div class="revenue-stat"><span>Pedidos</span><b id="stat-orders">0</b></div>
-          <div class="revenue-stat"><span>Facturación</span><b id="stat-revenue">0,00&nbsp;€</b></div>
-          <div class="revenue-stat"><span>Ticket medio</span><b id="stat-avg">0,00&nbsp;€</b></div>
-          <div class="revenue-stat"><span>Tasa de conversión</span><b id="stat-conversion">-</b></div>
-          <div class="revenue-stat"><span>Solicitudes de diseño</span><b id="stat-design">0</b></div>
+      <div class="stats-toolbar">
+        <div>
+          <h2 class="stats-title">Cuadro de mando</h2>
+          <p class="stats-sub" id="stats-range-label"></p>
         </div>
-        <p class="help-text" id="stats-visits-notice" style="display:none">
-          Todavía no se han registrado visitas. Si acabas de añadir esta sección, revisa que
-          las reglas de Firestore permiten escribir en la colección <code>analytics_daily</code>
-          (ver README).
-        </p>
+        <div class="stats-range" role="group" aria-label="Periodo">
+          <button type="button" data-days="7">7 días</button>
+          <button type="button" data-days="30" class="active">30 días</button>
+          <button type="button" data-days="90">90 días</button>
+          <button type="button" data-days="0">Todo</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi kpi-hero">
+          <span class="kpi-label">Facturación</span>
+          <b class="kpi-value" id="stat-revenue">0,00&nbsp;€</b>
+          <span class="kpi-delta" id="delta-revenue"></span>
+          <div class="kpi-spark" id="spark-revenue"></div>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Pedidos</span>
+          <b class="kpi-value" id="stat-orders">0</b>
+          <span class="kpi-delta" id="delta-orders"></span>
+          <span class="kpi-note">+ <b id="stat-design">0</b> solicitudes de diseño</span>
+          <div class="kpi-spark" id="spark-orders"></div>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Ticket medio</span>
+          <b class="kpi-value" id="stat-avg">0,00&nbsp;€</b>
+          <span class="kpi-delta" id="delta-avg"></span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Visitas a la web</span>
+          <b class="kpi-value" id="stat-visits">0</b>
+          <span class="kpi-delta" id="delta-visits"></span>
+          <div class="kpi-spark" id="spark-visits"></div>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Tasa de conversión</span>
+          <b class="kpi-value" id="stat-conversion">-</b>
+          <span class="kpi-delta" id="delta-conversion"></span>
+        </div>
+      </div>
+
+      <div class="card-panel stats-card">
+        <div class="stats-card-head">
+          <div>
+            <h3 id="revenue-title">Facturación por día</h3>
+            <p class="stats-card-sub">Pedidos no cancelados, sin contar las solicitudes de diseño</p>
+          </div>
+          <dl class="stats-facts">
+            <div><dt>Media diaria</dt><dd id="revenue-avg-day">-</dd></div>
+            <div><dt>Mejor día</dt><dd id="revenue-best-day">-</dd></div>
+            <div><dt>Días con ventas</dt><dd id="revenue-active-days">-</dd></div>
+          </dl>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-revenue" aria-label="Facturación por día" role="img"></canvas></div>
       </div>
 
       <div class="stats-grid">
-        <div class="card-panel">
-          <h3>Visitas por día</h3>
-          <div class="chart-wrap"><canvas id="chart-visits"></canvas></div>
+        <div class="card-panel stats-card">
+          <div class="stats-card-head">
+            <div>
+              <h3>Pedidos por estado</h3>
+              <p class="stats-card-sub">Pedidos creados en el periodo</p>
+            </div>
+          </div>
+          <div id="status-todo" class="status-todo" hidden></div>
+          <div id="status-bar" class="status-bar" role="img"></div>
+          <ul id="status-list" class="status-list"></ul>
         </div>
-        <div class="card-panel">
-          <h3>Facturación por día</h3>
-          <div class="chart-wrap"><canvas id="chart-revenue"></canvas></div>
+
+        <div class="card-panel stats-card">
+          <div class="stats-card-head">
+            <div>
+              <h3>Productos más vendidos</h3>
+              <p class="stats-card-sub" id="top-sold-sub">Por unidades, pedidos no cancelados</p>
+            </div>
+            <div class="seg-toggle" role="group" aria-label="Ordenar por">
+              <button type="button" data-metric="units" class="active">Unidades</button>
+              <button type="button" data-metric="revenue">Facturación</button>
+            </div>
+          </div>
+          <ol id="top-sold-list" class="rank-list"></ol>
         </div>
-        <div class="card-panel">
-          <h3>Pedidos por estado</h3>
-          <div class="chart-wrap"><canvas id="chart-status"></canvas></div>
+      </div>
+
+      <h3 class="stats-section-title">Tráfico de la web</h3>
+      <p class="help-text" id="stats-visits-notice" style="display:none">
+        Todavía no se han registrado visitas. Si acabas de añadir esta sección, revisa que
+        las reglas de Firestore permiten escribir en la colección <code>analytics_daily</code>
+        (ver README).
+      </p>
+      <div class="card-panel stats-card">
+        <div class="stats-card-head">
+          <div><h3>Visitas por día</h3></div>
         </div>
-        <div class="card-panel">
-          <h3>Visitas por página</h3>
-          <div class="chart-wrap"><canvas id="chart-pages"></canvas></div>
+        <div class="chart-wrap"><canvas id="chart-visits" aria-label="Visitas por día" role="img"></canvas></div>
+      </div>
+      <div class="stats-grid">
+        <div class="card-panel stats-card">
+          <div class="stats-card-head"><div><h3>Visitas por página</h3></div></div>
+          <ol id="pages-list" class="rank-list"></ol>
         </div>
-        <div class="card-panel">
-          <h3>Productos más vistos</h3>
-          <div class="chart-wrap chart-wrap-tall"><canvas id="chart-top-viewed"></canvas></div>
-        </div>
-        <div class="card-panel">
-          <h3>Productos más vendidos</h3>
-          <div class="chart-wrap chart-wrap-tall"><canvas id="chart-top-sold"></canvas></div>
+        <div class="card-panel stats-card">
+          <div class="stats-card-head"><div><h3>Productos más vistos</h3></div></div>
+          <ol id="top-viewed-list" class="rank-list"></ol>
         </div>
       </div>
     </div>
@@ -439,6 +506,6 @@
 <script src="assets/js/drive-export.js?v=20260925a"></script>
 <script src="assets/js/admin-orders.js?v=20260925c"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-<script src="assets/js/admin-stats.js?v=20260919b"></script>
+<script src="assets/js/admin-stats.js?v=20260925d"></script>
 </body>
 </html>
