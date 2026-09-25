@@ -8,10 +8,12 @@
   var STANDARD_SHIPPING_EUR = "5.50"; // Coincide con SHIPPING_COST en assets/js/cart.js
   var RETURN_WINDOW_DAYS = 5;
   // Política real de devoluciones y envío (confirmada por el propietario, no
-  // inventada): el cliente paga el envío de vuelta, la devolución se hace por
+  // inventada): el cliente organiza y paga él mismo el envío de vuelta (no hay
+  // importe fijo, por eso ReturnFeesCustomerResponsibility y no
+  // ReturnShippingFees, que obligaría a declarar returnShippingFeesAmount), la devolución se hace por
   // correo/mensajería, el pedido se prepara en 1-2 días laborables y el
   // tránsito dentro de España peninsular es de 2-4 días laborables.
-  var RETURN_FEES = "https://schema.org/ReturnShippingFees";
+  var RETURN_FEES = "https://schema.org/ReturnFeesCustomerResponsibility";
   var RETURN_METHOD = "https://schema.org/ReturnByMail";
   var HANDLING_TIME_DAYS = { min: 1, max: 2 };
   var TRANSIT_TIME_DAYS = { min: 2, max: 4 };
