@@ -65,25 +65,50 @@ function probarConexion() {
   console.log("✅ Firestore: pedidos accesibles.");
 }
 
+// Diseños del pedido: los del personalizador llevan uno (kind/material/design) y los
+// pedidos agrupados desde el panel pueden llevar varios en designs[].
+function orderDesigns_(o) {
+  if (Array.isArray(o.designs)) return o.designs;
+  if (!DESIGN_KINDS[o.kind]) return [];
+  return [{ kind: o.kind, orderCode: o.orderCode, material: o.material, qty: qty_(o), design: o.design || {} }];
+}
+
+function designsLabel_(designs) {
+  return designs.length > 1 ? "Varios diseños" : DESIGN_KINDS[designs[0].kind] || "Diseño personalizado";
+}
+
 function exportOrder_(orderId) {
   const o = getOrder_(orderId);
-  if (!DESIGN_KINDS[o.kind]) throw new Error("Solo se exportan pedidos de placa o púa personalizada.");
+  const designs = orderDesigns_(o);
+  if (!designs.length) throw new Error("Solo se exportan pedidos de placa o púa personalizada.");
   const c = o.customer || {};
-  const d = o.design || {};
   const code = safeName_(o.orderCode || orderId);
 
   const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
   const clientFolder = getOrCreateFolder_(root, safeName_(c.name) || "Sin nombre");
   const orderFolder = getOrCreateFolder_(clientFolder, code);
 
+  // Con varios diseños, cada archivo lleva delante el código de su pedido de origen.
   const files = [];
-  const designJpg = d.snapshot ? dataUrlToBlob_(d.snapshot, "image/jpeg", code + "-diseno.jpg") : null;
-  if (designJpg) files.push(putFile_(orderFolder, designJpg));
-  if (d.fileData) {
-    const name = safeName_(d.fileName) || code + "-archivo-cliente";
-    files.push(putFile_(orderFolder, dataUrlToBlob_(d.fileData, d.fileType, name)));
-  }
-  const pdf = HtmlService.createHtmlOutput(noteHtml_(o, orderId))
+  const designJpgs = [];
+  let fileMissing = false;
+  designs.forEach((ds) => {
+    const d = ds.design || {};
+    const prefix = designs.length > 1 ? safeName_(ds.orderCode) || code : code;
+    if (d.snapshot) {
+      const jpg = dataUrlToBlob_(d.snapshot, "image/jpeg", prefix + "-diseno.jpg");
+      designJpgs.push(jpg);
+      files.push(putFile_(orderFolder, jpg));
+    }
+    if (d.fileData) {
+      const base = safeName_(d.fileName) || "archivo-cliente";
+      const name = designs.length > 1 || !d.fileName ? prefix + "-" + base : base;
+      files.push(putFile_(orderFolder, dataUrlToBlob_(d.fileData, d.fileType, name)));
+    } else if (d.fileTooLargeToEmbed) {
+      fileMissing = true;
+    }
+  });
+  const pdf = HtmlService.createHtmlOutput(noteHtml_(o, orderId, designs))
     .getBlob()
     .getAs("application/pdf")
     .setName(code + "-nota-pedido.pdf");
@@ -94,18 +119,21 @@ function exportOrder_(orderId) {
   // aunque el cliente y el admin la lancen a la vez (el bloqueo de doPost las ordena).
   const isNew = !o.driveExportedAt;
   markExported_(orderId, folderUrl);
-  if (isNew) notifyNewOrder_(o, code, folderUrl, [pdf, designJpg].filter(Boolean));
-  return { folderUrl, files, fileMissing: !d.fileData && !!d.fileTooLargeToEmbed };
+  if (isNew) notifyNewOrder_(o, code, folderUrl, designs, [pdf, ...designJpgs]);
+  return { folderUrl, files, fileMissing };
 }
 
 /* ---------------- Aviso por email ---------------- */
 
-function notifyNewOrder_(o, code, folderUrl, attachments) {
+function notifyNewOrder_(o, code, folderUrl, designs, attachments) {
   const c = o.customer || {};
   const notes = (o.shipping && o.shipping.notes) || "";
+  const pieces = designs
+    .map((ds) => `Material: ${esc_((ds.material && ds.material.label) || "-")} · Cantidad: ${esc_(ds.qty || 1)}`)
+    .join("<br>");
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;color:#222;font-size:14px">
-    <p><b>Nuevo pedido de ${esc_(DESIGN_KINDS[o.kind].toLowerCase())}: ${esc_(code)}</b></p>
-    <p>Material: ${esc_((o.material && o.material.label) || "-")}<br>Cantidad: ${esc_(qty_(o))}</p>
+    <p><b>Nuevo pedido (${esc_(designsLabel_(designs).toLowerCase())}): ${esc_(code)}</b></p>
+    <p>${pieces}</p>
     <p><b>${esc_(c.name || "-")}</b>${c.phone ? "<br>Tel: " + esc_(c.phone) : ""}${c.email ? "<br>Email: " + esc_(c.email) : ""}</p>
     ${notes ? `<p><b>Nota del cliente:</b><br>${esc_(notes).replace(/\n/g, "<br>")}</p>` : ""}
     <p><a href="${folderUrl}">📁 Abrir la carpeta del pedido en Drive</a></p>
@@ -113,7 +141,7 @@ function notifyNewOrder_(o, code, folderUrl, attachments) {
   try {
     MailApp.sendEmail({
       to: NOTIFY_EMAIL,
-      subject: `Nuevo pedido ${code} · ${DESIGN_KINDS[o.kind]} · ${c.name || "sin nombre"}`,
+      subject: `Nuevo pedido ${code} · ${designsLabel_(designs)} · ${c.name || "sin nombre"}`,
       htmlBody: html,
       attachments,
       replyTo: c.email || undefined,
@@ -212,10 +240,28 @@ function decodeValue_(v) {
 
 /* ---------------- Nota del pedido (HTML → PDF) ---------------- */
 
-function noteHtml_(o, orderId) {
+function noteHtml_(o, orderId, designs) {
   const c = o.customer || {};
-  const d = o.design || {};
   const notes = (o.shipping && o.shipping.notes) || "";
+  const many = designs.length > 1;
+  const pieces = designs
+    .map((ds, i) => {
+      const d = ds.design || {};
+      return `
+    <h3>${many ? `Diseño ${i + 1} · ${esc_(DESIGN_KINDS[ds.kind] || "Diseño")} · ${esc_(ds.orderCode || "")}` : "Pieza"}</h3>
+    <div>Material: <b>${esc_((ds.material && ds.material.label) || "-")}</b></div>
+    <div>Cantidad: <b>${esc_(ds.qty || 1)}</b></div>
+    ${d.fileName ? `<div>Archivo del cliente: ${esc_(d.fileName)}</div>` : ""}
+    ${d.fileTooLargeToEmbed ? `<p class="warn">El archivo original era demasiado grande para guardarlo: hay que pedírselo al cliente.</p>` : ""}
+    ${d.fileInDrive ? `<p>El archivo original está en la carpeta de Drive del pedido ${esc_(ds.orderCode || "")}.</p>` : ""}
+    ${d.snapshot ? `<img src="${d.snapshot}">` : ""}`;
+    })
+    .join("");
+  // En un pedido agrupado se listan también los demás productos (sin precios).
+  const others = many || (o.items || []).length > designs.length
+    ? `<h3>Productos del pedido</h3>` +
+      (o.items || []).map((it) => `<div>${esc_(Number(it.qty) || 0)}× ${esc_(it.title)}</div>`).join("")
+    : "";
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
     body{font-family:Arial,Helvetica,sans-serif;color:#222;font-size:13px}
@@ -225,28 +271,22 @@ function noteHtml_(o, orderId) {
     h3{font-size:13px;color:#245F96;margin:16px 0 6px}
     .notes{padding:8px 10px;border:1px solid #245F96;background:#eaf2fb}
     .warn{padding:8px 10px;border:1px solid #c0392b;background:#fdecea;color:#8a1f13}
-    img{max-width:420px;border:1px solid #ddd}
+    img{max-width:420px;border:1px solid #ddd;margin-top:6px}
   </style></head><body>
     <div class="head">
       <div class="brand">HezurAdar</div>
-      <div class="doc">Nota de pedido · ${esc_(DESIGN_KINDS[o.kind])}</div>
+      <div class="doc">Nota de pedido · ${esc_(designsLabel_(designs))}</div>
       <div>Pedido ${esc_(o.orderCode || orderId)} · ${esc_(date_(o.createdAt))} · Estado: ${esc_(o.status || "pendiente")}</div>
     </div>
+    ${pieces}
+    ${others}
 
-    <h3>Pieza</h3>
-    <div>Material: <b>${esc_((o.material && o.material.label) || "-")}</b></div>
-    <div>Cantidad: <b>${esc_(qty_(o))}</b></div>
-    ${d.fileName ? `<div>Archivo del cliente: ${esc_(d.fileName)}</div>` : ""}
-    ${d.fileTooLargeToEmbed ? `<p class="warn">El archivo original era demasiado grande para guardarlo: hay que pedírselo al cliente.</p>` : ""}
-
-    ${notes ? `<h3>Nota del cliente</h3><div class="notes">${esc_(notes)}</div>` : ""}
+    ${notes ? `<h3>Nota del cliente</h3><div class="notes">${esc_(notes).replace(/\n/g, "<br>")}</div>` : ""}
 
     <h3>Cliente</h3>
     <div><b>${esc_(c.name || "-")}</b></div>
     ${c.phone ? `<div>Tel: ${esc_(c.phone)}</div>` : ""}
     ${c.email ? `<div>Email: ${esc_(c.email)}</div>` : ""}
-
-    ${d.snapshot ? `<h3>Diseño</h3><img src="${d.snapshot}">` : ""}
   </body></html>`;
 }
 

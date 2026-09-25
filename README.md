@@ -215,6 +215,12 @@ La primera exportación de cada pedido manda además un correo a hezuradar@gmail
 (`NOTIFY_EMAIL` en `Code.gs`) con la nota en PDF y el diseño adjuntos y el enlace a la carpeta.
 Las reexportaciones con "Enviar a cortar" no vuelven a avisar.
 
+Si en la pestaña **Clientes** se agrupan varios pedidos pendientes ("🔗 Agrupar pendientes"),
+el pedido resultante guarda todos los diseños en `designs[]`. "Enviar a cortar" sube entonces a
+una sola carpeta (la del pedido que se conserva) los diseños y archivos de todos, con el código
+de su pedido de origen delante, y una única nota en PDF. Si los archivos no caben juntos en el
+pedido (1 MB por documento de Firestore), los que ya estaban en Drive se quedan solo allí.
+
 Como GitHub Pages no tiene servidor, la subida la hace una aplicación web de Google Apps Script
 (`scripts/drive-export/`) que se ejecuta con tu cuenta de Google. La web solo le manda el ID del
 pedido; el script lo lee él mismo de Firestore, así que nadie puede usarlo para subir archivos

@@ -219,15 +219,17 @@
       if (waAlbaranBtn) waAlbaranBtn.addEventListener("click", () => sendAlbaranWhatsApp(o.docId));
       const resendEmailBtn = document.getElementById(`resend-email-${o.docId}`);
       if (resendEmailBtn) resendEmailBtn.addEventListener("click", () => resendCustomerEmail(o.docId));
-      const viewDesignBtn = document.getElementById(`view-design-${o.docId}`);
-      if (viewDesignBtn) viewDesignBtn.addEventListener("click", () => viewDesign(o));
-      const downloadBtn = document.getElementById(`download-design-${o.docId}`);
-      if (downloadBtn) {
-        downloadBtn.addEventListener("click", () => {
-          const d = o.design || {};
-          downloadDesignFile(d.fileData, d.fileName, d.fileType);
-        });
-      }
+      orderDesigns(o).forEach((ds, i) => {
+        const viewDesignBtn = document.getElementById(`view-design-${o.docId}-${i}`);
+        if (viewDesignBtn) viewDesignBtn.addEventListener("click", () => viewDesign(ds));
+        const downloadBtn = document.getElementById(`download-design-${o.docId}-${i}`);
+        if (downloadBtn) {
+          downloadBtn.addEventListener("click", () => {
+            const d = ds.design || {};
+            downloadDesignFile(d.fileData, d.fileName, d.fileType);
+          });
+        }
+      });
       const sendToCutBtn = document.getElementById(`send-to-cut-${o.docId}`);
       if (sendToCutBtn) sendToCutBtn.addEventListener("click", () => sendToCut(o.docId));
     });
@@ -266,10 +268,10 @@
     }
   }
 
-  function viewDesign(o) {
-    const d = o.design || {};
+  function viewDesign(ds) {
+    const d = ds.design || {};
     if (!d.snapshot) return;
-    const material = (o.material && o.material.label) || "";
+    const material = (ds.material && ds.material.label) || "";
     const overlay = document.createElement("div");
     overlay.className = "modal-backdrop";
     overlay.innerHTML = `
@@ -549,11 +551,26 @@
     }
   }
 
-  // Los pedidos del personalizador no se agrupan: cada uno lleva su propio diseño y
-  // archivo, y juntarlos podría pasar del límite de 1 MiB por documento de Firestore.
+  // Diseños de un pedido: los del personalizador llevan uno (kind/material/design) y
+  // los agrupados pueden llevar varios en designs[].
+  function orderDesigns(o) {
+    if (Array.isArray(o.designs)) return o.designs;
+    if (!isDesignOrder(o)) return [];
+    return [
+      {
+        kind: o.kind,
+        orderCode: o.orderCode || o.docId,
+        material: o.material || null,
+        qty: ((o.items || [])[0] || {}).qty || 1,
+        design: o.design || {},
+        driveFolderUrl: o.driveFolderUrl || "",
+      },
+    ];
+  }
+
   function mergeablePendingOrders(key) {
     return ordersForCustomer(key)
-      .filter((o) => (o.status || "pendiente") === "pendiente" && !isDesignOrder(o))
+      .filter((o) => (o.status || "pendiente") === "pendiente")
       .sort((a, b) => String(a.createdAt || "").localeCompare(String(b.createdAt || "")));
   }
 
@@ -564,7 +581,7 @@
       const same = out.find(
         (x) =>
           (x.id || null) === (it.id || null) &&
-          (x.id || x.title === it.title) &&
+          x.title === it.title &&
           Number(x.price) === Number(it.price) &&
           (Number(x.discountPercent) || 0) === (Number(it.discountPercent) || 0)
       );
@@ -574,30 +591,34 @@
     return out;
   }
 
+  // Firestore no admite documentos de más de 1 MiB; se deja margen para los nombres de campo.
+  const MAX_ORDER_BYTES = 1000000;
+  const docBytes = (obj) => new Blob([JSON.stringify(obj)]).size;
+
   // Se conserva el pedido más antiguo (su código y fecha) y los demás se borran. Los
   // datos del cliente se toman del más reciente, las notas se juntan y el envío se
-  // cobra una sola vez (el más caro de los agrupados, para no quedarse corto).
+  // cobra una sola vez (el más caro de los agrupados, para no quedarse corto). Los
+  // diseños de placas/púas pasan a designs[], y sus líneas llevan el código del
+  // pedido de origen para no confundir dos placas iguales al ponerles precio.
   async function mergePendingOrders(key) {
     const group = mergeablePendingOrders(key);
     if (group.length < 2) return;
     const [target, ...rest] = group;
     const newest = group[group.length - 1];
-    const items = mergeItems(group.flatMap((o) => o.items || []));
+    const items = mergeItems(
+      group.flatMap((o) =>
+        (o.items || []).map((it) =>
+          isDesignOrder(o) && !String(it.title).includes(o.orderCode) ? { ...it, title: `${it.title} · ${o.orderCode}` } : it
+        )
+      )
+    );
     const subtotal = items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
     const shippingCost = Math.max(...group.map((o) => Number(o.shippingCost) || 0));
     const notes = [...new Set(group.map((o) => ((o.shipping && o.shipping.notes) || "").trim()).filter(Boolean))].join("\n");
     const codes = group.map((o) => o.orderCode || o.docId);
+    const designs = group.flatMap(orderDesigns).map((ds) => ({ ...ds, design: { ...ds.design } }));
 
-    if (
-      !confirm(
-        `¿Agrupar ${group.length} pedidos pendientes (${codes.join(", ")}) en el pedido ${codes[0]}?\n\n` +
-          `Total: ${formatPrice(subtotal + shippingCost)} (envío ${formatPrice(shippingCost)}, cobrado una sola vez).\n` +
-          `Los pedidos ${codes.slice(1).join(", ")} se borrarán.`
-      )
-    )
-      return;
-
-    const { docId, ...base } = target;
+    const { docId, kind, design, material, ...base } = target;
     const merged = {
       ...base,
       items,
@@ -609,6 +630,36 @@
       shipping: { ...(target.shipping || {}), ...(newest.shipping || {}), notes },
       mergedFrom: [...(target.mergedFrom || []), ...rest.flatMap((o) => [...(o.mergedFrom || []), o.orderCode || o.docId])],
     };
+    if (designs.length) merged.designs = designs;
+    // Si alguno ya se exportó a Drive no se vuelve a mandar el aviso de pedido nuevo.
+    const exportedAt = group.map((o) => o.driveExportedAt).find(Boolean);
+    if (exportedAt) merged.driveExportedAt = exportedAt;
+
+    // Si no cabe, se quitan los archivos originales que ya están en Drive (se enlaza la carpeta).
+    const dropped = [];
+    for (const ds of designs) {
+      if (docBytes(merged) <= MAX_ORDER_BYTES) break;
+      if (ds.design.fileData && ds.driveFolderUrl) {
+        ds.design.fileData = null;
+        ds.design.fileInDrive = true;
+        dropped.push(ds.design.fileName || ds.orderCode);
+      }
+    }
+    if (docBytes(merged) > MAX_ORDER_BYTES) {
+      alert("No se pueden agrupar: los diseños juntos pesan más de lo que admite un pedido (1 MB).");
+      return;
+    }
+
+    if (
+      !confirm(
+        `¿Agrupar ${group.length} pedidos pendientes (${codes.join(", ")}) en el pedido ${codes[0]}?\n\n` +
+          `Total: ${formatPrice(subtotal + shippingCost)} (envío ${formatPrice(shippingCost)}, cobrado una sola vez).\n` +
+          (designs.length ? `Incluye ${designs.length} diseño(s) personalizado(s).\n` : "") +
+          (dropped.length ? `Para que quepa, estos archivos se quedan solo en Drive: ${dropped.join(", ")}.\n` : "") +
+          `Los pedidos ${codes.slice(1).join(", ")} se borrarán.`
+      )
+    )
+      return;
 
     try {
       const db = firebase.firestore();
@@ -699,7 +750,10 @@
   }
 
   function orderCard(o) {
-    const design = isDesignOrder(o);
+    const designs = orderDesigns(o);
+    const design = designs.length > 0;
+    const many = designs.length > 1;
+    const designLabel = many ? `${designs.length} diseños personalizados` : design ? DESIGN_KINDS[designs[0].kind] || "Diseño personalizado" : "";
     const date = formatDate(o.createdAt);
     const status = o.status || "pendiente";
     const shippingCost = Number(o.shippingCost) || 0;
@@ -717,9 +771,34 @@
       .join("");
     const c = o.customer || {};
     const s = o.shipping || {};
-    const d = o.design || {};
-    const material = (o.material && o.material.label) || "Sin especificar";
     const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
+    const id = escapeAttr(o.docId);
+    const designButtons = designs
+      .map((ds, i) => {
+        const d = ds.design || {};
+        const n = many ? " " + (i + 1) : "";
+        return (
+          (d.snapshot ? `<button class="small-btn" id="view-design-${id}-${i}" type="button" title="Ver el diseño tal y como lo configuró el cliente">👁️ Ver diseño${n}</button>` : "") +
+          (d.fileData ? `<button class="small-btn" id="download-design-${id}-${i}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo${n}</button>` : "")
+        );
+      })
+      .join("");
+    const designBlocks = designs
+      .map((ds, i) => {
+        const d = ds.design || {};
+        const material = (ds.material && ds.material.label) || "Sin especificar";
+        return `
+            ${many ? `<div class="order-total-row" style="margin-top:${i ? 14 : 0}px"><b>Diseño ${i + 1} · ${escapeHtml(DESIGN_KINDS[ds.kind] || "Diseño")} · ${escapeHtml(ds.orderCode || "")}</b></div>` : ""}
+            ${d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
+            <div class="order-totals">
+              <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
+              ${many ? `<div class="order-total-row"><span>Cantidad</span><span>${Number(ds.qty) || 1}</span></div>` : ""}
+              ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
+            </div>
+            ${d.fileTooLargeToEmbed ? `<p class="help-text">El archivo original era demasiado grande para adjuntarlo aquí: pide al cliente que te lo reenvíe por WhatsApp o email.</p>` : ""}
+            ${d.fileInDrive && ds.driveFolderUrl ? `<p class="help-text">El archivo original está en <a href="${escapeAttr(ds.driveFolderUrl)}" target="_blank" rel="noopener">su carpeta de Drive</a>.</p>` : ""}`;
+      })
+      .join("");
     const priced = itemsSum > 0;
 
     return `
@@ -728,7 +807,7 @@
           <div class="order-head-title">
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
             <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
-            ${design ? `<span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 ${escapeHtml(DESIGN_KINDS[o.kind] || "Diseño personalizado")}</span>` : ""}
+            ${design ? `<span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 ${escapeHtml(designLabel)}</span>` : ""}
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
@@ -737,8 +816,7 @@
                 .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
                 .join("")}
             </select>
-            ${design && d.snapshot ? `<button class="small-btn" id="view-design-${escapeAttr(o.docId)}" type="button" title="Ver el diseño tal y como lo configuró el cliente">👁️ Ver diseño</button>` : ""}
-            ${design && d.fileData ? `<button class="small-btn" id="download-design-${escapeAttr(o.docId)}" type="button" title="Descargar el archivo original subido por el cliente">📥 Descargar archivo</button>` : ""}
+            ${designButtons}
             ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Sube el diseño, el archivo del cliente y la nota del pedido a la carpeta compartida de Drive">✂️ Enviar a cortar</button>` : ""}
             ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(o.driveFolderUrl)}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive">📁 Drive</a>` : ""}
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
@@ -752,16 +830,7 @@
         </div>
         <div class="order-card-body">
           <div class="order-items-block">
-            ${design && d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
-            ${
-              design
-                ? `<div class="order-totals">
-              <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
-              ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
-            </div>`
-                : ""
-            }
-            ${design && d.fileTooLargeToEmbed ? `<p class="help-text">El archivo original era demasiado grande para adjuntarlo aquí: pide al cliente que te lo reenvíe por WhatsApp o email.</p>` : ""}
+            ${designBlocks}
             ${
               design && !priced
                 ? `<p class="help-text">Todavía sin presupuestar: pulsa "✏️ Editar" para introducir el precio de las unidades y el envío.</p>`
@@ -895,8 +964,8 @@ ${bodyHtml}
   function albaranWhatsAppText(o) {
     const c = o.customer || {};
     const s = o.shipping || {};
-    const d = o.design || {};
-    const design = isDesignOrder(o);
+    const designs = orderDesigns(o);
+    const design = designs.length > 0;
     const shippingCost = Number(o.shippingCost) || 0;
     const itemsSum = (o.items || []).reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
     const total = orderTotal(o);
@@ -909,12 +978,14 @@ ${bodyHtml}
 
     return [
       design
-        ? `🎨 *Presupuesto · ${DESIGN_KINDS[o.kind] || "Diseño personalizado"}*`
+        ? `🎨 *Presupuesto · ${designs.length > 1 ? "Diseños personalizados" : DESIGN_KINDS[designs[0].kind] || "Diseño personalizado"}*`
         : `📄 *Albarán de entrega*`,
       `Pedido ${o.orderCode || o.docId}`,
       "",
-      design ? `🧩 Material: ${(o.material && o.material.label) || "-"}` : null,
-      design && d.fileName ? `📎 Archivo: ${d.fileName}` : null,
+      ...designs.flatMap((ds) => [
+        `🧩 Material: ${(ds.material && ds.material.label) || "-"}${designs.length > 1 ? ` (${ds.orderCode})` : ""}`,
+        ds.design && ds.design.fileName ? `📎 Archivo: ${ds.design.fileName}` : null,
+      ]),
       design ? "" : null,
       "🛒 *Detalle:*",
       lines,
@@ -1327,6 +1398,12 @@ ${bodyHtml}
       order.kind = existing.kind;
       order.design = existing.design;
       order.material = existing.material;
+    }
+    // Lo mismo con los diseños de un pedido agrupado y con lo que guarda la exportación a Drive.
+    if (existing) {
+      ["designs", "mergedFrom", "driveFolderUrl", "driveExportedAt"].forEach((k) => {
+        if (existing[k] !== undefined) order[k] = existing[k];
+      });
     }
 
     setOrderFormStatus("info", "Guardando...");
