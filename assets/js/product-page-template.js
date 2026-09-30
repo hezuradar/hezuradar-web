@@ -66,11 +66,16 @@
     return typeof p.stock === "number" && p.stock <= 0;
   }
 
-  function metaDescription(product) {
+  function fullDescription(product) {
     var plain = String(product.description || "").replace(/\s+/g, " ").trim();
     if (!plain) {
       plain = (product.title || "") + " — hueso y cuerno natural para luthería, HezurAdar.";
     }
+    return plain;
+  }
+
+  function metaDescription(product) {
+    var plain = fullDescription(product);
     return plain.length > 160 ? plain.slice(0, 157).trim() + "..." : plain;
   }
 
@@ -118,7 +123,7 @@
       "@type": "Product",
       name: product.title,
       image: images,
-      description: metaDescription(product),
+      description: fullDescription(product),
       sku: product.sku || undefined,
       category: product.subcategory ? product.category + " / " + product.subcategory : product.category,
       brand: { "@type": "Brand", name: "HezurAdar" },
