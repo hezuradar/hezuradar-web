@@ -24,7 +24,13 @@
   content:"";position:absolute;inset:8% 6% 0;border-radius:50%;
   background:radial-gradient(closest-side,#dde8f3,rgba(221,232,243,0));
 }
-.nf-art svg{position:relative;width:100%;max-width:340px;height:auto;overflow:visible}
+.nf-art img{
+  position:relative;width:100%;max-width:400px;height:auto;
+  /* El dibujo está recortado abajo y a los lados: se funde con el fondo en vez de acabar en seco. */
+  -webkit-mask-image:radial-gradient(ellipse 58% 62% at 50% 44%,#000 72%,transparent 100%);
+  mask-image:radial-gradient(ellipse 58% 62% at 50% 44%,#000 72%,transparent 100%);
+  transform-origin:50% 90%;animation:nf-worry 3.2s ease-in-out infinite;
+}
 .nf-text .nf-code{font-size:4.5rem;font-weight:800;line-height:1;letter-spacing:-.03em;color:var(--color-primary);margin:0 0 6px}
 .nf-text h1{font-size:1.7rem;margin:0 0 12px;line-height:1.2}
 .nf-text p{color:var(--color-muted);margin:0 0 10px;max-width:440px;line-height:1.6}
@@ -33,16 +39,13 @@
 .nf-links{margin-top:22px;font-size:.88rem;color:var(--color-muted)}
 .nf-links a{color:var(--color-primary-dark)}
 
-/* Movimiento: el chacal tiembla un poco y le cae una gota de sudor. */
-.nf-head{transform-origin:160px 230px;animation:nf-worry 2.6s ease-in-out infinite}
-.nf-drop{animation:nf-drop 2.6s ease-in infinite}
-@keyframes nf-worry{0%,100%{transform:rotate(0)}20%{transform:rotate(-2.2deg)}40%{transform:rotate(2deg)}60%{transform:rotate(-1.2deg)}80%{transform:rotate(0)}}
-@keyframes nf-drop{0%,35%{opacity:0;transform:translateY(-6px)}45%{opacity:1}100%{opacity:0;transform:translateY(26px)}}
-@media (prefers-reduced-motion:reduce){.nf-head,.nf-drop{animation:none}.nf-drop{opacity:1}}
+/* Movimiento: el chacal se balancea un poco, nervioso. */
+@keyframes nf-worry{0%,100%{transform:rotate(0)}25%{transform:rotate(-1.2deg)}50%{transform:rotate(1deg)}75%{transform:rotate(-.6deg)}}
+@media (prefers-reduced-motion:reduce){.nf-art img{animation:none}}
 
 @media (max-width:760px){
   .notfound{grid-template-columns:1fr;gap:12px;padding:28px 0 44px;text-align:center}
-  .nf-art svg{max-width:250px}
+  .nf-art img{max-width:280px}
   .nf-text .nf-code{font-size:3.4rem}
   .nf-text h1{font-size:1.4rem}
   .nf-text p{margin-left:auto;margin-right:auto}
@@ -64,69 +67,8 @@
 <main class="container">
   <div class="notfound">
     <div class="nf-art">
-      <svg viewBox="0 0 320 320" role="img" aria-labelledby="nf-art-title">
-        <title id="nf-art-title">El chacal de HezurAdar, preocupado, con las manos en la cabeza</title>
-        <!-- Cuerpo y collar -->
-        <path d="M58 320 Q62 246 160 238 Q258 246 262 320 Z" fill="#1f2a44"/>
-        <path d="M92 262 Q160 312 228 262" fill="none" stroke="#d4a640" stroke-width="9" stroke-linecap="round"/>
-        <path d="M100 252 Q160 296 220 252" fill="none" stroke="#245f96" stroke-width="7" stroke-linecap="round"/>
-        <path d="M106 243 Q160 282 214 243" fill="none" stroke="#e8eef5" stroke-width="5" stroke-linecap="round"/>
-
-        <g class="nf-head">
-          <!-- Cuello -->
-          <rect x="138" y="196" width="44" height="52" rx="14" fill="#1f2a44"/>
-          <!-- Caídas del tocado (nemes) a rayas -->
-          <g>
-            <path d="M104 118 L90 248 L124 252 L132 140 Z" fill="#245f96"/>
-            <path d="M216 118 L230 248 L196 252 L188 140 Z" fill="#245f96"/>
-            <path d="M101 146 L129 150 M99 168 L128 172 M97 190 L127 194 M95 212 L126 216 M93 234 L125 238" stroke="#e8eef5" stroke-width="6"/>
-            <path d="M219 146 L191 150 M221 168 L192 172 M223 190 L193 194 M225 212 L194 216 M227 234 L195 238" stroke="#e8eef5" stroke-width="6"/>
-          </g>
-          <!-- Orejas -->
-          <path d="M116 104 L98 18 L150 86 Z" fill="#1f2a44"/>
-          <path d="M204 104 L222 18 L170 86 Z" fill="#1f2a44"/>
-          <path d="M120 96 L107 38 L141 86 Z" fill="#3b4f7a"/>
-          <path d="M200 96 L213 38 L179 86 Z" fill="#3b4f7a"/>
-          <!-- Cabeza y hocico -->
-          <ellipse cx="160" cy="134" rx="50" ry="48" fill="#1f2a44"/>
-          <path d="M128 148 Q136 214 160 224 Q184 214 192 148 Z" fill="#1f2a44"/>
-          <path d="M146 176 Q160 200 174 176" fill="none" stroke="#2c3d63" stroke-width="3" stroke-linecap="round"/>
-          <ellipse cx="160" cy="210" rx="10" ry="7" fill="#0d1422"/>
-          <!-- Boca preocupada -->
-          <path d="M149 219 q5.5 -4 11 0 t11 0" fill="none" stroke="#e8eef5" stroke-width="2.2" stroke-linecap="round"/>
-          <!-- Banda del tocado sobre la frente -->
-          <path d="M106 118 Q160 82 214 118 L210 128 Q160 98 110 128 Z" fill="#d4a640"/>
-          <!-- Ojos con kohl, mirando arriba -->
-          <path d="M126 146 Q140 134 154 146 Q140 156 126 146 Z" fill="#fff"/>
-          <path d="M166 146 Q180 134 194 146 Q180 156 166 146 Z" fill="#fff"/>
-          <circle cx="141" cy="142" r="4.6" fill="#0d1422"/>
-          <circle cx="179" cy="142" r="4.6" fill="#0d1422"/>
-          <circle cx="142.6" cy="140.4" r="1.4" fill="#fff"/>
-          <circle cx="180.6" cy="140.4" r="1.4" fill="#fff"/>
-          <path d="M124 147 L114 151 M196 147 L206 151" stroke="#d4a640" stroke-width="2.4" stroke-linecap="round"/>
-          <!-- Cejas de preocupación (altas por dentro) -->
-          <path d="M126 132 Q138 128 152 120" fill="none" stroke="#e8eef5" stroke-width="3.6" stroke-linecap="round"/>
-          <path d="M194 132 Q182 128 168 120" fill="none" stroke="#e8eef5" stroke-width="3.6" stroke-linecap="round"/>
-        </g>
-
-        <!-- Brazos: codos hacia fuera y un tono más claro que el cuerpo para que se lean -->
-        <path d="M92 296 Q20 236 96 150" fill="none" stroke="#2c3d63" stroke-width="20" stroke-linecap="round"/>
-        <path d="M228 296 Q300 236 224 150" fill="none" stroke="#2c3d63" stroke-width="20" stroke-linecap="round"/>
-        <path d="M44 214 l18 10 M276 214 l-18 10" stroke="#d4a640" stroke-width="7" stroke-linecap="round"/>
-        <!-- Manos sobre las sienes: palma y dedos encima de la cabeza -->
-        <g fill="#3b4f7a" stroke="#1f2a44" stroke-width="2">
-          <path d="M84 156 Q80 128 100 114 Q108 108 116 112 Q124 116 122 126 Q128 124 130 132 Q131 140 124 142 Q126 150 118 154 Q104 164 84 156 Z"/>
-          <path d="M236 156 Q240 128 220 114 Q212 108 204 112 Q196 116 198 126 Q192 124 190 132 Q189 140 196 142 Q194 150 202 154 Q216 164 236 156 Z"/>
-        </g>
-        <path d="M104 118 Q112 122 118 128 M106 130 Q114 133 122 138 M104 142 Q110 145 116 149" fill="none" stroke="#1f2a44" stroke-width="2" stroke-linecap="round"/>
-        <path d="M216 118 Q208 122 202 128 M214 130 Q206 133 198 138 M216 142 Q210 145 204 149" fill="none" stroke="#1f2a44" stroke-width="2" stroke-linecap="round"/>
-
-        <!-- Gota de sudor -->
-        <path class="nf-drop" d="M236 92 q8 12 0 16 q-8 -4 0 -16 Z" fill="#8fb8e0"/>
-        <!-- Interrogaciones -->
-        <text x="252" y="64" font-family="Inter,Arial,sans-serif" font-size="30" font-weight="800" fill="#245f96" opacity=".75">?</text>
-        <text x="52" y="78" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="#245f96" opacity=".5">?</text>
-      </svg>
+      <img src="/images/site/anubis-404.webp" width="720" height="720"
+           alt="Anubis, el chacal de HezurAdar, preocupado y con las manos en la cabeza">
     </div>
 
     <div class="nf-text">
