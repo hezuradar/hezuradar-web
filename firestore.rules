@@ -46,7 +46,7 @@ service cloud.firestore {
               && isStr(d.material.id, 60) && isStr(d.material.label, 120)))
         && (!('design' in d) || (d.design is map
               && d.design.keys().hasOnly(['snapshot', 'fileName', 'fileType', 'fileData', 'fileTooLargeToEmbed'])
-              && optStr(d.design, 'snapshot', 900000)
+              && optStr(d.design, 'snapshot', 1000000)
               && optStr(d.design, 'fileName', 200)
               && optStr(d.design, 'fileType', 100)
               && (!('fileData' in d.design) || d.design.fileData == null || d.design.fileData is string)
