@@ -1169,5 +1169,25 @@
     "imageWidth": 4032,
     "imageHeight": 3024,
     "updatedAt": "2026-10-02"
+  },
+  {
+    "id": "4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7",
+    "title": "Bloque hueso teñido Negro 90x7x10",
+    "description": "Bloque de hueso de búfalo teñido de negro con tintes naturales \n90x7x10 mm",
+    "price": 5.5,
+    "sku": "RR0066",
+    "category": "Hueso",
+    "subcategory": "Custom",
+    "stock": null,
+    "discountPercent": null,
+    "images": [
+      "images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948923550_0.jpeg",
+      "images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948928002_1.jpeg",
+      "images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948932815_2.jpeg"
+    ],
+    "slug": "bloque-hueso-tenido-negro-90x7x10-4ecabbdf",
+    "imageWidth": 4032,
+    "imageHeight": 3024,
+    "updatedAt": "2026-10-02"
   }
 ]
