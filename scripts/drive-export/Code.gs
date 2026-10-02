@@ -28,11 +28,28 @@ const DESIGN_KINDS = {
   "pua-personalizada": "Púa personalizada",
 };
 
+// Email de confirmación al cliente. Se envía desde aquí (y no desde EmailJS en el
+// navegador) para que el contenido salga siempre del pedido guardado en Firestore y
+// nadie pueda usar la cuenta para mandar correos con un texto o destinatario propios.
+// - action "confirmCustomer": la cesta, justo después de crear el pedido, con un
+//   token de reCAPTCHA que se valida con Google. Solo una vez por pedido y solo
+//   durante los primeros minutos desde que se creó.
+// - action "resendCustomer": el botón "Reenviar email" del panel, con el ID token
+//   de Firebase del administrador.
+// La clave secreta de reCAPTCHA va en Configuración del proyecto → Propiedades del
+// script → RECAPTCHA_SECRET (nunca en este archivo, que se publica en GitHub).
+const FIREBASE_API_KEY = "AIzaSyDHdD-PcTQtaJhbGPegd7aW6ZWiI_EPFuQ"; // clave pública, la misma de assets/js/firebase-config.js
+const ADMIN_EMAILS = ["hezuradar@gmail.com", "iotegi@gmail.com"];
+const SITE_HOSTNAME = "hezuradar.com";
+const CONFIRM_WINDOW_MINUTES = 30;
+
 function doPost(e) {
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || "{}");
     const orderId = String(body.orderId || "");
     if (!/^[A-Za-z0-9]{10,40}$/.test(orderId)) throw new Error("ID de pedido no válido.");
+    if (body.action === "confirmCustomer") return json_({ ok: true, ...confirmCustomer_(orderId, String(body.captchaToken || "")) });
+    if (body.action === "resendCustomer") return json_({ ok: true, ...resendCustomer_(orderId, String(body.idToken || "")) });
     // El cliente (al cerrar el pedido) y el admin ("Enviar a cortar") pueden
     // lanzarlo a la vez: el bloqueo evita crear carpetas duplicadas.
     const lock = LockService.getScriptLock();
@@ -150,6 +167,143 @@ function notifyNewOrder_(o, code, folderUrl, designs, attachments) {
     // Los archivos ya están en Drive: un fallo del correo no debe dar el pedido por fallido.
     console.error("No se pudo enviar el aviso por email: " + err);
   }
+}
+
+/* ---------------- Confirmación al cliente ---------------- */
+
+function confirmCustomer_(orderId, captchaToken) {
+  verifyCaptcha_(captchaToken);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  try {
+    const o = getOrder_(orderId);
+    if (o.customerEmailSentAt) return { sent: false, reason: "ya enviado" };
+    const created = new Date(o.createdAtServer || o.createdAt || 0).getTime();
+    if (!created || Date.now() - created > CONFIRM_WINDOW_MINUTES * 60 * 1000) {
+      throw new Error("El pedido es demasiado antiguo para enviar la confirmación automática.");
+    }
+    sendCustomerEmail_(o);
+    markCustomerEmailed_(orderId);
+    return { sent: true };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function resendCustomer_(orderId, idToken) {
+  verifyAdmin_(idToken);
+  const o = getOrder_(orderId);
+  sendCustomerEmail_(o);
+  markCustomerEmailed_(orderId);
+  return { sent: true };
+}
+
+function verifyCaptcha_(token) {
+  const secret = PropertiesService.getScriptProperties().getProperty("RECAPTCHA_SECRET");
+  if (!secret) throw new Error("Falta RECAPTCHA_SECRET en las propiedades del script.");
+  if (!token) throw new Error("Falta la verificación reCAPTCHA.");
+  const res = UrlFetchApp.fetch("https://www.google.com/recaptcha/api/siteverify", {
+    method: "post",
+    payload: { secret: secret, response: token },
+    muteHttpExceptions: true,
+  });
+  const data = JSON.parse(res.getContentText() || "{}");
+  if (!data.success || data.hostname !== SITE_HOSTNAME) throw new Error("La verificación reCAPTCHA no es válida.");
+}
+
+// Comprueba el ID token de Firebase con Identity Toolkit y que el correo sea de un admin.
+function verifyAdmin_(idToken) {
+  if (!idToken) throw new Error("Falta la sesión de administrador.");
+  const res = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FIREBASE_API_KEY, {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({ idToken: idToken }),
+    muteHttpExceptions: true,
+  });
+  const user = ((JSON.parse(res.getContentText() || "{}").users) || [])[0];
+  if (res.getResponseCode() !== 200 || !user || ADMIN_EMAILS.indexOf(String(user.email || "").toLowerCase()) === -1) {
+    throw new Error("Sesión de administrador no válida.");
+  }
+}
+
+function sendCustomerEmail_(o) {
+  const c = o.customer || {};
+  const email = String(c.email || "").trim();
+  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) || email.length > 200) {
+    throw new Error("El pedido no tiene un email de cliente válido.");
+  }
+  MailApp.sendEmail({
+    to: email,
+    subject: `Pedido ${o.orderCode || ""} recibido - HezurAdar`,
+    htmlBody: customerEmailHtml_(o),
+    name: "HezurAdar",
+    replyTo: NOTIFY_EMAIL,
+  });
+}
+
+function markCustomerEmailed_(orderId) {
+  const res = UrlFetchApp.fetch(firestoreUrl_(orderId) + "?updateMask.fieldPaths=customerEmailSentAt", {
+    method: "patch",
+    contentType: "application/json",
+    headers: firestoreHeaders_(),
+    muteHttpExceptions: true,
+    payload: JSON.stringify({ fields: { customerEmailSentAt: { stringValue: new Date().toISOString() } } }),
+  });
+  if (res.getResponseCode() !== 200) console.warn("No se pudo guardar customerEmailSentAt: " + res.getContentText());
+}
+
+const PAYMENT_LABELS = { paypal: "PayPal", bizum: "Bizum", otros: "Otros" };
+
+function eur_(n) {
+  return (Number(n) || 0).toFixed(2).replace(".", ",") + " €";
+}
+
+// Mismo diseño que tenía la plantilla de EmailJS, pero montado aquí con datos escapados.
+function customerEmailHtml_(o) {
+  const c = o.customer || {};
+  const s = o.shipping || {};
+  const items = Array.isArray(o.items) ? o.items : [];
+  const subtotal = Number(o.subtotal) || 0;
+  const shipping = Number(o.shippingCost) || 0;
+  const total = typeof o.total === "number" ? o.total : subtotal + shipping;
+  const td = "padding:4px 0;color:#33424c;font-size:13px";
+  const rows = items
+    .map(
+      (it) => `<tr>
+        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">${esc_(it.title)}
+          <div style="color:#6c7d89;font-size:12px">${esc_(Number(it.qty) || 0)} × ${esc_(eur_(it.price))}</div></td>
+        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px;text-align:right;white-space:nowrap">${esc_(eur_((Number(it.price) || 0) * (Number(it.qty) || 0)))}</td>
+      </tr>`
+    )
+    .join("");
+  const priced = subtotal > 0;
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e1e8ed;border-radius:12px;overflow:hidden">
+    <div style="background:#245F96;padding:22px 28px"><span style="color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:.3px">HezurAdar</span></div>
+    <div style="padding:28px">
+      <h2 style="margin:0 0 6px;color:#1c2b36;font-size:19px">¡Gracias por tu pedido, ${esc_(c.name || "")}!</h2>
+      <p style="margin:0 0 18px;color:#33424c;font-size:14px;line-height:1.5">Hemos recibido tu pedido. Nos pondremos en contacto contigo en breve para confirmar la disponibilidad, el envío y los datos de pago. Aquí tienes el resumen:</p>
+      <div style="background:#f5f7f9;border-radius:10px;padding:14px 16px;margin-bottom:20px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;color:#33424c">
+          <tr><td style="padding:2px 0"><b>Nº de pedido</b></td><td style="padding:2px 0;text-align:right">${esc_(o.orderCode || "")}</td></tr>
+          <tr><td style="padding:2px 0"><b>Fecha</b></td><td style="padding:2px 0;text-align:right">${esc_(date_(o.createdAt))}</td></tr>
+          <tr><td style="padding:2px 0"><b>Forma de pago</b></td><td style="padding:2px 0;text-align:right">${esc_(PAYMENT_LABELS[o.paymentMethod] || "-")}</td></tr>
+        </table>
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:6px">${rows}</table>
+      ${priced ? `<table style="width:100%;border-collapse:collapse;margin-top:10px">
+        <tr><td style="${td}">Subtotal</td><td style="${td};text-align:right">${esc_(eur_(subtotal))}</td></tr>
+        ${shipping ? `<tr><td style="${td}">Envío certificado</td><td style="${td};text-align:right">${esc_(eur_(shipping))}</td></tr>` : ""}
+        <tr><td style="padding:8px 0 0;color:#1c2b36;font-size:16px;font-weight:bold;border-top:1px solid #e1e8ed">Total</td>
+            <td style="padding:8px 0 0;color:#245F96;font-size:16px;font-weight:bold;text-align:right;border-top:1px solid #e1e8ed">${esc_(eur_(total))}</td></tr>
+      </table>` : `<p style="color:#33424c;font-size:13px">Te enviaremos el presupuesto en breve.</p>`}
+      <div style="margin-top:22px;padding-top:18px;border-top:1px solid #e1e8ed">
+        <p style="margin:0 0 4px;color:#1c2b36;font-size:14px;font-weight:bold">Dirección de envío</p>
+        <div style="${td}">${esc_(c.name || "")}<br>${esc_(s.address || "")}<br>${esc_(s.postalCode || "")} ${esc_(s.city || "")}${s.province ? " (" + esc_(s.province) + ")" : ""}<br>Tel: ${esc_(c.phone || "")}</div>
+        ${s.notes ? `<p style="${td}"><b>Notas:</b> ${esc_(s.notes)}</p>` : ""}
+      </div>
+      <p style="margin:22px 0 0;color:#6c7d89;font-size:12px;line-height:1.5">Si tienes cualquier duda sobre tu pedido, responde a este correo o escríbenos por WhatsApp. Condiciones de venta y devoluciones: https://hezuradar.com/condiciones.html</p>
+    </div>
+  </div>`;
 }
 
 /* ---------------- Drive ---------------- */
