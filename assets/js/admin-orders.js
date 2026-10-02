@@ -1118,7 +1118,7 @@ ${bodyHtml}
       alert("Este pedido no tiene email de cliente.");
       return;
     }
-    if (!window.HA_EMAIL || !window.HA_EMAIL.sendCustomerOrderEmail) {
+    if (!window.HA_DRIVE || !window.HA_DRIVE.enabled || !firebase.auth().currentUser) {
       alert("El envío de email no está disponible en este panel.");
       return;
     }
@@ -1128,7 +1128,8 @@ ${bodyHtml}
       btn.textContent = "Enviando...";
     }
     try {
-      await window.HA_EMAIL.sendCustomerOrderEmail(o);
+      const idToken = await firebase.auth().currentUser.getIdToken();
+      await window.HA_DRIVE.resendCustomerEmail(docId, idToken);
       alert(`Email de confirmación reenviado a ${c.email}.`);
     } catch (e) {
       alert("No se pudo enviar el email: " + ((e && (e.text || e.message)) || e));

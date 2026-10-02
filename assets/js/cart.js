@@ -298,6 +298,10 @@
         <p class="help-text checkout-legal">Al confirmar aceptas las <a href="/condiciones.html" target="_blank" rel="noopener">condiciones de venta</a>
         (incluido el derecho de desistimiento de 14 días) y el tratamiento de tus datos según la
         <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
+        <div id="co-captcha-wrap" class="field" hidden>
+          <span class="help-text">Para enviarte la confirmación por email, marca la casilla:</span>
+          <div id="co-captcha"></div>
+        </div>
         <div id="checkout-status" role="status" aria-live="polite"></div>
         <div style="display:flex;gap:10px;margin-top:6px">
           <button type="button" class="btn btn-outline" id="back-to-cart">Volver a la cesta</button>
@@ -308,7 +312,7 @@
   }
 
   function successTemplate() {
-    const email = lastOrder && lastOrder.customer && lastOrder.customer.email;
+    const email = lastOrder && lastOrder.customerEmailRequested && lastOrder.customer && lastOrder.customer.email;
     return `
       <h3>¡Pedido enviado!</h3>
       <div class="status-msg ok">Pedido ${escapeHtml((lastOrder && lastOrder.orderCode) || "")} recibido.</div>
@@ -347,6 +351,10 @@
       const goCheckout = document.getElementById("go-checkout");
       if (goCheckout) goCheckout.addEventListener("click", () => openDrawer("checkout"));
     } else if (view === "checkout") {
+      const emailInput = document.getElementById("co-email");
+      emailInput.addEventListener("input", () => {
+        if (emailInput.value.trim()) showCaptcha();
+      });
       document.getElementById("back-to-cart").addEventListener("click", () => openDrawer("cart"));
       document.getElementById("checkout-form").addEventListener("submit", onSubmitCheckout);
       document.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
@@ -358,6 +366,37 @@
     } else if (view === "success") {
       document.getElementById("continue-shopping").addEventListener("click", closeDrawer);
     }
+  }
+
+  // reCAPTCHA v2 (assets/js/drive-export.js -> recaptchaSiteKey). Solo se carga si el
+  // cliente escribe su email: sin email no hay confirmación que proteger.
+  let captchaWidgetId = null;
+  let captchaLoading = false;
+  function captchaSiteKey() {
+    return (window.HA_DRIVE && window.HA_DRIVE.recaptchaSiteKey) || "";
+  }
+  function showCaptcha() {
+    const key = captchaSiteKey();
+    const wrap = document.getElementById("co-captcha-wrap");
+    if (!key || !wrap) return;
+    wrap.hidden = false;
+    const render = () => {
+      const el = document.getElementById("co-captcha");
+      if (!el || el.childElementCount) return;
+      captchaWidgetId = window.grecaptcha.render(el, { sitekey: key });
+    };
+    if (window.grecaptcha && window.grecaptcha.render) return render();
+    window.haRecaptchaReady = render;
+    if (captchaLoading) return;
+    captchaLoading = true;
+    const sc = document.createElement("script");
+    sc.src = "https://www.google.com/recaptcha/api.js?onload=haRecaptchaReady&render=explicit&hl=es";
+    sc.async = true;
+    document.head.appendChild(sc);
+  }
+  function captchaToken() {
+    if (captchaWidgetId === null || !window.grecaptcha) return "";
+    return window.grecaptcha.getResponse(captchaWidgetId) || "";
   }
 
   async function onSubmitCheckout(e) {
@@ -372,6 +411,12 @@
     }
     if (!data.paymentMethod) {
       setCheckoutStatus("err", "Elige una forma de pago.");
+      return;
+    }
+    const token = (data.email || "").trim() && captchaSiteKey() ? captchaToken() : "";
+    if ((data.email || "").trim() && captchaSiteKey() && !token) {
+      showCaptcha();
+      setCheckoutStatus("err", "Marca la casilla «No soy un robot» para recibir la confirmación por email (o deja el email vacío).");
       return;
     }
     submitting = true;
@@ -413,9 +458,10 @@
       },
     };
 
+    let orderId = null;
     try {
       if (window.HA_DB && window.HA_DB.saveOrder) {
-        await window.HA_DB.saveOrder(order);
+        orderId = await window.HA_DB.saveOrder(order);
       }
     } catch (err) {
       console.error("No se pudo guardar el pedido en la base de datos:", err);
@@ -429,13 +475,9 @@
       console.error("No se pudo enviar el email del pedido:", err);
     }
 
-    try {
-      if (window.HA_EMAIL && window.HA_EMAIL.sendCustomerOrderEmail) {
-        await window.HA_EMAIL.sendCustomerOrderEmail(order);
-      }
-    } catch (err) {
-      console.error("No se pudo enviar el email de confirmación al cliente:", err);
-    }
+    // La confirmación al cliente la envía el Apps Script leyendo el pedido guardado.
+    order.customerEmailRequested = !!(orderId && token);
+    if (order.customerEmailRequested && window.HA_DRIVE) window.HA_DRIVE.confirmCustomerEmail(orderId, token);
 
     const phone = (window.HA && window.HA.store && window.HA.store.whatsapp) || "";
     const text = buildWhatsAppMessage(order);

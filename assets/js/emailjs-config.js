@@ -16,23 +16,12 @@
 //    {{customer_phone}} {{customer_email}} {{shipping_address}} {{notes}}
 // 4. Account -> General -> copia tu "Public Key"
 //
-// 5. (Opcional) Email de confirmación al CLIENTE: si el cliente rellena su email al
-//    hacer el pedido, se le envía automáticamente un correo con el resumen visual del
-//    pedido. Para activarlo:
-//    a) Email Templates -> Create new Template (uno nuevo, distinto al del paso 3).
-//    b) En "To Email" pon: {{to_email}}
-//    c) En el asunto puedes poner algo como: Pedido {{order_code}} confirmado - Hezur&Adar
-//    d) En el cuerpo, cambia a la vista "Code editor" (HTML) y pon únicamente: {{{order_html}}}
-//       (con triple llave, así EmailJS inserta el HTML ya maquetado tal cual, en vez de
-//       escaparlo como texto).
-//    e) Guarda y copia el "Template ID" -> pégalo abajo en "customerTemplateId".
-//    Si dejas "customerTemplateId" con el valor de ejemplo, esta función se omite sin dar
-//    error: el pedido se sigue guardando y avisando por WhatsApp/email al negocio igual.
+// 5. El email de confirmación al CLIENTE ya no usa EmailJS: lo envía el Apps Script
+//    (scripts/drive-export/Code.gs) tras validar reCAPTCHA. Ver README.md, sección 7.
 window.HA_EMAILJS_CONFIG = {
   publicKey: "OJRsbiXiBtTuXI009",
   serviceId: "service_4hsf5zy",
   templateId: "template_vw6xsbu",
-  customerTemplateId: "template_ul6jy8a",
   toEmail: "hezuradar@gmail.com",
 };
 

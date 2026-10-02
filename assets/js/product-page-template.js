@@ -293,7 +293,7 @@
       "<head>\n" +
       '<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-      '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\'; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://firestore.googleapis.com https://api.emailjs.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
+      '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://www.google.com https://www.gstatic.com; frame-src https://www.google.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://firestore.googleapis.com https://api.emailjs.com https://script.google.com https://script.googleusercontent.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
       "<title>" + escapeHtml(product.title) + " — HezurAdar</title>\n" +
       '<meta name="description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
       '<link rel="canonical" href="' + canonicalUrl + '">\n' +
@@ -404,10 +404,11 @@
       '<script src="/assets/js/firebase-orders.js?v=20260915l"></script>\n' +
       '<script src="/assets/js/analytics.js?v=20261002d"></script>\n' +
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js"></script>\n' +
-      '<script src="/assets/js/emailjs-config.js?v=20260915l"></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20260915l"></script>\n' +
+      '<script src="/assets/js/emailjs-config.js?v=20261002e"></script>\n' +
+      '<script src="/assets/js/emailjs-notify.js?v=20261002e"></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261002d"></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261002d"></script>\n' +
+      '<script src="/assets/js/drive-export.js?v=20261002e"></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261002e"></script>\n' +
       '<script src="/assets/js/product-page.js?v=20260923a" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
       "</body>\n" +
       "</html>\n"

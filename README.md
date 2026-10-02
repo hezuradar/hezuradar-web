@@ -245,6 +245,30 @@ permisos* como Propietario o Editor.
 > Drive), proyecto "HezurAdar Drive". Esa cuenta tiene permiso de Editor en el proyecto Firebase
 > para que el script pueda leer los pedidos.
 
+### Email de confirmación al cliente (con reCAPTCHA)
+
+El mismo Apps Script envía, desde Gmail, la confirmación del pedido al cliente. Así el
+contenido sale siempre del pedido guardado en Firestore y nadie puede usar la cuenta para
+mandar correos con un texto o un destinatario propios:
+
+- **Desde la cesta:** si el cliente escribe su email, aparece la casilla «No soy un robot»
+  (Google reCAPTCHA v2). El script valida esa casilla con Google y solo envía una vez por
+  pedido, durante los primeros 30 minutos.
+- **Desde el panel:** el botón «✉️ Reenviar email» envía tu sesión de Firebase y el script
+  comprueba que eres administrador (`ADMIN_EMAILS` en `Code.gs`).
+
+Para activarlo:
+
+1. En [google.com/recaptcha/admin](https://www.google.com/recaptcha/admin) crea un sitio de
+   tipo **reCAPTCHA v2 → casilla «No soy un robot»** con el dominio `hezuradar.com`.
+2. Copia la **clave del sitio** (pública) en `RECAPTCHA_SITE_KEY` de `assets/js/drive-export.js`.
+3. Copia la **clave secreta** en el Apps Script: *Configuración del proyecto → Propiedades del
+   script → Añadir propiedad* `RECAPTCHA_SECRET`. No la pongas nunca en el código: este
+   repositorio se publica.
+
+Mientras `RECAPTCHA_SITE_KEY` esté vacía, la cesta no muestra la casilla y no se envía
+confirmación por email (el pedido y el aviso por WhatsApp funcionan igual).
+
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de

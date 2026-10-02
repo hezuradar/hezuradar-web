@@ -35,5 +35,42 @@
     }).catch((e) => console.warn("No se pudo exportar el pedido a Drive:", e));
   }
 
-  window.HA_DRIVE = { enabled: !!DRIVE_EXPORT_URL, exportOrder, exportOrderInBackground };
+  // Clave PÚBLICA (site key) de Google reCAPTCHA v2 "No soy un robot" para hezuradar.com.
+  // La secreta va solo en las propiedades del Apps Script (RECAPTCHA_SECRET).
+  // Mientras esté vacía, la cesta no muestra la casilla ni envía el email al cliente.
+  const RECAPTCHA_SITE_KEY = "6LdwiNstAAAAAPVkEtoSjmsDIVi06429LjiS3ySC";
+
+  // Email de confirmación al cliente justo después de guardar el pedido. keepalive
+  // deja terminar la petición aunque el cliente cierre la pestaña al abrirse WhatsApp.
+  function confirmCustomerEmail(orderId, captchaToken) {
+    if (!DRIVE_EXPORT_URL || !orderId || !captchaToken) return;
+    fetch(DRIVE_EXPORT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      keepalive: true,
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "confirmCustomer", orderId, captchaToken }),
+    }).catch((e) => console.warn("No se pudo enviar la confirmación al cliente:", e));
+  }
+
+  // Botón "Reenviar email" del panel: el script comprueba el ID token del administrador.
+  async function resendCustomerEmail(orderId, idToken) {
+    const res = await fetch(DRIVE_EXPORT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "resendCustomer", orderId, idToken }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Error desconocido al reenviar el email.");
+    return data;
+  }
+
+  window.HA_DRIVE = {
+    enabled: !!DRIVE_EXPORT_URL,
+    recaptchaSiteKey: RECAPTCHA_SITE_KEY,
+    exportOrder,
+    exportOrderInBackground,
+    confirmCustomerEmail,
+    resendCustomerEmail,
+  };
 })();
