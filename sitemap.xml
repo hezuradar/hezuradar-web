@@ -893,4 +893,19 @@
       <image:loc>https://hezuradar.com/images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948739180_2.jpeg</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://hezuradar.com/productos/bloque-hueso-tenido-negro-90x7x10-4ecabbdf.html</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948923550_0.jpeg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948928002_1.jpeg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948932815_2.jpeg</image:loc>
+    </image:image>
+  </url>
 </urlset>
