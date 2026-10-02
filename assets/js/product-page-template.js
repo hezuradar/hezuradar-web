@@ -94,9 +94,48 @@
     return plain;
   }
 
+  // Frase de cierre para las fichas con descripción muy corta (solo medidas):
+  // así ninguna meta description se queda en 50-70 caracteres.
+  var META_TAIL = "Material natural para luthería, preparado a mano en Legazpi. Envío a toda España.";
+
   function metaDescription(product) {
-    var plain = fullDescription(product);
-    return plain.length > 160 ? plain.slice(0, 157).trim() + "..." : plain;
+    var title = String(product.title || "").trim();
+    // Las viñetas ("- Mejor tono: ...") se leen como frases seguidas.
+    var plain = String(product.description || "")
+      .split("\n")
+      .map(function (line) { return line.replace(/^\s*[-•]\s*/, "").trim(); })
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!plain) return fullDescription(product);
+
+    // Fichas con la misma descripción base (p. ej. las cejuelas talladas):
+    // si el texto empieza igual que el título hasta su "para ...", se usa el
+    // título completo para que cada ficha tenga una descripción distinta.
+    if (title && plain.toLowerCase().indexOf(title.toLowerCase()) !== 0) {
+      var tw = title.split(" ");
+      var dw = plain.split(" ");
+      var head = tw.indexOf("para");
+      var k = 0;
+      while (k < tw.length && k < dw.length && tw[k].toLowerCase() === dw[k].toLowerCase()) k++;
+      var rest = dw.slice(k).join(" ");
+      var titleTail = tw.slice(head).join(" ").toLowerCase();
+      if (head > 1 && k === head && rest.toLowerCase().indexOf(titleTail) === -1) plain = title + " " + rest;
+    }
+
+    if (plain.length < 110) {
+      var sep = /[.!?]$/.test(plain) ? " " : ". ";
+      // Se añade la frase entera o su primera mitad, nunca cortada a medias.
+      var tails = [META_TAIL, META_TAIL.split(". ")[0] + "."];
+      for (var t = 0; t < tails.length; t++) {
+        if ((plain + sep + tails[t]).length <= 160) { plain += sep + tails[t]; break; }
+      }
+    }
+    if (plain.length <= 160) return plain;
+    var cut = plain.slice(0, 158);
+    cut = cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,;:.\-—]+$/, "");
+    return cut + "…";
   }
 
   function waLink(phone, text) {
@@ -314,8 +353,9 @@
       '<meta name="twitter:title" content="' + escapeAttr(product.title) + " — HezurAdar" + '">\n' +
       '<meta name="twitter:description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
       '<meta name="twitter:image" content="' + absMainImage + '">\n' +
-      '<link rel="icon" href="/images/site/favicon-32x32.png" sizes="32x32">\n' +
-      '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16">\n' +
+      '<link rel="icon" href="/favicon.ico" sizes="any">\n' +
+      '<link rel="icon" href="/images/site/favicon-32x32.png" sizes="32x32" type="image/png">\n' +
+      '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +

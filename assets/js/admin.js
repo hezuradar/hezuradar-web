@@ -456,19 +456,11 @@
     });
   }
 
-  function fileToBase64(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result.split(",")[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
   // Reescala la imagen a maxWidth (via canvas) y la devuelve como JPEG en
-  // base64, para no publicar nunca una foto a tamaño completo donde solo
-  // hace falta una miniatura (grid del catálogo, productos relacionados).
-  function fileToThumbBase64(file, maxWidth) {
+  // base64 junto con sus dimensiones finales. Se usa tanto para la miniatura
+  // como para la foto principal: una foto de móvil sin reducir (4000 px, 3 MB)
+  // hunde la velocidad de carga de la ficha y su posicionamiento.
+  function fileToThumbBase64(file, maxWidth, quality) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -483,14 +475,14 @@
         URL.revokeObjectURL(url);
         canvas.toBlob(
           (blob) => {
-            if (!blob) return reject(new Error("No se pudo generar la miniatura."));
+            if (!blob) return reject(new Error("No se pudo generar la imagen reducida."));
             const reader = new FileReader();
-            reader.onload = () => resolve(reader.result.split(",")[1]);
+            reader.onload = () => resolve({ base64: reader.result.split(",")[1], width: w, height: h });
             reader.onerror = reject;
             reader.readAsDataURL(blob);
           },
           "image/jpeg",
-          0.78
+          quality || 0.78
         );
       };
       img.onerror = () => {
@@ -521,22 +513,24 @@
       const id = editingId || crypto.randomUUID();
       const existing = editingId ? products.find((x) => x.id === editingId) : null;
       let images = [...currentImages];
+      let mainImageDims = null;
 
       if (pendingFiles.length) {
         setStatus("p-status", "info", `Subiendo ${pendingFiles.length} imagen(es)...`);
         for (let i = 0; i < pendingFiles.length; i++) {
           const file = pendingFiles[i];
-          const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-          const path = `images/products/${id}_${Date.now()}_${i}.${ext}`;
-          const base64 = await fileToBase64(file);
-          await putFile(path, base64, `Sube imagen de producto: ${title}`, null);
+          // La foto se publica reducida a 1600 px como máximo y en JPEG.
+          const path = `images/products/${id}_${Date.now()}_${i}.jpg`;
+          const full = await fileToThumbBase64(file, 1600, 0.85);
+          await putFile(path, full.base64, `Sube imagen de producto: ${title}`, null);
           images.push(path);
+          if (i === 0 && currentImages.length === 0) mainImageDims = { width: full.width, height: full.height };
 
           // Miniatura (~500px) para el grid del catálogo y "productos relacionados":
           // si falla, la ficha usará la imagen a tamaño completo hasta el próximo
           // guardado (no es un error que deba interrumpir la publicación).
           try {
-            const thumbBase64 = await fileToThumbBase64(file, 500);
+            const thumbBase64 = (await fileToThumbBase64(file, 500)).base64;
             const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(path);
             if (thumbPath) await putFile(thumbPath, thumbBase64, `Sube miniatura de producto: ${title}`, null);
           } catch (e) {
@@ -551,18 +545,11 @@
       // para declarar og:image:width/height sin inventar valores. Si la principal es
       // una foto nueva se leen sus bytes; si es una que ya existía, se reutilizan las
       // que ya se calcularon para ella en un guardado anterior.
-      let mainImageDims = null;
-      if (currentImages.length > 0) {
-        if (existing && existing.images && existing.images[0] === currentImages[0] && existing.imageWidth && existing.imageHeight) {
-          mainImageDims = { width: existing.imageWidth, height: existing.imageHeight };
-        }
-      } else if (pendingFiles.length && window.HA_TEMPLATE) {
-        try {
-          const bytes = new Uint8Array(await pendingFiles[0].arrayBuffer());
-          mainImageDims = window.HA_TEMPLATE.imageDimensionsFromBytes(bytes);
-        } catch (e) {
-          /* si no se pueden leer, simplemente no se declaran */
-        }
+      // Dimensiones reales de la imagen principal (images[0]) para declarar
+      // og:image:width/height sin inventar valores: si es una foto nueva salen
+      // del reescalado; si ya existía, se reutilizan las de un guardado anterior.
+      if (currentImages.length > 0 && existing && existing.images && existing.images[0] === currentImages[0] && existing.imageWidth && existing.imageHeight) {
+        mainImageDims = { width: existing.imageWidth, height: existing.imageHeight };
       }
 
       const product = {
