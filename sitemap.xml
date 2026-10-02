@@ -2,25 +2,21 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://hezuradar.com/</loc>
-    <lastmod>2026-09-25T11:29:39+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/disenador.html</loc>
-    <lastmod>2026-09-25T11:29:39+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/disenador-puas.html</loc>
-    <lastmod>2026-09-25T11:29:39+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-hueso-vs-cuerno.html</loc>
-    <lastmod>2026-09-25T11:29:39+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -880,6 +876,21 @@
     </image:image>
     <image:image>
       <image:loc>https://hezuradar.com/images/products/9cf44366-365b-4864-bf43-8559c5a2f91e_1789715936092_1.jpeg</image:loc>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://hezuradar.com/productos/marco-de-madre-perla-5488f43b.html</loc>
+    <lastmod>2026-10-02</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948729428_0.jpeg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948734671_1.jpeg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948739180_2.jpeg</image:loc>
     </image:image>
   </url>
 </urlset>
