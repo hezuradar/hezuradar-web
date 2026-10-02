@@ -280,30 +280,23 @@
 
   async function publishSitemap(allProducts) {
     if (!window.HA_TEMPLATE) throw new Error("No se pudo cargar la plantilla de página de producto.");
-    const T = window.HA_TEMPLATE;
-    const entries = [
-      { loc: T.SITE_URL + "/", changefreq: "weekly", priority: "1.0" },
-      { loc: T.SITE_URL + "/disenador.html", changefreq: "monthly", priority: "0.7" },
-      { loc: T.SITE_URL + "/disenador-puas.html", changefreq: "monthly", priority: "0.7" },
-      { loc: T.SITE_URL + "/guia-hueso-vs-cuerno.html", changefreq: "monthly", priority: "0.5" },
-      { loc: T.SITE_URL + "/condiciones.html", changefreq: "yearly", priority: "0.2" },
-      { loc: T.SITE_URL + "/privacidad.html", changefreq: "yearly", priority: "0.2" },
-      { loc: T.SITE_URL + "/cookies.html", changefreq: "yearly", priority: "0.2" },
-      { loc: T.SITE_URL + "/aviso-legal.html", changefreq: "yearly", priority: "0.2" },
-    ].concat(
-      allProducts
-        .filter((p) => p.slug)
-        .map((p) => ({
-          loc: T.SITE_URL + "/productos/" + p.slug + ".html",
-          changefreq: "weekly",
-          priority: "0.6",
-          lastmod: p.updatedAt,
-          images: (p.images || []).map((im) => T.SITE_URL + "/" + im),
-        }))
-    );
-    const xml = T.buildSitemapXml(entries);
+    const xml = window.HA_TEMPLATE.buildSitemapXml(window.HA_TEMPLATE.sitemapEntries(allProducts));
     const existing = await getFile("sitemap.xml");
     await putFile("sitemap.xml", b64EncodeUnicode(xml), "Actualiza sitemap.xml", existing ? existing.sha : null);
+  }
+
+  // Páginas de categoría (/cejuelas.html, ...): solo se suben las que cambian
+  // (un producto nuevo, un precio, una foto...), para no crear commits vacíos.
+  async function publishCategoryPages(allProducts) {
+    if (!window.HA_TEMPLATE) throw new Error("No se pudo cargar la plantilla de página de producto.");
+    const storeFile = await getFile("data/store.json");
+    const store = storeFile ? JSON.parse(storeFile.content) : {};
+    for (const cat of window.HA_TEMPLATE.CATEGORY_PAGES) {
+      const html = window.HA_TEMPLATE.buildCategoryHtml(cat, store, allProducts);
+      const existing = await getFile(cat.file);
+      if (existing && existing.content === html) continue;
+      await putFile(cat.file, b64EncodeUnicode(html), `Actualiza la página de categoría: ${cat.name}`, existing ? existing.sha : null);
+    }
   }
 
   let categoryMap = {}; // categoría -> Set de subcategorías ya usadas con ella
@@ -602,6 +595,7 @@
         await publishProductPage(product, updatedProducts);
         await publishHomepage(updatedProducts);
         await publishSitemap(updatedProducts);
+        await publishCategoryPages(updatedProducts);
       } catch (e) {
         seoWarning = " Aviso: el catálogo se publicó bien, pero no se pudo actualizar la página SEO del producto o el sitemap (" + e.message + "). Vuelve a guardar el producto para reintentarlo.";
       }
@@ -649,6 +643,7 @@
         await deleteProductPage(p);
         await publishHomepage(updatedProducts);
         await publishSitemap(updatedProducts);
+        await publishCategoryPages(updatedProducts);
       } catch (e) {
         seoWarning = " Aviso: no se pudo borrar la página SEO del producto o actualizar el sitemap (" + e.message + ").";
       }

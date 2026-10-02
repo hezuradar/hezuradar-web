@@ -32,6 +32,40 @@ function gitLastModified(relPath) {
   }
 }
 
+function escapeHtml(str) {
+  return String(str || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+
+function replaceBetween(html, start, end, inner) {
+  const a = html.indexOf(start);
+  const b = html.indexOf(end);
+  if (a === -1 || b === -1) throw new Error("No se han encontrado los marcadores " + start + " / " + end);
+  return html.slice(0, a + start.length) + inner + html.slice(b);
+}
+
+// Mismo marcado que renderAboutText() de assets/js/main.js.
+function aboutHtml(store) {
+  const text = String(store.aboutUs || "");
+  const marker = "\n\nAbout us\n\n";
+  const idx = text.indexOf(marker);
+  if (idx === -1) return '<span lang="es" class="about-text-block">' + escapeHtml(text) + "</span>";
+  return (
+    '<span lang="es" class="about-text-block">' + escapeHtml(text.slice(0, idx)) + "</span>" +
+    '<span lang="en" class="about-text-block">' + escapeHtml(text.slice(idx + marker.length)) + "</span>"
+  );
+}
+
+// Mismo marcado que la lista de contacto de assets/js/main.js.
+function contactHtml(store) {
+  const wa = "https://api.whatsapp.com/send?phone=" + String(store.whatsapp || "").replace("+", "") + "&text=" + encodeURIComponent("Hola, estoy interesado en vuestros productos.");
+  return (
+    "\n        <li><b>Ubicación</b>Legazpi, Gipuzkoa (España)</li>" +
+    '\n        <li><b>Email</b><a href="mailto:' + escapeHtml(store.email) + '">' + escapeHtml(store.email) + "</a></li>" +
+    '\n        <li><b>WhatsApp</b><a href="' + escapeHtml(wa) + '" target="_blank" rel="noopener">' + escapeHtml(store.whatsapp) + "</a></li>" +
+    '\n        <li><b>Instagram</b><a href="' + escapeHtml(store.instagram) + '" target="_blank" rel="noopener">@hezuradar</a></li>\n      '
+  );
+}
+
 function main() {
   const products = JSON.parse(fs.readFileSync(PRODUCTS_PATH, "utf8"));
   const store = JSON.parse(fs.readFileSync(STORE_PATH, "utf8"));
@@ -94,64 +128,23 @@ function main() {
     }
   });
 
-  const entries = [
-    { loc: TEMPLATE.SITE_URL + "/", changefreq: "weekly", priority: "1.0", lastmod: gitLastModified("index.html") },
-    {
-      loc: TEMPLATE.SITE_URL + "/disenador.html",
-      changefreq: "monthly",
-      priority: "0.7",
-      lastmod: gitLastModified("disenador.html"),
-    },
-    {
-      loc: TEMPLATE.SITE_URL + "/disenador-puas.html",
-      changefreq: "monthly",
-      priority: "0.7",
-      lastmod: gitLastModified("disenador-puas.html"),
-    },
-    {
-      loc: TEMPLATE.SITE_URL + "/guia-hueso-vs-cuerno.html",
-      changefreq: "monthly",
-      priority: "0.5",
-      lastmod: gitLastModified("guia-hueso-vs-cuerno.html"),
-    },
-    {
-      loc: TEMPLATE.SITE_URL + "/condiciones.html",
-      changefreq: "yearly",
-      priority: "0.2",
-      lastmod: gitLastModified("condiciones.html"),
-    },
-    {
-      loc: TEMPLATE.SITE_URL + "/privacidad.html",
-      changefreq: "yearly",
-      priority: "0.2",
-      lastmod: gitLastModified("privacidad.html"),
-    },
-    {
-      loc: TEMPLATE.SITE_URL + "/cookies.html",
-      changefreq: "yearly",
-      priority: "0.2",
-      lastmod: gitLastModified("cookies.html"),
-    },
-    {
-      loc: TEMPLATE.SITE_URL + "/aviso-legal.html",
-      changefreq: "yearly",
-      priority: "0.2",
-      lastmod: gitLastModified("aviso-legal.html"),
-    },
-  ].concat(
-    products.map((p) => ({
-      loc: TEMPLATE.SITE_URL + "/productos/" + p.slug + ".html",
-      changefreq: "weekly",
-      priority: "0.6",
-      lastmod: p.updatedAt,
-      images: (p.images || []).map((im) => TEMPLATE.SITE_URL + "/" + im),
-    }))
-  );
+  // Páginas de categoría (/cejuelas.html, ...), con los productos de cada tipo.
+  TEMPLATE.CATEGORY_PAGES.forEach((cat) => {
+    fs.writeFileSync(path.join(ROOT, cat.file), TEMPLATE.buildCategoryHtml(cat, store, products), "utf8");
+  });
+  console.log("Generadas " + TEMPLATE.CATEGORY_PAGES.length + " páginas de categoría.");
+
+  const entries = TEMPLATE.sitemapEntries(products, gitLastModified);
   fs.writeFileSync(SITEMAP_PATH, TEMPLATE.buildSitemapXml(entries), "utf8");
   console.log("sitemap.xml regenerado con " + entries.length + " URLs.");
 
   const indexHtml = fs.readFileSync(INDEX_PATH, "utf8");
-  fs.writeFileSync(INDEX_PATH, CATALOG_TEMPLATE.injectHomepageMarkup(indexHtml, products), "utf8");
+  let homeHtml = CATALOG_TEMPLATE.injectHomepageMarkup(indexHtml, products);
+  // "Quiénes somos" y contacto también quedan en el HTML (main.js los vuelve a
+  // pintar igual), para que el texto se indexe sin depender de JavaScript.
+  homeHtml = replaceBetween(homeHtml, "<!--HA:ABOUT_START-->", "<!--HA:ABOUT_END-->", aboutHtml(store));
+  homeHtml = replaceBetween(homeHtml, "<!--HA:CONTACT_START-->", "<!--HA:CONTACT_END-->", contactHtml(store));
+  fs.writeFileSync(INDEX_PATH, homeHtml, "utf8");
   console.log("index.html regenerado con el catálogo (" + products.length + " productos).");
 }
 
