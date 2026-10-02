@@ -482,7 +482,7 @@
     const phone = (window.HA && window.HA.store && window.HA.store.whatsapp) || "";
     const text = buildWhatsAppMessage(order);
     if (phone) {
-      const waUrl = `https://wa.me/${phone.replace("+", "")}?text=${encodeURIComponent(text)}`;
+      const waUrl = `https://api.whatsapp.com/send?phone=${phone.replace("+", "")}&text=${encodeURIComponent(text)}`;
       if (waWindow) {
         waWindow.location.href = waUrl;
       } else {

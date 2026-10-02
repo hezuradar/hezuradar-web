@@ -40,7 +40,7 @@
 
   function waLink(phone, text) {
     const msg = text || "Hola, estoy interesado en vuestros productos.";
-    return `https://wa.me/${phone.replace("+", "")}?text=${encodeURIComponent(msg)}`;
+    return `https://api.whatsapp.com/send?phone=${phone.replace("+", "")}&text=${encodeURIComponent(msg)}`;
   }
   function formatPrice(n) {
     return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);

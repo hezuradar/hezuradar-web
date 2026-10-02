@@ -100,7 +100,7 @@
   }
 
   function waLink(phone, text) {
-    return "https://wa.me/" + String(phone || "").replace("+", "") + "?text=" + encodeURIComponent(text);
+    return "https://api.whatsapp.com/send?phone=" + String(phone || "").replace("+", "") + "&text=" + encodeURIComponent(text);
   }
 
   // Lee las dimensiones reales de una imagen JPEG o PNG a partir de sus bytes,
@@ -408,8 +408,8 @@
       '<script src="/assets/js/emailjs-notify.js?v=20261002e"></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261002d"></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261002e"></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261002e"></script>\n' +
-      '<script src="/assets/js/product-page.js?v=20260923a" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261002f"></script>\n' +
+      '<script src="/assets/js/product-page.js?v=20261002f" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
       "</body>\n" +
       "</html>\n"
     );

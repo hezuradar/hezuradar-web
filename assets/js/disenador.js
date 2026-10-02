@@ -906,7 +906,7 @@
       const phoneShop = (store && store.whatsapp) || "";
       if (phoneShop) {
         const text = buildWhatsAppMessage(order);
-        window.open(`https://wa.me/${phoneShop.replace("+", "")}?text=${encodeURIComponent(text)}`, "_blank");
+        window.open(`https://api.whatsapp.com/send?phone=${phoneShop.replace("+", "")}&text=${encodeURIComponent(text)}`, "_blank");
       }
     } catch (err) {
       console.error("No se pudo abrir WhatsApp:", err);

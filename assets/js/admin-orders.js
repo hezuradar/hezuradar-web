@@ -1070,7 +1070,7 @@ ${bodyHtml}
     }
     const phone = waPhoneDigits(c.phone);
     const text = albaranWhatsAppText(o);
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`, "_blank", "noopener");
   }
 
   // Sube a la carpeta compartida de Drive (cliente/pedido) el diseño, el archivo
