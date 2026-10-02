@@ -2,23 +2,47 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://hezuradar.com/</loc>
+    <lastmod>2026-10-02T16:29:24+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/disenador.html</loc>
+    <lastmod>2026-10-02T16:29:24+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/disenador-puas.html</loc>
+    <lastmod>2026-10-02T16:29:24+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-hueso-vs-cuerno.html</loc>
+    <lastmod>2026-10-02T16:29:24+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://hezuradar.com/condiciones.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://hezuradar.com/privacidad.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://hezuradar.com/cookies.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  <url>
+    <loc>https://hezuradar.com/aviso-legal.html</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.2</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/productos/5-puas-de-buey-ambar-prime-horn-68e0d1e3.html</loc>

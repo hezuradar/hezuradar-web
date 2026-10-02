@@ -95,15 +95,15 @@ function exportOrder_(orderId) {
   designs.forEach((ds) => {
     const d = ds.design || {};
     const prefix = designs.length > 1 ? safeName_(ds.orderCode) || code : code;
-    if (d.snapshot) {
+    if (isImageDataUrl_(d.snapshot)) {
       const jpg = dataUrlToBlob_(d.snapshot, "image/jpeg", prefix + "-diseno.jpg");
       designJpgs.push(jpg);
       files.push(putFile_(orderFolder, jpg));
     }
-    if (d.fileData) {
-      const base = safeName_(d.fileName) || "archivo-cliente";
+    if (d.fileData && String(d.fileData).indexOf("data:") === 0) {
+      const base = safeClientFileName_(d.fileName);
       const name = designs.length > 1 || !d.fileName ? prefix + "-" + base : base;
-      files.push(putFile_(orderFolder, dataUrlToBlob_(d.fileData, d.fileType, name)));
+      files.push(putFile_(orderFolder, dataUrlToBlob_(d.fileData, safeMime_(base), name)));
     } else if (d.fileTooLargeToEmbed) {
       fileMissing = true;
     }
@@ -172,6 +172,28 @@ function dataUrlToBlob_(dataUrl, mimeType, name) {
   const meta = dataUrl.substring(5, comma);
   const type = mimeType || meta.replace(/;base64$/i, "") || "application/octet-stream";
   return Utilities.newBlob(Utilities.base64Decode(dataUrl.substring(comma + 1)), type, name);
+}
+
+// El pedido lo escribe el cliente: la imagen del diseño solo se acepta si de verdad es
+// un JPEG/PNG en base64, y el archivo original solo con una extensión de la lista
+// (cualquier otra se guarda como .bin y como binario genérico, sin poder ejecutarse).
+const SAFE_CLIENT_EXTS = { pdf: "application/pdf", dxf: "application/dxf", svg: "image/svg+xml", png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg" };
+
+function isImageDataUrl_(s) {
+  return typeof s === "string" && /^data:image\/(jpeg|png);base64,[A-Za-z0-9+\/=]+$/.test(s);
+}
+
+function safeClientFileName_(fileName) {
+  const base = safeName_(fileName).replace(/[^\w.\- ]+/g, "_").slice(0, 80) || "archivo-cliente";
+  const dot = base.lastIndexOf(".");
+  const ext = dot > 0 ? base.slice(dot + 1).toLowerCase() : "";
+  const stem = (dot > 0 ? base.slice(0, dot) : base).replace(/\./g, "_");
+  return stem + "." + (SAFE_CLIENT_EXTS[ext] ? ext : "bin");
+}
+
+function safeMime_(fileName) {
+  const ext = fileName.slice(fileName.lastIndexOf(".") + 1).toLowerCase();
+  return SAFE_CLIENT_EXTS[ext] || "application/octet-stream";
 }
 
 // Drive admite casi cualquier carácter, pero quitamos barras y espacios de más
@@ -254,7 +276,7 @@ function noteHtml_(o, orderId, designs) {
     ${d.fileName ? `<div>Archivo del cliente: ${esc_(d.fileName)}</div>` : ""}
     ${d.fileTooLargeToEmbed ? `<p class="warn">El archivo original era demasiado grande para guardarlo: hay que pedírselo al cliente.</p>` : ""}
     ${d.fileInDrive ? `<p>El archivo original está en la carpeta de Drive del pedido ${esc_(ds.orderCode || "")}.</p>` : ""}
-    ${d.snapshot ? `<img src="${d.snapshot}">` : ""}`;
+    ${isImageDataUrl_(d.snapshot) ? `<img src="${d.snapshot}">` : ""}`;
     })
     .join("");
   // En un pedido agrupado se listan también los demás productos (sin precios).

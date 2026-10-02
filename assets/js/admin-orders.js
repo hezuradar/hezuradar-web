@@ -161,7 +161,7 @@
       .orderBy("createdAt", "desc")
       .onSnapshot(
         (snap) => {
-          orders = snap.docs.map((d) => ({ docId: d.id, ...d.data() }));
+          orders = snap.docs.map((d) => normalizeOrder({ docId: d.id, ...d.data() }));
           renderOrders();
           renderRevenue();
           renderCustomers();
@@ -175,6 +175,46 @@
           setAuthStatus("err", "Error leyendo pedidos: " + err.message);
         }
       );
+  }
+
+  // Los pedidos los escribe un cliente anónimo: antes de pintarlos se fuerzan los tipos
+  // esperados para que un documento malformado (p.ej. mergedFrom como texto o un email
+  // numérico) no rompa el panel entero ni cuele un enlace que no sea de Google Drive.
+  function normalizeOrder(o) {
+    const str = (v) => (v == null ? "" : String(v));
+    const strMap = (m, keys) => {
+      const src = m && typeof m === "object" ? m : {};
+      const out = { ...src };
+      keys.forEach((k) => (out[k] = str(src[k])));
+      return out;
+    };
+    o.customer = strMap(o.customer, ["name", "phone", "email"]);
+    o.shipping = strMap(o.shipping, ["address", "postalCode", "city", "province", "notes"]);
+    o.status = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"].includes(o.status) ? o.status : "pendiente";
+    o.items = Array.isArray(o.items) ? o.items.filter((it) => it && typeof it === "object") : [];
+    o.mergedFrom = Array.isArray(o.mergedFrom) ? o.mergedFrom.map(str) : [];
+    if (o.designs != null && !Array.isArray(o.designs)) delete o.designs;
+    if (o.total != null && typeof o.total !== "number") delete o.total;
+    if (o.driveFolderUrl && !/^https:\/\/drive\.google\.com\//.test(String(o.driveFolderUrl))) o.driveFolderUrl = "";
+    if (Array.isArray(o.designs)) {
+      o.designs.forEach((ds) => {
+        if (ds && ds.driveFolderUrl && !/^https:\/\/drive\.google\.com\//.test(String(ds.driveFolderUrl))) ds.driveFolderUrl = "";
+      });
+    }
+    if (o.createdAt != null && typeof o.createdAt !== "string") o.createdAt = str(o.createdAt);
+    return o;
+  }
+
+  // Precio unitario que debería tener una línea según el catálogo publicado (con
+  // descuentos por cantidad y porcentaje), para detectar pedidos con precios alterados.
+  function catalogPriceMismatches(o) {
+    if (!catalogProducts.length || !window.HA_CATALOG_TEMPLATE) return [];
+    return (o.items || []).filter((it) => {
+      const p = catalogProducts.find((x) => x.id === it.id);
+      if (!p) return false;
+      const expected = window.HA_CATALOG_TEMPLATE.unitPriceFor(p, Number(it.qty) || 1);
+      return Math.abs((Number(it.price) || 0) - expected) > 0.005;
+    });
   }
 
   /* ---------------- LIST + REVENUE ---------------- */
@@ -251,14 +291,26 @@
   // Un <a href="data:..." download> directo falla en varios navegadores móviles (sobre todo
   // con tipos poco comunes como .dxf), así que se convierte a un Blob real antes de descargar,
   // que es el método con mejor soporte en iOS/Android.
+  const SAFE_DESIGN_EXTS = ["pdf", "dxf", "svg", "png", "jpg", "jpeg"];
+
+  // El nombre y el tipo del archivo los pone el cliente: se descarga siempre como binario
+  // genérico y con una extensión de la lista, para no abrir por error un .exe o un .html.
+  function safeDesignFileName(fileName) {
+    const base = String(fileName || "diseno").split(/[\\/]/).pop().replace(/[^\w.\- ]+/g, "_").slice(0, 80) || "diseno";
+    const dot = base.lastIndexOf(".");
+    const ext = dot > 0 ? base.slice(dot + 1).toLowerCase() : "";
+    const stem = (dot > 0 ? base.slice(0, dot) : base).replace(/\./g, "_");
+    return stem + "." + (SAFE_DESIGN_EXTS.includes(ext) ? ext : "bin");
+  }
+
   function downloadDesignFile(dataUrl, fileName, mimeType) {
-    if (!dataUrl) return;
+    if (!dataUrl || typeof dataUrl !== "string" || !dataUrl.startsWith("data:")) return;
     try {
-      const blob = dataUrlToBlob(dataUrl, mimeType);
+      const blob = dataUrlToBlob(dataUrl, "application/octet-stream");
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = fileName || "diseno";
+      a.download = safeDesignFileName(fileName);
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -800,6 +852,7 @@
       })
       .join("");
     const priced = itemsSum > 0;
+    const mismatches = design ? [] : catalogPriceMismatches(o);
 
     return `
       <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
@@ -839,7 +892,8 @@
               <div class="order-total-row"><span>Productos</span><span>${formatPrice(itemsSum)}</span></div>
               ${shippingCost > 0 ? `<div class="order-total-row"><span>Envío</span><span>${formatPrice(shippingCost)}</span></div>` : ""}
               <div class="order-total-row order-total-grand"><span>Total</span><b>${formatPrice(total)}</b></div>
-            </div>`
+            </div>
+            ${mismatches.length ? `<div class="status-msg err">⚠️ Precio distinto del catálogo en: ${escapeHtml(mismatches.map((it) => it.title).join(", "))}. Revisa el importe antes de confirmar.</div>` : ""}`
             }
           </div>
           <div class="order-customer">
@@ -1016,7 +1070,7 @@ ${bodyHtml}
     }
     const phone = waPhoneDigits(c.phone);
     const text = albaranWhatsAppText(o);
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank");
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, "_blank", "noopener");
   }
 
   // Sube a la carpeta compartida de Drive (cliente/pedido) el diseño, el archivo

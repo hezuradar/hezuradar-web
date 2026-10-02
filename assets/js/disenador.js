@@ -321,7 +321,7 @@
     if (!window.pdfjsLib) throw new Error("No se pudo cargar el lector de PDF. Recarga la página e inténtalo de nuevo.");
     const buf = await file.arrayBuffer();
     const timeoutMsg = "No se ha podido procesar este PDF (ha tardado demasiado). Prueba con otro archivo o con un DXF.";
-    const pdf = await withTimeout(pdfjsLib.getDocument({ data: buf }).promise, 20000, timeoutMsg);
+    const pdf = await withTimeout(pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise, 20000, timeoutMsg);
     const page = await withTimeout(pdf.getPage(1), 20000, timeoutMsg);
     const baseViewport = page.getViewport({ scale: 1 });
     const targetMax = 900;

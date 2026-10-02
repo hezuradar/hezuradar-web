@@ -11,11 +11,14 @@
     "index.html": "inicio",
     "disenador.html": "placa",
     "disenador-puas.html": "pua",
+    "guia-hueso-vs-cuerno.html": "guia",
   };
 
   function currentPageKey() {
-    const file = window.location.pathname.split("/").pop();
-    return PAGE_KEYS[file] || PAGE_KEYS[""] || "otra";
+    const path = window.location.pathname;
+    if (path.indexOf("/productos/") === 0) return "producto";
+    const file = path.split("/").pop();
+    return PAGE_KEYS[file] || "otra";
   }
 
   function getApp() {

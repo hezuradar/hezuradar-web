@@ -1,24 +1,72 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /orders/{orderId} {
-      allow create: if request.resource.data.keys().hasAll(['orderCode','status','items','subtotal','customer','shipping'])
-        && request.resource.data.orderCode is string && request.resource.data.orderCode.size() < 40
-        && request.resource.data.status is string
-        && request.resource.data.items is list && request.resource.data.items.size() > 0 && request.resource.data.items.size() <= 50
-        && request.resource.data.subtotal is number && request.resource.data.subtotal >= 0 && request.resource.data.subtotal < 100000
-        && request.resource.data.customer.name is string && request.resource.data.customer.name.size() < 200
-        && request.resource.data.customer.phone is string && request.resource.data.customer.phone.size() < 40
-        && request.resource.data.shipping.address is string && request.resource.data.shipping.address.size() < 300
-        && (!('notes' in request.resource.data.shipping) || request.resource.data.shipping.notes.size() < 1000);
-      allow read, update, delete: if request.auth != null;
+
+    // Cuentas que pueden ver y gestionar pedidos y estadísticas desde admin.html.
+    // Si entras al panel con otro correo, añádelo aquí antes de publicar las reglas.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['hezuradar@gmail.com', 'iotegi@gmail.com'];
     }
+
+    function isStr(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    function optStr(m, key, max) {
+      return !(key in m) || isStr(m[key], max);
+    }
+
+    // Pedido creado desde la cesta (cart.js) o desde los diseñadores (disenador.js).
+    function validPublicOrder() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['orderCode', 'createdAt', 'createdAtServer', 'status', 'items', 'subtotal',
+                               'shippingCost', 'total', 'paymentMethod', 'customer', 'shipping',
+                               'kind', 'material', 'design'])
+        && d.keys().hasAll(['orderCode', 'status', 'items', 'subtotal', 'customer', 'shipping'])
+        && isStr(d.orderCode, 40)
+        && d.status == 'pendiente'
+        && (!('createdAtServer' in d) || d.createdAtServer == request.time)
+        && optStr(d, 'createdAt', 40)
+        && d.items is list && d.items.size() > 0 && d.items.size() <= 50
+        && d.subtotal is number && d.subtotal >= 0 && d.subtotal < 100000
+        && (!('shippingCost' in d) || (d.shippingCost is number && d.shippingCost >= 0 && d.shippingCost < 100))
+        && (!('total' in d) || (d.total is number && d.total >= 0 && d.total < 100000))
+        && (!('paymentMethod' in d) || d.paymentMethod in ['', 'paypal', 'bizum', 'otros'])
+        && (!('kind' in d) || d.kind in ['placa-personalizada', 'pua-personalizada'])
+        && d.customer is map
+        && d.customer.keys().hasOnly(['name', 'phone', 'email'])
+        && isStr(d.customer.name, 200) && isStr(d.customer.phone, 40) && optStr(d.customer, 'email', 200)
+        && d.shipping is map
+        && d.shipping.keys().hasOnly(['address', 'postalCode', 'city', 'province', 'notes'])
+        && isStr(d.shipping.address, 300)
+        && optStr(d.shipping, 'postalCode', 20) && optStr(d.shipping, 'city', 120)
+        && optStr(d.shipping, 'province', 120) && optStr(d.shipping, 'notes', 1000)
+        && (!('material' in d) || (d.material is map && d.material.keys().hasOnly(['id', 'label'])
+              && isStr(d.material.id, 60) && isStr(d.material.label, 120)))
+        && (!('design' in d) || (d.design is map
+              && d.design.keys().hasOnly(['snapshot', 'fileName', 'fileType', 'fileData', 'fileTooLargeToEmbed'])
+              && optStr(d.design, 'snapshot', 900000)
+              && optStr(d.design, 'fileName', 200)
+              && optStr(d.design, 'fileType', 100)
+              && (!('fileData' in d.design) || d.design.fileData == null || d.design.fileData is string)
+              && (!('fileTooLargeToEmbed' in d.design) || d.design.fileTooLargeToEmbed is bool)));
+    }
+
+    match /orders/{orderId} {
+      allow create: if isAdmin() || validPublicOrder();
+      allow read, update, delete: if isAdmin();
+    }
+
     match /analytics_daily/{date} {
-      allow read: if request.auth != null;
+      allow read, delete: if isAdmin();
       allow create, update: if date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
         && request.resource.data.diff(resource == null ? {} : resource.data).affectedKeys()
-             .hasOnly(['visits', 'pages', 'productViews', 'productTitles', 'updatedAt']);
-      allow delete: if request.auth != null;
+             .hasOnly(['visits', 'pages', 'productViews', 'productTitles', 'updatedAt'])
+        && (!('visits' in request.resource.data) || request.resource.data.visits is int)
+        && (!('pages' in request.resource.data) || request.resource.data.pages is map)
+        && (!('productViews' in request.resource.data) || request.resource.data.productViews is map)
+        && (!('productTitles' in request.resource.data) || request.resource.data.productTitles is map);
     }
   }
 }

@@ -38,6 +38,43 @@
     return pct > 0 ? Math.round(p.price * (1 - pct / 100) * 100) / 100 : p.price;
   }
 
+  // Precios por cantidad: [{ minQty: 10, price: 4.15 }, ...], de menor a mayor cantidad.
+  function priceTiers(p) {
+    if (!p || !Array.isArray(p.priceTiers)) return [];
+    return p.priceTiers
+      .filter(function (t) {
+        return t && Number(t.minQty) > 1 && typeof t.price === "number" && t.price >= 0;
+      })
+      .slice()
+      .sort(function (a, b) {
+        return a.minQty - b.minQty;
+      });
+  }
+
+  // Precio unitario real de una línea de `qty` unidades: el del tramo de cantidad que
+  // corresponda y, encima, el descuento en % del producto si lo tiene.
+  function unitPriceFor(p, qty) {
+    var base = p.price;
+    priceTiers(p).forEach(function (t) {
+      if (qty >= t.minQty) base = t.price;
+    });
+    var pct = Number(p.discountPercent) || 0;
+    return pct > 0 ? Math.round(base * (1 - pct / 100) * 100) / 100 : base;
+  }
+
+  function priceTiersHtml(p) {
+    var tiers = priceTiers(p);
+    if (!tiers.length) return "";
+    var first = tiers[0].minQty;
+    var rows = ["<li><span>" + (first === 2 ? "1 ud" : "1–" + (first - 1) + " uds") + "</span><b>" + formatPrice(p.price) + "/ud</b></li>"];
+    tiers.forEach(function (t, i) {
+      var next = tiers[i + 1];
+      var label = next ? t.minQty + "–" + (next.minQty - 1) + " uds" : "Desde " + t.minQty + " uds";
+      rows.push("<li><span>" + label + "</span><b>" + formatPrice(t.price) + "/ud</b></li>");
+    });
+    return '<div class="price-tiers"><div class="price-tiers-title">Precio por cantidad</div><ul>' + rows.join("") + "</ul></div>";
+  }
+
   function isOutOfStock(p) {
     return typeof p.stock === "number" && p.stock <= 0;
   }
@@ -77,14 +114,14 @@
       '">\n        <div class="card-img' +
       (outOfStock ? " has-stock-badge" : "") +
       '" data-open="' +
-      p.id +
+      escapeAttr(p.id) +
       '">\n          ' +
       (outOfStock ? '<span class="badge-outofstock">Sin stock</span>\n          ' : "") +
       (hasDiscount ? '<span class="badge-discount">-' + p.discountPercent + '%</span>\n          ' : "") +
       '<span class="card-cat">' +
       escapeHtml(p.subcategory || p.category) +
       '</span>\n          <img src="' +
-      thumbPath(img) +
+      escapeAttr(thumbPath(img)) +
       '" alt="' +
       escapeAttr(p.title) +
       '" loading="lazy">\n        </div>\n        <div class="card-body">\n          <h3 class="card-title">' +
@@ -96,11 +133,11 @@
         ? '<span class="price-old">' + formatPrice(p.price) + "</span> " + formatPrice(effectivePrice(p))
         : formatPrice(p.price)) +
       '</div>\n          <div class="card-actions">\n            <button class="btn btn-outline" data-open="' +
-      p.id +
+      escapeAttr(p.id) +
       '">Más info</button>\n            ' +
       (outOfStock
         ? '<button class="btn btn-outline" disabled>Sin stock</button>'
-        : '<button class="btn btn-primary" data-add="' + p.id + '">Añadir</button>') +
+        : '<button class="btn btn-primary" data-add="' + escapeAttr(p.id) + '">Añadir</button>') +
       "\n          </div>\n        </div>\n      </article>\n    "
     );
   }
@@ -139,6 +176,9 @@
     thumbPath: thumbPath,
     formatPrice: formatPrice,
     effectivePrice: effectivePrice,
+    priceTiers: priceTiers,
+    unitPriceFor: unitPriceFor,
+    priceTiersHtml: priceTiersHtml,
     isOutOfStock: isOutOfStock,
     categoryList: categoryList,
     buildChipsHtml: buildChipsHtml,

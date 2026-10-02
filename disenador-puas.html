@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.googleapis.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://firestore.googleapis.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
 <title>Personaliza tus púas — HezurAdar</title>
-<meta name="description" content="Sube el logo de tu diseño (PDF o DXF) y ajústalo sobre una púa de 32×32 mm en hueso y cuerno natural.">
+<meta name="description" content="Sube el logo de tu diseño (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso y cuerno natural.">
 <link rel="canonical" href="https://hezuradar.com/disenador-puas.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="HezurAdar">
@@ -25,7 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20261002a">
+<link rel="stylesheet" href="assets/css/style.css?v=20261002d">
 <script src="assets/js/device.js?v=20260915q"></script>
 </head>
 <body>
@@ -63,7 +63,7 @@
         <h2>2. Sube tu diseño</h2>
         <p class="help-text">Formatos admitidos: <b>PDF</b> y <b>DXF</b> (el formato abierto de CAD). Si solo tienes un
         archivo <b>DWG</b>, expórtalo a DXF desde tu programa de diseño — es gratis y tarda segundos.</p>
-        <input type="file" id="design-file-input" accept="*/*">
+        <input type="file" id="design-file-input" accept="*/*" aria-label="Archivo de tu diseño (PDF o DXF)">
         <div id="design-file-status"></div>
         <button class="btn btn-outline" id="remove-design-btn" type="button" style="display:none;margin-top:10px">✕ Quitar diseño</button>
       </div>
@@ -86,13 +86,13 @@
 
         <div class="plate-controls" id="plate-controls" style="display:none">
           <div class="plate-control-row">
-            <label>Tamaño (mm)</label>
+            <label for="scale-range">Tamaño (mm)</label>
             <button type="button" class="small-btn" data-scale="-1">−</button>
             <input type="range" id="scale-range" min="5" max="80" step="0.5" value="26.2">
             <button type="button" class="small-btn" data-scale="1">+</button>
           </div>
           <div class="plate-control-row">
-            <label>Girar</label>
+            <label for="rotate-range">Girar</label>
             <button type="button" class="small-btn" data-rotate="-1">↶ 15°</button>
             <input type="range" id="rotate-range" min="0" max="359" step="1" value="0">
             <button type="button" class="small-btn" data-rotate="1">15° ↷</button>
@@ -116,44 +116,44 @@
         <h2>4. Tus datos</h2>
         <p class="help-text"><b>Recuerda:</b> el pedido mínimo de púas personalizadas es de 20 unidades; si quieres más, indícalo abajo.</p>
         <div class="field">
-          <label>Nombre y apellidos *</label>
+          <label for="d-name">Nombre y apellidos *</label>
           <input id="d-name" placeholder="Nombre completo">
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Teléfono *</label>
+            <label for="d-phone">Teléfono *</label>
             <input id="d-phone" placeholder="+34 600 000 000">
           </div>
           <div class="field">
-            <label>Email</label>
+            <label for="d-email">Email</label>
             <input id="d-email" type="email" placeholder="tucorreo@ejemplo.com">
           </div>
         </div>
         <div class="field">
-          <label>Cantidad de púas *</label>
+          <label for="d-qty">Cantidad de púas *</label>
           <input id="d-qty" type="number" min="20" step="1" value="20">
         </div>
         <p id="d-qty-total" class="card-price" style="margin:0 0 14px"></p>
         <div class="field">
-          <label>Dirección de envío *</label>
+          <label for="d-address">Dirección de envío *</label>
           <input id="d-address" placeholder="Calle, número, piso">
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Código postal *</label>
+            <label for="d-postal">Código postal *</label>
             <input id="d-postal" placeholder="20230">
           </div>
           <div class="field">
-            <label>Ciudad *</label>
+            <label for="d-city">Ciudad *</label>
             <input id="d-city" placeholder="Legazpi">
           </div>
         </div>
         <div class="field">
-          <label>Provincia</label>
+          <label for="d-province">Provincia</label>
           <input id="d-province" placeholder="Gipuzkoa">
         </div>
         <div class="field">
-          <label>Notas del pedido (opcional)</label>
+          <label for="d-notes">Notas del pedido (opcional)</label>
           <textarea id="d-notes" placeholder="Plazo, acabado que buscas..."></textarea>
         </div>
 
@@ -173,6 +173,9 @@
           </label>
         </div>
 
+        <p class="help-text checkout-legal">Es una solicitud de presupuesto, sin compromiso de compra. Tratamos tus datos
+        solo para preparar y gestionar tu pedido, según la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.
+        Las piezas personalizadas no admiten desistimiento (ver <a href="/condiciones.html" target="_blank" rel="noopener">condiciones</a>).</p>
         <button class="btn btn-primary" id="send-request-btn" type="button" style="width:100%">Enviar solicitud</button>
         <div id="request-status"></div>
       </div>
@@ -184,19 +187,27 @@
 <footer class="site-footer">
   <div class="container">
     <span>&copy; <span id="year"></span> HezurAdar · Legazpi, Gipuzkoa</span>
+    <div class="footer-links">
+      <a href="/#about">Quiénes somos</a>
+      <a href="/guia-hueso-vs-cuerno.html">Hueso vs cuerno: guía de materiales</a>
+      <a href="/condiciones.html">Envíos y devoluciones</a>
+      <a href="/privacidad.html">Privacidad</a>
+      <a href="/aviso-legal.html">Aviso legal</a>
+      <a href="https://www.instagram.com/hezuradar/" target="_blank" rel="noopener">Instagram</a>
+    </div>
   </div>
 </footer>
 
 <script src="assets/js/year.js?v=20260915q"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/legacy/build/pdf.min.js"></script>
+<script src="/assets/js/vendor/pdf-3.11.174.min.js"></script>
 <script src="assets/js/dxf-mini.js?v=20260915q"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="/assets/js/vendor/firebase-app-compat-10.12.2.js"></script>
+<script src="/assets/js/vendor/firebase-firestore-compat-10.12.2.js"></script>
 <script src="assets/js/firebase-config.js?v=20260915q"></script>
 <script src="assets/js/firebase-orders.js?v=20260924a"></script>
 <script src="assets/js/drive-export.js?v=20260925a"></script>
-<script src="assets/js/analytics.js?v=20260918a"></script>
+<script src="assets/js/analytics.js?v=20261002d"></script>
 <script src="assets/js/disenador-puas-config.js?v=20260918b"></script>
-<script src="assets/js/disenador.js?v=20260924a"></script>
+<script src="assets/js/disenador.js?v=20261002d"></script>
 </body>
 </html>

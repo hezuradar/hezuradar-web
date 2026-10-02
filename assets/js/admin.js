@@ -1,6 +1,13 @@
 (function () {
   "use strict";
 
+  // El panel no debe poder cargarse dentro de un iframe de otra web (clickjacking):
+  // GitHub Pages no permite enviar la cabecera frame-ancestors, así que se hace aquí.
+  if (window.top !== window.self) {
+    window.top.location = window.self.location.href;
+    return;
+  }
+
   const LS = {
     pinHash: "ha_pin_hash",
     owner: "ha_gh_owner",
@@ -24,7 +31,6 @@
     $("gh-owner").value = localStorage.getItem(LS.owner) || "hezuradar";
     $("gh-repo").value = localStorage.getItem(LS.repo) || "hezuradar-web";
     $("gh-branch").value = localStorage.getItem(LS.branch) || "main";
-    $("gh-token").value = localStorage.getItem(LS.token) || "";
 
     $("gh-save").addEventListener("click", saveGhConfig);
     $("p-save").addEventListener("click", saveProduct);
@@ -84,6 +90,8 @@
     $("lock-screen").style.display = "none";
     $("admin-shell").style.display = "block";
     $("logout-btn").style.display = "inline-block";
+    // El token solo se rellena tras desbloquear el panel con el PIN.
+    $("gh-token").value = localStorage.getItem(LS.token) || "";
     loadProducts();
   }
 
@@ -278,6 +286,10 @@
       { loc: T.SITE_URL + "/disenador.html", changefreq: "monthly", priority: "0.7" },
       { loc: T.SITE_URL + "/disenador-puas.html", changefreq: "monthly", priority: "0.7" },
       { loc: T.SITE_URL + "/guia-hueso-vs-cuerno.html", changefreq: "monthly", priority: "0.5" },
+      { loc: T.SITE_URL + "/condiciones.html", changefreq: "yearly", priority: "0.2" },
+      { loc: T.SITE_URL + "/privacidad.html", changefreq: "yearly", priority: "0.2" },
+      { loc: T.SITE_URL + "/cookies.html", changefreq: "yearly", priority: "0.2" },
+      { loc: T.SITE_URL + "/aviso-legal.html", changefreq: "yearly", priority: "0.2" },
     ].concat(
       allProducts
         .filter((p) => p.slug)
@@ -354,14 +366,14 @@
       .map(
         (p) => `
       <tr>
-        <td><img src="${(p.images && p.images[0]) || ""}" alt=""></td>
+        <td><img src="${escapeAttr((p.images && p.images[0]) || "")}" alt=""></td>
         <td>${escapeHtml(p.title)}</td>
         <td>${escapeHtml(p.subcategory || p.category || "")}</td>
-        <td>${Number(p.price).toFixed(2)} €${p.discountPercent ? ` <span class="discount-tag">-${p.discountPercent}%</span>` : ""}</td>
-        <td>${p.stock ?? "-"}</td>
+        <td>${Number(p.price).toFixed(2)} €${p.discountPercent ? ` <span class="discount-tag">-${Number(p.discountPercent) || 0}%</span>` : ""}</td>
+        <td>${p.stock == null ? "-" : Number(p.stock)}</td>
         <td class="row-actions">
-          <button class="small-btn" data-edit="${p.id}">Editar</button>
-          <button class="small-btn danger" data-del="${p.id}">Borrar</button>
+          <button class="small-btn" data-edit="${escapeAttr(p.id)}">Editar</button>
+          <button class="small-btn danger" data-del="${escapeAttr(p.id)}">Borrar</button>
         </td>
       </tr>`
       )
@@ -386,6 +398,7 @@
     $("p-price").value = p.price != null ? String(p.price).replace(".", ",") : "";
     $("p-stock").value = p.stock ?? "";
     $("p-discount").value = p.discountPercent ?? "";
+    $("p-tiers").value = formatTiers(p.priceTiers);
     $("p-category").value = p.category || "";
     updateSubcategoryOptions(p.subcategory || "");
     $("p-sku").value = p.sku || "";
@@ -399,7 +412,7 @@
     pendingFiles = [];
     currentImages = [];
     $("form-title").textContent = "Añadir producto";
-    ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-sku"].forEach((id) => ($(id).value = ""));
+    ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-tiers", "p-sku"].forEach((id) => ($(id).value = ""));
     $("p-category").value = "";
     updateSubcategoryOptions("");
     $("p-images").value = "";
@@ -495,6 +508,8 @@
       if (!title) throw new Error("El título es obligatorio.");
       if (isNaN(price) || price < 0) throw new Error("El precio no es válido. Usa solo números, con coma o punto para los decimales (p.ej. 10,50).");
 
+      const priceTiers = parseTiers($("p-tiers").value);
+
       const cfg = ghConfig();
       if (!cfg.owner || !cfg.repo || !cfg.token) {
         throw new Error("Configura primero la conexión con GitHub.");
@@ -561,6 +576,7 @@
         stock: $("p-stock").value === "" ? null : parseInt($("p-stock").value, 10),
         discountPercent:
           $("p-discount").value === "" ? null : Math.min(99, Math.max(0, parseInt($("p-discount").value, 10) || 0)),
+        priceTiers: priceTiers.length ? priceTiers : undefined,
         images,
         slug,
         imageWidth: mainImageDims ? mainImageDims.width : undefined,
@@ -680,6 +696,27 @@
   function escapeAttr(str) {
     return escapeHtml(str);
   }
+  // "10=4,15; 20=4,05" -> [{ minQty: 10, price: 4.15 }, { minQty: 20, price: 4.05 }]
+  function parseTiers(raw) {
+    const text = String(raw || "").trim();
+    if (!text) return [];
+    const tiers = text.split(";").map((chunk) => chunk.trim()).filter(Boolean).map((chunk) => {
+      const parts = chunk.split("=");
+      const minQty = parseInt(parts[0], 10);
+      const price = parseDecimal(parts[1]);
+      if (parts.length !== 2 || !(minQty > 1) || isNaN(price) || price < 0) {
+        throw new Error(`Precio por cantidad no válido: "${chunk}". Usa el formato 10=4,15; 20=4,05`);
+      }
+      return { minQty, price: Math.round(price * 100) / 100 };
+    });
+    return tiers.sort((a, b) => a.minQty - b.minQty);
+  }
+
+  function formatTiers(tiers) {
+    if (!Array.isArray(tiers)) return "";
+    return tiers.map((t) => `${t.minQty}=${String(t.price).replace(".", ",")}`).join("; ");
+  }
+
   function parseDecimal(raw) {
     const s = String(raw ?? "")
       .trim()

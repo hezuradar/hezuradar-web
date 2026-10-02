@@ -114,6 +114,30 @@ function main() {
       priority: "0.5",
       lastmod: gitLastModified("guia-hueso-vs-cuerno.html"),
     },
+    {
+      loc: TEMPLATE.SITE_URL + "/condiciones.html",
+      changefreq: "yearly",
+      priority: "0.2",
+      lastmod: gitLastModified("condiciones.html"),
+    },
+    {
+      loc: TEMPLATE.SITE_URL + "/privacidad.html",
+      changefreq: "yearly",
+      priority: "0.2",
+      lastmod: gitLastModified("privacidad.html"),
+    },
+    {
+      loc: TEMPLATE.SITE_URL + "/cookies.html",
+      changefreq: "yearly",
+      priority: "0.2",
+      lastmod: gitLastModified("cookies.html"),
+    },
+    {
+      loc: TEMPLATE.SITE_URL + "/aviso-legal.html",
+      changefreq: "yearly",
+      priority: "0.2",
+      lastmod: gitLastModified("aviso-legal.html"),
+    },
   ].concat(
     products.map((p) => ({
       loc: TEMPLATE.SITE_URL + "/productos/" + p.slug + ".html",

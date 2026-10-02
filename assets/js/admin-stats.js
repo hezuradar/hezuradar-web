@@ -4,7 +4,7 @@
   const $ = (id) => document.getElementById(id);
   const DESIGN_KINDS = { "placa-personalizada": true, "pua-personalizada": true };
   const isDesignOrder = (o) => !!DESIGN_KINDS[o && o.kind];
-  const PAGE_LABELS = { inicio: "Inicio", placa: "Personaliza tu placa", pua: "Personaliza tus púas" };
+  const PAGE_LABELS = { inicio: "Inicio", placa: "Personaliza tu placa", pua: "Personaliza tus púas", producto: "Fichas de producto", guia: "Guía hueso vs cuerno", otra: "Otras páginas" };
   const STATUS_ORDER = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
   const STATUS_LABELS = { pendiente: "Pendiente", confirmado: "Confirmado", enviado: "Enviado", entregado: "Entregado", cancelado: "Cancelado" };
   // Mismos tonos que las etiquetas de estado de la pestaña Pedidos (DESIGN.md): el color

@@ -273,6 +273,27 @@ a.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover,var(--shad
 .guide-list{margin:0 0 1.2em;padding-left:1.2em}
 .guide-list li{margin-bottom:.6em;font-size:.96rem}
 .guide-article .product-actions-page{margin-top:2em}
+.guide-article h3{font-size:1.02rem;margin:1.4em 0 .5em}
+.legal-form{border:1px dashed var(--color-border);border-radius:var(--radius);padding:16px 18px;background:#fff}
+.legal-form p{margin:0 0 .5em}
+
+/* Tabla de precios por cantidad (ficha, modal del catálogo) */
+.price-tiers{border:1px solid var(--color-border);border-radius:10px;padding:10px 14px;background:var(--color-bg);max-width:340px}
+.price-tiers-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--color-primary-dark);margin-bottom:6px}
+.price-tiers ul{list-style:none;margin:0;padding:0}
+.price-tiers li{display:flex;justify-content:space-between;gap:12px;font-size:.88rem;padding:3px 0}
+.price-tiers li + li{border-top:1px solid var(--color-border)}
+.modal-info .price-tiers{margin:4px 0 10px}
+
+.checkout-legal{margin:6px 0 10px}
+.checkout-legal a{color:var(--color-primary-dark)}
+
+input[type=file]{max-width:100%;font-size:.88rem}
+input[type=file]::file-selector-button{
+  border:1px solid var(--color-border);background:#fff;color:var(--color-text);border-radius:999px;
+  padding:8px 14px;margin-right:10px;font:inherit;font-weight:700;cursor:pointer;
+}
+input[type=file]::file-selector-button:hover{border-color:var(--color-primary)}
 @media (max-width:760px){
   .product-detail{grid-template-columns:1fr;padding:18px}
 }
@@ -457,8 +478,11 @@ a.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover,var(--shad
   .brand img{width:30px;height:30px}
   .header-nav{display:contents}
   .header-icons{order:1;margin-left:auto}
-  .header-links{order:2;flex-basis:100%;justify-content:center;flex-wrap:wrap;row-gap:8px}
-  .pill-btn{padding:7px 12px;font-size:.82rem}
+  /* Una sola fila desplazable en vez de dos: la cabecera fija ocupaba ~20 % de la pantalla. */
+  .header-links{order:2;flex-basis:100%;justify-content:flex-start;flex-wrap:nowrap;overflow-x:auto;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px}
+  .header-links::-webkit-scrollbar{display:none}
+  .pill-btn{padding:7px 12px;font-size:.82rem;white-space:nowrap;flex:none}
   .icon-btn{width:40px;height:40px}
   .hero-copy p{font-size:.88rem}
   .results-bar{margin:16px 0 10px}
@@ -500,7 +524,8 @@ a.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover,var(--shad
 .field textarea.field-textarea-compact{min-height:64px}
 .field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;min-width:0}
 @media (max-width:760px){
-  .field-row{grid-template-columns:1fr}
+  /* En una columna, el margen inferior de cada .field ya separa: sin gap, para no duplicar el hueco. */
+  .field-row{grid-template-columns:1fr;row-gap:0}
 }
 .card-panel{background:#fff;border:1px solid var(--color-border);border-radius:var(--radius);padding:24px;margin-bottom:24px}
 .status-msg{padding:10px 14px;border-radius:8px;font-size:.85rem;margin-top:10px}

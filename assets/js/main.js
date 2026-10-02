@@ -284,17 +284,17 @@
     const hasDiscount = Number(p.discountPercent) > 0;
     els.modalRoot.innerHTML = `
       <div class="modal-backdrop" id="modal-backdrop">
-        <div class="modal">
+        <div class="modal" role="dialog" aria-modal="true" aria-label="${escapeAttr(p.title)}">
           <button class="modal-close" id="modal-close" aria-label="Cerrar">&times;</button>
           <div class="modal-scroll">
             <div class="modal-gallery">
-              <img id="modal-main-img" src="${images[0]}" alt="${escapeAttr(p.title)}">
+              <img id="modal-main-img" src="${escapeAttr(images[0])}" alt="${escapeAttr(p.title)}">
               ${
                 images.length > 1
                   ? `<div class="modal-thumbs">${images
                       .map(
                         (im, i) =>
-                          `<img src="${CT.thumbPath(im)}" data-full="${im}" data-i="${i}" class="${i === 0 ? "active" : ""}">`
+                          `<img src="${escapeAttr(CT.thumbPath(im))}" data-full="${escapeAttr(im)}" data-i="${i}" alt="" class="${i === 0 ? "active" : ""}">`
                       )
                       .join("")}</div>`
                   : ""
@@ -308,12 +308,13 @@
                   ? `<span class="price-old">${CT.formatPrice(p.price)}</span> ${CT.formatPrice(CT.effectivePrice(p))}`
                   : CT.formatPrice(p.price)
               }</div>
+              ${CT.priceTiersHtml ? CT.priceTiersHtml(p) : ""}
               ${outOfStock ? `<div class="status-msg err">Sin stock disponible.</div>` : ""}
               <div class="modal-desc">${escapeHtml(p.description || "")}</div>
               <div class="modal-sku">Ref. ${escapeHtml(p.sku || "-")}</div>
               <div class="qty-stepper">
                 <button type="button" id="modal-qty-dec" aria-label="Menos" ${outOfStock ? "disabled" : ""}>&minus;</button>
-                <input type="number" id="modal-qty" value="1" min="1" inputmode="numeric" ${outOfStock ? "disabled" : ""}>
+                <input type="number" id="modal-qty" value="1" min="1" inputmode="numeric" aria-label="Cantidad" ${outOfStock ? "disabled" : ""}>
                 <button type="button" id="modal-qty-inc" aria-label="Más" ${outOfStock ? "disabled" : ""}>+</button>
               </div>
               <div class="modal-actions">
@@ -349,6 +350,7 @@
       closeModal();
     });
     document.body.style.overflow = "hidden";
+    document.getElementById("modal-close").focus({ preventScroll: true });
   }
 
   function closeModal() {

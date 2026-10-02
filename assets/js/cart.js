@@ -65,6 +65,12 @@
     if (window.HA && window.HA.effectivePrice) return window.HA.effectivePrice(p);
     return p.price;
   }
+  // Precio unitario para `qty` unidades, con los precios por cantidad del producto
+  // (assets/js/catalog-template.js); sin esa plantilla cargada, el precio normal.
+  function unitPrice(p, qty) {
+    const CT = window.HA_CATALOG_TEMPLATE;
+    return CT && CT.unitPriceFor ? CT.unitPriceFor(p, qty) : effectivePrice(p);
+  }
 
   function lines() {
     const products = getProducts();
@@ -72,8 +78,9 @@
       .map((c) => {
         const p = products.find((x) => x.id === c.id);
         if (!p) return null;
-        const price = effectivePrice(p);
-        return { id: c.id, qty: c.qty, product: p, price, lineTotal: price * c.qty };
+        const price = unitPrice(p, c.qty);
+        const tierApplied = price < effectivePrice(p);
+        return { id: c.id, qty: c.qty, product: p, price, tierApplied, lineTotal: Math.round(price * c.qty * 100) / 100 };
       })
       .filter(Boolean);
   }
@@ -167,17 +174,17 @@
             <div class="cart-line-info">
               <div class="cart-line-title">${escapeHtml(l.product.title)}</div>
               <div class="cart-line-price">${
-                l.product.discountPercent
+                l.product.discountPercent || l.tierApplied
                   ? `<span class="price-old">${formatPrice(l.product.price)}</span> ${formatPrice(l.price)}`
                   : formatPrice(l.price)
-              }</div>
+              }${l.tierApplied ? ` <span class="help-text">· precio por cantidad</span>` : ""}</div>
               <div class="qty-stepper qty-stepper-sm">
-                <button type="button" data-dec="${l.id}">&minus;</button>
-                <input type="number" min="1" value="${l.qty}" data-qty="${l.id}">
-                <button type="button" data-inc="${l.id}">+</button>
+                <button type="button" data-dec="${escapeHtml(l.id)}" aria-label="Quitar una unidad">&minus;</button>
+                <input type="number" min="1" value="${l.qty}" data-qty="${escapeHtml(l.id)}" aria-label="Cantidad">
+                <button type="button" data-inc="${escapeHtml(l.id)}" aria-label="Añadir una unidad">+</button>
               </div>
             </div>
-            <button class="cart-line-remove" data-remove="${l.id}" aria-label="Quitar">&times;</button>
+            <button class="cart-line-remove" data-remove="${escapeHtml(l.id)}" aria-label="Quitar">&times;</button>
           </div>
         `
           )
@@ -240,58 +247,61 @@
       <form id="checkout-form">
         <h4 class="checkout-section-title">Tus datos</h4>
         <div class="field">
-          <label>Nombre y apellidos *</label>
-          <input required name="name" id="co-name" placeholder="Nombre completo">
+          <label for="co-name">Nombre y apellidos *</label>
+          <input required name="name" id="co-name" autocomplete="name" maxlength="190" placeholder="Nombre completo">
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Teléfono *</label>
-            <input required name="phone" id="co-phone" placeholder="+34 600 000 000">
+            <label for="co-phone">Teléfono *</label>
+            <input required name="phone" id="co-phone" type="tel" autocomplete="tel" maxlength="39" placeholder="+34 600 000 000">
           </div>
           <div class="field">
-            <label>Email</label>
-            <input type="email" name="email" id="co-email" placeholder="tucorreo@ejemplo.com">
+            <label for="co-email">Email</label>
+            <input type="email" name="email" id="co-email" autocomplete="email" maxlength="190" placeholder="tucorreo@ejemplo.com">
           </div>
         </div>
         <div class="field">
-          <label>Dirección de envío *</label>
-          <input required name="address" id="co-address" placeholder="Calle, número, piso">
+          <label for="co-address">Dirección de envío *</label>
+          <input required name="address" id="co-address" autocomplete="street-address" maxlength="290" placeholder="Calle, número, piso">
         </div>
         <div class="field-row">
           <div class="field">
-            <label>Código postal *</label>
-            <input required name="postalCode" id="co-postal" placeholder="20230">
+            <label for="co-postal">Código postal *</label>
+            <input required name="postalCode" id="co-postal" autocomplete="postal-code" maxlength="19" placeholder="20230">
           </div>
           <div class="field">
-            <label>Ciudad *</label>
-            <input required name="city" id="co-city" placeholder="Legazpi">
+            <label for="co-city">Ciudad *</label>
+            <input required name="city" id="co-city" autocomplete="address-level2" maxlength="119" placeholder="Legazpi">
           </div>
         </div>
         <div class="field">
-          <label>Provincia</label>
-          <input name="province" id="co-province" placeholder="Gipuzkoa">
+          <label for="co-province">Provincia</label>
+          <input name="province" id="co-province" autocomplete="address-level1" maxlength="119" placeholder="Gipuzkoa">
         </div>
         <div class="field">
-          <label>Notas del pedido (opcional)</label>
-          <textarea name="notes" id="co-notes" placeholder="Instrucciones de entrega, preferencias..."></textarea>
+          <label for="co-notes">Notas del pedido (opcional)</label>
+          <textarea name="notes" id="co-notes" maxlength="990" placeholder="Instrucciones de entrega, preferencias..."></textarea>
         </div>
 
-        <h4 class="checkout-section-title">Forma de pago *</h4>
-        <div class="payment-methods">
+        <h4 class="checkout-section-title" id="co-payment-title">Forma de pago *</h4>
+        <div class="payment-methods" role="radiogroup" aria-labelledby="co-payment-title">
           ${PAYMENT_METHODS.map(
             (p) => `
             <label class="payment-method-btn">
               <input type="radio" name="paymentMethod" value="${p.value}" required>
-              <img src="${p.img}" alt="${escapeHtml(p.label)}">
+              <img src="${imgSrc(p.img)}" alt="${escapeHtml(p.label)}">
             </label>
           `
           ).join("")}
         </div>
 
-        <div id="checkout-status"></div>
+        <p class="help-text checkout-legal">Al confirmar aceptas las <a href="/condiciones.html" target="_blank" rel="noopener">condiciones de venta</a>
+        (incluido el derecho de desistimiento de 14 días) y el tratamiento de tus datos según la
+        <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</p>
+        <div id="checkout-status" role="status" aria-live="polite"></div>
         <div style="display:flex;gap:10px;margin-top:6px">
           <button type="button" class="btn btn-outline" id="back-to-cart">Volver a la cesta</button>
-          <button type="submit" class="btn btn-primary" id="confirm-order" style="flex:1">Confirmar pedido</button>
+          <button type="submit" class="btn btn-primary" id="confirm-order" style="flex:1">Confirmar pedido con obligación de pago</button>
         </div>
       </form>
     `;

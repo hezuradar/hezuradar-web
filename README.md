@@ -80,24 +80,17 @@ no se guardará ningún historial y la pestaña "Pedidos" del panel quedará vac
    (puedes desactivar Google Analytics, no hace falta).
 2. En el menú lateral, entra en **Compilación → Firestore Database** → **Crear base de datos** →
    elige una ubicación de Europa (p.ej. `eur3`) → modo **producción**.
-3. Dentro de Firestore, pestaña **Reglas**, sustituye el contenido por esto y publica:
+3. Dentro de Firestore, pestaña **Reglas**, sustituye el contenido por el del fichero
+   [`firestore.rules`](firestore.rules) de este repositorio y publica.
 
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /orders/{orderId} {
-         allow create: if true;
-         allow read, update, delete: if request.auth != null;
-       }
-     }
-   }
-   ```
-
-   Esto permite que cualquiera pueda **crear** un pedido (es lo que hace la cesta de la compra), pero
-   solo alguien que haya iniciado sesión (tú) puede **leerlos o modificarlos**.
+   Esas reglas dejan que cualquiera **cree** un pedido con el formato exacto que usan la cesta y los
+   diseñadores (estado `pendiente`, campos y tamaños acotados), pero solo las cuentas de
+   administración listadas en `isAdmin()` pueden **leerlos, modificarlos o borrarlos**. Si entras al
+   panel con otro correo, añádelo a esa lista antes de publicar.
 4. En **Compilación → Authentication** → pestaña **Sign-in method**, activa el proveedor
-   **Correo electrónico/contraseña**.
+   **Correo electrónico/contraseña**. Después, en **Authentication → Settings → User actions**,
+   desactiva **Enable create (sign-up)** para que nadie más pueda darse de alta con la clave pública
+   (tu cuenta créala antes desde la pestaña *Users*).
 5. Pestaña **Users** → **Add user**: crea tu usuario administrador (el email y contraseña con los que
    entrarás en la pestaña "Pedidos" del panel).
 6. Icono de engranaje (arriba a la izquierda) → **Configuración del proyecto** → pestaña **Tus apps**
@@ -249,8 +242,8 @@ proyecto Firebase: añádela en la consola de Firebase → *Configuración del p
 permisos* como Propietario o Editor.
 
 > Instalación actual: el script está en la cuenta **hezuradar@gmail.com** (dueña de la carpeta de
-> Drive), proyecto "HezurAdar Drive". El proyecto Firebase es de iotegi@gmail.com y hezuradar@gmail.com
-> se añadió como Editor para que el script pueda leer los pedidos.
+> Drive), proyecto "HezurAdar Drive". Esa cuenta tiene permiso de Editor en el proyecto Firebase
+> para que el script pueda leer los pedidos.
 
 ## Notas
 

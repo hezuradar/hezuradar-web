@@ -6,7 +6,8 @@
 
   var SITE_URL = "https://hezuradar.com";
   var STANDARD_SHIPPING_EUR = "5.50"; // Coincide con SHIPPING_COST en assets/js/cart.js
-  var RETURN_WINDOW_DAYS = 5;
+  // Mínimo legal para ventas a distancia a consumidores en España (art. 102 TRLGDCU).
+  var RETURN_WINDOW_DAYS = 14;
   // Política real de devoluciones y envío (confirmada por el propietario, no
   // inventada): el cliente organiza y paga él mismo el envío de vuelta (no hay
   // importe fijo, por eso ReturnFeesCustomerResponsibility y no
@@ -17,6 +18,25 @@
   var RETURN_METHOD = "https://schema.org/ReturnByMail";
   var HANDLING_TIME_DAYS = { min: 1, max: 2 };
   var TRANSIT_TIME_DAYS = { min: 2, max: 4 };
+
+  // Plantilla del catálogo (precios por cantidad): en el navegador ya está cargada como
+  // window.HA_CATALOG_TEMPLATE; en Node (scripts/generate-product-pages.js) se carga aquí.
+  function catalogApi() {
+    if (root.HA_CATALOG_TEMPLATE) return root.HA_CATALOG_TEMPLATE;
+    if (typeof require === "function") {
+      try {
+        return require("./catalog-template.js");
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function priceTiersHtml(product) {
+    var api = catalogApi();
+    return api && api.priceTiersHtml ? api.priceTiersHtml(product) : "";
+  }
 
   function slugify(str) {
     return String(str || "")
@@ -177,7 +197,8 @@
     };
     return [productNode, breadcrumbNode]
       .map(function (node) {
-        return '<script type="application/ld+json">\n' + JSON.stringify(node, null, 2) + "\n</script>";
+        // "<" escapado para que un "</script>" dentro de un texto no cierre el bloque.
+        return '<script type="application/ld+json">\n' + JSON.stringify(node, null, 2).replace(/</g, "\\u003c") + "\n</script>";
       })
       .join("\n");
   }
@@ -272,7 +293,7 @@
       "<head>\n" +
       '<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-      '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://www.gstatic.com https://cdn.jsdelivr.net; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://*.googleapis.com https://api.emailjs.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
+      '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\'; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://firestore.googleapis.com https://api.emailjs.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
       "<title>" + escapeHtml(product.title) + " — HezurAdar</title>\n" +
       '<meta name="description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
       '<link rel="canonical" href="' + canonicalUrl + '">\n' +
@@ -299,7 +320,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261002a">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261002d">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -341,12 +362,13 @@
       '      <div class="product-cat-page">' + escapeHtml(catLabel) + "</div>\n" +
       "      <h1>" + escapeHtml(product.title) + "</h1>\n" +
       '      <div class="product-price-page">' + priceHtml + "</div>\n" +
+      (priceTiersHtml(product) ? "      " + priceTiersHtml(product) + "\n" : "") +
       (outOfStock ? '      <div class="status-msg err">Sin stock disponible.</div>\n' : "") +
       '      <p class="product-desc-page">' + escapeHtml(product.description || "") + "</p>\n" +
       '      <div class="product-sku-page">Ref. ' + escapeHtml(product.sku || "-") + "</div>\n" +
       '      <div class="qty-stepper">\n' +
       '        <button type="button" id="product-qty-dec" aria-label="Menos"' + (outOfStock ? " disabled" : "") + ">&minus;</button>\n" +
-      '        <input type="number" id="product-qty" value="1" min="1" inputmode="numeric"' + (outOfStock ? " disabled" : "") + ">\n" +
+      '        <input type="number" id="product-qty" value="1" min="1" inputmode="numeric" aria-label="Cantidad"' + (outOfStock ? " disabled" : "") + ">\n" +
       '        <button type="button" id="product-qty-inc" aria-label="Más"' + (outOfStock ? " disabled" : "") + ">+</button>\n" +
       "      </div>\n" +
       '      <div class="product-actions-page">\n' +
@@ -364,6 +386,9 @@
       '    <div class="footer-links">\n' +
       '      <a href="/#about">Quiénes somos</a>\n' +
       '      <a href="/guia-hueso-vs-cuerno.html">Hueso vs cuerno: guía de materiales</a>\n' +
+      '      <a href="/condiciones.html">Envíos y devoluciones</a>\n' +
+      '      <a href="/privacidad.html">Privacidad</a>\n' +
+      '      <a href="/aviso-legal.html">Aviso legal</a>\n' +
       '      <a href="' + escapeAttr(instagram) + '" target="_blank" rel="noopener">Instagram</a>\n' +
       "    </div>\n" +
       "  </div>\n" +
@@ -373,15 +398,16 @@
       "</a>\n\n" +
       '<div id="cart-root"></div>\n\n' +
       '<script src="/assets/js/year.js?v=20260915l"></script>\n' +
-      '<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>\n' +
-      '<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>\n' +
+      '<script src="/assets/js/vendor/firebase-app-compat-10.12.2.js"></script>\n' +
+      '<script src="/assets/js/vendor/firebase-firestore-compat-10.12.2.js"></script>\n' +
       '<script src="/assets/js/firebase-config.js?v=20260915l"></script>\n' +
       '<script src="/assets/js/firebase-orders.js?v=20260915l"></script>\n' +
-      '<script src="/assets/js/analytics.js?v=20260918a"></script>\n' +
-      '<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.4.1/dist/email.min.js"></script>\n' +
+      '<script src="/assets/js/analytics.js?v=20261002d"></script>\n' +
+      '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js"></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20260915l"></script>\n' +
       '<script src="/assets/js/emailjs-notify.js?v=20260915l"></script>\n' +
-      '<script src="/assets/js/cart.js?v=20260921f"></script>\n' +
+      '<script src="/assets/js/catalog-template.js?v=20261002d"></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261002d"></script>\n' +
       '<script src="/assets/js/product-page.js?v=20260923a" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
       "</body>\n" +
       "</html>\n"
