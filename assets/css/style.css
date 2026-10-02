@@ -483,10 +483,18 @@ input[type=file]::file-selector-button:hover{border-color:var(--color-primary)}
     scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:0 -20px;padding:0 20px}
   .header-links::-webkit-scrollbar{display:none}
   .pill-btn{padding:7px 12px;font-size:.82rem;white-space:nowrap;flex:none}
+  /* Tres botones no caben en 375px y el tercero quedaba cortado sin pista de que había más.
+     Ese tercero siempre tiene alternativa visible: "Quiénes somos" está en el pie y
+     "Volver a la tienda" en el logo y en la miga de pan "Tienda". */
+  .header-links .pill-btn:nth-child(n+3){display:none}
   .icon-btn{width:40px;height:40px}
   .hero-copy p{font-size:.88rem}
   .results-bar{margin:16px 0 10px}
   #cart-close{width:46px;height:46px;font-size:1.6rem}
+}
+@media (max-width:380px){
+  .header-links{gap:6px}
+  .pill-btn{padding:6px 10px;font-size:.76rem}
 }
 
 @media (max-width:480px){

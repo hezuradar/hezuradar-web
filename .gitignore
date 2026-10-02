@@ -1,3 +1,4 @@
 .claude/
 token*.txt
 *.pat
+.playwright-mcp/
