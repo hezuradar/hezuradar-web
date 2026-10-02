@@ -1149,5 +1149,25 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-09-22"
+  },
+  {
+    "id": "5488f43b-8110-47b1-9c00-a979ceb88bce",
+    "title": "Marco de madre Perla",
+    "description": "Marco para puente de madre Perla \nMedida exterior 80x12x2",
+    "price": 14,
+    "sku": "RR0066",
+    "category": "Madre Perla Y Abalone",
+    "subcategory": "Custom",
+    "stock": null,
+    "discountPercent": null,
+    "images": [
+      "images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948729428_0.jpeg",
+      "images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948734671_1.jpeg",
+      "images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948739180_2.jpeg"
+    ],
+    "slug": "marco-de-madre-perla-5488f43b",
+    "imageWidth": 4032,
+    "imageHeight": 3024,
+    "updatedAt": "2026-10-02"
   }
 ]
