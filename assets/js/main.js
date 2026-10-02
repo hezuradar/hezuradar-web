@@ -72,6 +72,9 @@
   }
 
   function bindEvents() {
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && document.getElementById("modal-backdrop")) closeModal();
+    });
     els.search.addEventListener("input", (e) => {
       state.term = e.target.value.trim().toLowerCase();
       render();
