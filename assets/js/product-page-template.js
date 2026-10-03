@@ -362,7 +362,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003b">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003c">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -507,7 +507,8 @@
         "<li><strong>Cordal o selleta:</strong> piezas más altas, de 85 × 3 × 15 mm (en hueso, 85 × 2,5 × 15 mm).</li>" +
         "</ul>" +
         '<p>Para medir la tuya, consulta la <a href="/guia-medidas-cejuela-selleta.html">guía de medidas de cejuelas y selletas</a>; ' +
-        'para elegir material, la <a href="/guia-hueso-vs-cuerno.html">guía de hueso o cuerno</a>.</p>',
+        'para elegir material, la <a href="/guia-hueso-vs-cuerno.html">guía de hueso o cuerno</a>. ' +
+        'Y si vas a tallarla tú, sigue la <a href="/guia-tallar-selleta.html">guía para tallar una selleta paso a paso</a>.</p>',
     },
     {
       file: "pines-guitarra-acustica.html",
@@ -607,14 +608,13 @@
       '    <span>&copy; <span id="year"></span> HezurAdar · Legazpi, Gipuzkoa</span>\n' +
       '    <div class="footer-links">\n' +
       '      <a href="/#about">Quiénes somos</a>\n' +
-      '      <a href="/guia-hueso-vs-cuerno.html">Hueso vs cuerno: guía de materiales</a>\n' +
-      '      <a href="/guia-medidas-cejuela-selleta.html">Medidas de cejuelas y selletas</a>\n' +
       '      <a href="/condiciones.html">Envíos y devoluciones</a>\n' +
       '      <a href="/privacidad.html">Privacidad</a>\n' +
       '      <a href="/aviso-legal.html">Aviso legal</a>\n' +
       '      <a href="' + escapeAttr(instagram || "https://www.instagram.com/hezuradar/") + '" target="_blank" rel="noopener">Instagram</a>\n' +
       "    </div>\n" +
       "    " + footerCatsHtml() + "\n" +
+      "    " + footerGuidesHtml() + "\n" +
       "  </div>\n" +
       "</footer>\n\n"
     );
@@ -626,6 +626,26 @@
       '<nav class="footer-cats" aria-label="Categorías">' +
       CATEGORY_PAGES.map(function (c) {
         return '<a href="/' + c.file + '">' + escapeHtml(c.name) + "</a>";
+      }).join("") +
+      "</nav>"
+    );
+  }
+
+  // Guías del sitio, en el orden en que salen en el pie de página.
+  var GUIDE_PAGES = [
+    { file: "guia-hueso-vs-cuerno.html", name: "Hueso o cuerno" },
+    { file: "guia-medidas-cejuela-selleta.html", name: "Medidas de cejuelas y selletas" },
+    { file: "guia-tallar-cejuela.html", name: "Tallar una cejuela" },
+    { file: "guia-tallar-selleta.html", name: "Tallar una selleta" },
+    { file: "guia-cambiar-pines-guitarra.html", name: "Cambiar los pines" },
+  ];
+
+  // Fila de enlaces a las guías (se repite en el pie de todas las páginas).
+  function footerGuidesHtml() {
+    return (
+      '<nav class="footer-cats footer-guides" aria-label="Guías"><span>Guías:</span>' +
+      GUIDE_PAGES.map(function (g) {
+        return '<a href="/' + g.file + '">' + escapeHtml(g.name) + "</a>";
       }).join("") +
       "</nav>"
     );
@@ -704,7 +724,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003b">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003c">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
@@ -767,6 +787,7 @@
     { path: "guia-hueso-vs-cuerno.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-medidas-cejuela-selleta.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-tallar-cejuela.html", changefreq: "monthly", priority: "0.5" },
+    { path: "guia-tallar-selleta.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-cambiar-pines-guitarra.html", changefreq: "monthly", priority: "0.5" },
     { path: "condiciones.html", changefreq: "yearly", priority: "0.2" },
     { path: "privacidad.html", changefreq: "yearly", priority: "0.2" },
@@ -850,6 +871,7 @@
     categoryPageFor: categoryPageFor,
     buildCategoryHtml: buildCategoryHtml,
     footerCatsHtml: footerCatsHtml,
+    footerGuidesHtml: footerGuidesHtml,
     SITE_URL: SITE_URL,
   };
 

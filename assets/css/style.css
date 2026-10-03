@@ -319,6 +319,8 @@ input[type=file]::file-selector-button:hover{border-color:var(--color-primary)}
 .footer-links{display:flex;gap:16px;flex-wrap:wrap}
 .footer-cats{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px 16px;padding-top:12px;margin-top:4px;border-top:1px solid rgba(255,255,255,.12)}
 .footer-cats a{color:inherit}
+.footer-guides{border-top:0;padding-top:0;margin-top:-4px}
+.footer-guides span{opacity:.7}
 
 /* Páginas de categoría y "Compra por tipo" de la portada */
 .category-intro{max-width:760px;margin-bottom:22px;line-height:1.65}
