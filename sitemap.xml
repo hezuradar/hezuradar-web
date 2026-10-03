@@ -26,7 +26,17 @@
   </url>
   <url>
     <loc>https://hezuradar.com/guia-medidas-cejuela-selleta.html</loc>
-    <lastmod>2026-10-02T20:13:20+02:00</lastmod>
+    <lastmod>2026-10-03T09:42:43+02:00</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://hezuradar.com/guia-tallar-cejuela.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://hezuradar.com/guia-cambiar-pines-guitarra.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>

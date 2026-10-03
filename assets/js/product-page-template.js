@@ -481,7 +481,8 @@
         "<li><strong>Para tallar:</strong> piezas en bruto de 55 × 6 × 10 mm, y de 55 × 4 × 9 mm para cejuelas tipo Fender.</li>" +
         "</ul>" +
         '<p>Si no sabes qué medida lleva tu guitarra, mira la <a href="/guia-medidas-cejuela-selleta.html">guía de medidas de cejuelas y selletas</a>; ' +
-        'para elegir material, la <a href="/guia-hueso-vs-cuerno.html">guía de hueso o cuerno</a>.</p>',
+        'para elegir material, la <a href="/guia-hueso-vs-cuerno.html">guía de hueso o cuerno</a>. ' +
+        'Y si vas a tallarla tú, sigue la <a href="/guia-tallar-cejuela.html">guía para tallar una cejuela paso a paso</a>.</p>',
     },
     {
       file: "selletas.html",
@@ -527,7 +528,8 @@
         "<li><strong>Ranurados:</strong> la ranura facilita el paso de la cuerda y hace más cómodo el cambio de cuerdas.</li>" +
         "<li><strong>Sin ranurar:</strong> acabado liso que mantiene el diseño tradicional del pin.</li>" +
         "</ul>" +
-        "<p>Todos son para guitarras acústicas con pines de puente estándar. Si tienes dudas con tu modelo, pregúntanos por WhatsApp.</p>",
+        "<p>Todos son para guitarras acústicas con pines de puente estándar. Si tienes dudas con tu modelo, pregúntanos por WhatsApp. " +
+        'Te explicamos cómo elegir entre ranurados y lisos, y cómo cambiarlos, en la <a href="/guia-cambiar-pines-guitarra.html">guía para cambiar los pines</a>.</p>',
     },
     {
       file: "puas.html",
@@ -764,6 +766,8 @@
     { path: "disenador-puas.html", changefreq: "monthly", priority: "0.7" },
     { path: "guia-hueso-vs-cuerno.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-medidas-cejuela-selleta.html", changefreq: "monthly", priority: "0.5" },
+    { path: "guia-tallar-cejuela.html", changefreq: "monthly", priority: "0.5" },
+    { path: "guia-cambiar-pines-guitarra.html", changefreq: "monthly", priority: "0.5" },
     { path: "condiciones.html", changefreq: "yearly", priority: "0.2" },
     { path: "privacidad.html", changefreq: "yearly", priority: "0.2" },
     { path: "cookies.html", changefreq: "yearly", priority: "0.2" },
