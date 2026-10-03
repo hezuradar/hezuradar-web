@@ -1,30 +1,57 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" font-family="Inter, Arial, sans-serif">
-  <title>Selleta compensada vista desde arriba: el punto de apoyo de cada cuerda está desplazado</title>
-  <rect width="760" height="300" fill="#ffffff"/>
-  <text x="380" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#62727d">VISTA DESDE ARRIBA · EJEMPLO EN GUITARRA ACÚSTICA</text>
-  <!-- Puente -->
-  <rect x="150" y="70" width="460" height="150" rx="14" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
-  <!-- Selleta -->
-  <rect x="190" y="118" width="380" height="26" rx="6" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
-  <!-- Línea de apoyo compensada -->
-  <polyline points="225,138 275,134 325,130 375,126 425,136 475,124" fill="none" stroke="#4076AA" stroke-width="2" stroke-dasharray="5 4" transform="translate(30,0)"/>
-  <g fill="#d9534f" transform="translate(30,0)">
-    <circle cx="225" cy="138" r="5"/><circle cx="275" cy="134" r="5"/><circle cx="325" cy="130" r="5"/>
-    <circle cx="375" cy="126" r="5"/><circle cx="425" cy="136" r="5"/><circle cx="475" cy="124" r="5"/>
-  </g>
-  <!-- Cuerdas hacia los pines -->
-  <g stroke="#9aa7b0" stroke-width="1.5">
-    <line x1="255" y1="54" x2="255" y2="190"/><line x1="305" y1="54" x2="305" y2="190"/><line x1="355" y1="54" x2="355" y2="190"/>
-    <line x1="405" y1="54" x2="405" y2="190"/><line x1="455" y1="54" x2="455" y2="190"/><line x1="505" y1="54" x2="505" y2="190"/>
-  </g>
-  <g fill="#f6eedc" stroke="#1c2b36" stroke-width="1.2">
-    <circle cx="255" cy="190" r="7"/><circle cx="305" cy="190" r="7"/><circle cx="355" cy="190" r="7"/>
-    <circle cx="405" cy="190" r="7"/><circle cx="455" cy="190" r="7"/><circle cx="505" cy="190" r="7"/>
-  </g>
-  <g font-size="13" fill="#1c2b36" text-anchor="middle" font-weight="700">
-    <text x="255" y="246">6ª</text><text x="305" y="246">5ª</text><text x="355" y="246">4ª</text>
-    <text x="405" y="246">3ª</text><text x="455" y="246">2ª</text><text x="505" y="246">1ª</text>
-  </g>
-  <text x="630" y="96" font-size="13" fill="#62727d">hacia el mástil ↑</text>
-  <text x="380" y="280" text-anchor="middle" font-size="13" fill="#62727d">Cada punto rojo es donde apoya la cuerda. Copia el dibujo de tu selleta original.</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" font-family="Inter, Arial, sans-serif">
+  <title>Selleta compensada vista desde arriba a escala: inclinada hacia los graves y con el punto de apoyo de cada cuerda desplazado</title>
+  <defs>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e6d6b4"/></linearGradient>
+    <linearGradient id="boneH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe3c8"/><stop offset=".5" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e3d2ad"/></linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f3626"/><stop offset="1" stop-color="#2c1d13"/></linearGradient>
+    <linearGradient id="spruce" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4e2bb"/><stop offset="1" stop-color="#dfbf8a"/></linearGradient>
+    <linearGradient id="mahog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97643c"/><stop offset="1" stop-color="#6b4226"/></linearGradient>
+    <linearGradient id="maple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b07a"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
+    <linearGradient id="ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2b1e"/><stop offset="1" stop-color="#18100a"/></linearGradient>
+    <linearGradient id="nickel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7f9"/><stop offset=".55" stop-color="#bcc6cd"/><stop offset="1" stop-color="#8c99a2"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8890"/><stop offset=".5" stop-color="#d6dde2"/><stop offset="1" stop-color="#6c767d"/></linearGradient>
+    <radialGradient id="ballg" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f2c76a"/><stop offset="1" stop-color="#9b7426"/></radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/></marker>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c9b48a" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="760" height="330" fill="#ffffff"/>
+  <text x="380.0" y="30.0" font-size="13" font-weight="700" fill="#62727d" text-anchor="middle">VISTA DESDE ARRIBA · SELLETA COMPENSADA DE ACÚSTICA (A ESCALA)</text>
+  <path d="M41.5,99.5 Q23.5,99.5 23.5,170.0 Q23.5,250.5 53.5,250.5 L706.5,250.5 Q736.5,250.5 736.5,170.0 Q736.5,99.5 718.5,99.5 Q380.0,83.5 41.5,99.5 Z" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.5"/>
+  <polygon points="214.4,140.1 545.6,128.6 545.6,142.4 214.4,153.9" fill="url(#boneH)" stroke="#1c2b36" stroke-width="1.5" stroke-linejoin="round"/>
+  <line x1="255.8" y1="50" x2="255.8" y2="151.2" stroke="#aab4ba" stroke-width="2.05"/>
+  <line x1="255.8" y1="151.2" x2="255.8" y2="190.7" stroke="#aab4ba" stroke-width="2.05" stroke-dasharray="2 2"/>
+  <circle cx="255.8" cy="190.7" r="16.6" fill="url(#bone)" stroke="#1c2b36" stroke-width="1"/>
+  <text x="255.8" y="229.3" font-size="13" font-weight="700" fill="#f6eedc" text-anchor="middle">6ª</text>
+  <line x1="305.5" y1="50" x2="305.5" y2="147.0" stroke="#aab4ba" stroke-width="1.80"/>
+  <line x1="305.5" y1="147.0" x2="305.5" y2="190.7" stroke="#aab4ba" stroke-width="1.80" stroke-dasharray="2 2"/>
+  <circle cx="305.5" cy="190.7" r="16.6" fill="url(#bone)" stroke="#1c2b36" stroke-width="1"/>
+  <text x="305.5" y="229.3" font-size="13" font-weight="700" fill="#f6eedc" text-anchor="middle">5ª</text>
+  <line x1="355.2" y1="50" x2="355.2" y2="142.1" stroke="#aab4ba" stroke-width="1.55"/>
+  <line x1="355.2" y1="142.1" x2="355.2" y2="190.7" stroke="#aab4ba" stroke-width="1.55" stroke-dasharray="2 2"/>
+  <circle cx="355.2" cy="190.7" r="16.6" fill="url(#bone)" stroke="#1c2b36" stroke-width="1"/>
+  <text x="355.2" y="229.3" font-size="13" font-weight="700" fill="#f6eedc" text-anchor="middle">4ª</text>
+  <line x1="404.8" y1="50" x2="404.8" y2="136.6" stroke="#aab4ba" stroke-width="1.30"/>
+  <line x1="404.8" y1="136.6" x2="404.8" y2="190.7" stroke="#aab4ba" stroke-width="1.30" stroke-dasharray="2 2"/>
+  <circle cx="404.8" cy="190.7" r="16.6" fill="url(#bone)" stroke="#1c2b36" stroke-width="1"/>
+  <text x="404.8" y="229.3" font-size="13" font-weight="700" fill="#f6eedc" text-anchor="middle">3ª</text>
+  <line x1="454.5" y1="50" x2="454.5" y2="143.7" stroke="#aab4ba" stroke-width="1.05"/>
+  <line x1="454.5" y1="143.7" x2="454.5" y2="190.7" stroke="#aab4ba" stroke-width="1.05" stroke-dasharray="2 2"/>
+  <circle cx="454.5" cy="190.7" r="16.6" fill="url(#bone)" stroke="#1c2b36" stroke-width="1"/>
+  <text x="454.5" y="229.3" font-size="13" font-weight="700" fill="#f6eedc" text-anchor="middle">2ª</text>
+  <line x1="504.2" y1="50" x2="504.2" y2="132.5" stroke="#aab4ba" stroke-width="0.80"/>
+  <line x1="504.2" y1="132.5" x2="504.2" y2="190.7" stroke="#aab4ba" stroke-width="0.80" stroke-dasharray="2 2"/>
+  <circle cx="504.2" cy="190.7" r="16.6" fill="url(#bone)" stroke="#1c2b36" stroke-width="1"/>
+  <text x="504.2" y="229.3" font-size="13" font-weight="700" fill="#f6eedc" text-anchor="middle">1ª</text>
+  <polyline points="255.8,151.2 305.5,147.0 355.2,142.1 404.8,136.6 454.5,143.7 504.2,132.5" fill="none" stroke="#4076AA" stroke-width="1.6" stroke-dasharray="4 3"/>
+  <circle cx="255.8" cy="151.2" r="3.6" fill="#d9534f" stroke="#ffffff" stroke-width="1"/>
+  <circle cx="305.5" cy="147.0" r="3.6" fill="#d9534f" stroke="#ffffff" stroke-width="1"/>
+  <circle cx="355.2" cy="142.1" r="3.6" fill="#d9534f" stroke="#ffffff" stroke-width="1"/>
+  <circle cx="404.8" cy="136.6" r="3.6" fill="#d9534f" stroke="#ffffff" stroke-width="1"/>
+  <circle cx="454.5" cy="143.7" r="3.6" fill="#d9534f" stroke="#ffffff" stroke-width="1"/>
+  <circle cx="504.2" cy="132.5" r="3.6" fill="#d9534f" stroke="#ffffff" stroke-width="1"/>
+  <text x="575.6" y="72.0" font-size="13" fill="#62727d">↑ hacia el mástil</text>
+  <path d="M458.5,145.7 L514.5,88.6" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <circle cx="458.5" cy="145.7" r="2.8" fill="#4076AA"/>
+  <text x="518.5" y="84.6" font-size="13" font-weight="700" fill="#1c2b36">la 2ª apoya más atrás</text>
+  <text x="380.0" y="318.0" font-size="13" fill="#62727d" text-anchor="middle">Los puntos rojos marcan dónde apoya cada cuerda. Copia los de tu selleta original.</text>
 </svg>

@@ -1,37 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" font-family="Inter, Arial, sans-serif">
-  <title>Las tres medidas de una cejuela o selleta: largo, grosor y alto</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" font-family="Inter, Arial, sans-serif">
+  <title>Pieza de hueso de 55 × 6 × 10 mm dibujada a escala con su largo, grosor y alto</title>
   <defs>
-    <marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/>
-    </marker>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e6d6b4"/></linearGradient>
+    <linearGradient id="boneH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe3c8"/><stop offset=".5" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e3d2ad"/></linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f3626"/><stop offset="1" stop-color="#2c1d13"/></linearGradient>
+    <linearGradient id="spruce" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4e2bb"/><stop offset="1" stop-color="#dfbf8a"/></linearGradient>
+    <linearGradient id="mahog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97643c"/><stop offset="1" stop-color="#6b4226"/></linearGradient>
+    <linearGradient id="maple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b07a"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
+    <linearGradient id="ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2b1e"/><stop offset="1" stop-color="#18100a"/></linearGradient>
+    <linearGradient id="nickel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7f9"/><stop offset=".55" stop-color="#bcc6cd"/><stop offset="1" stop-color="#8c99a2"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8890"/><stop offset=".5" stop-color="#d6dde2"/><stop offset="1" stop-color="#6c767d"/></linearGradient>
+    <radialGradient id="ballg" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f2c76a"/><stop offset="1" stop-color="#9b7426"/></radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/></marker>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c9b48a" stroke-width="2"/></pattern>
   </defs>
-  <rect width="720" height="320" fill="#ffffff"/>
-  <!-- Pieza -->
-  <polygon points="130,130 530,130 580,95 180,95" fill="#fbf6ea" stroke="#1c2b36" stroke-width="2"/>
-  <polygon points="530,130 580,95 580,185 530,220" fill="#e8dcc0" stroke="#1c2b36" stroke-width="2"/>
-  <rect x="130" y="130" width="400" height="90" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
-  <g stroke="#d9c9a6" stroke-width="1.5" fill="none">
-    <path d="M150,160 C230,152 300,168 380,158 S500,150 515,156"/>
-    <path d="M150,192 C250,186 330,200 420,190 S500,184 515,188"/>
-  </g>
-  <!-- Largo -->
-  <line x1="130" y1="232" x2="130" y2="262" stroke="#9aa7b0" stroke-width="1"/>
-  <line x1="530" y1="232" x2="530" y2="262" stroke="#9aa7b0" stroke-width="1"/>
-  <line x1="136" y1="252" x2="524" y2="252" stroke="#4076AA" stroke-width="2" marker-start="url(#a)" marker-end="url(#a)"/>
-  <text x="330" y="284" text-anchor="middle" font-size="18" font-weight="700" fill="#1c2b36">Largo</text>
-  <text x="330" y="304" text-anchor="middle" font-size="13" fill="#62727d">ancho del mástil o largo de la ranura del puente</text>
-  <!-- Alto -->
-  <line x1="88" y1="130" x2="122" y2="130" stroke="#9aa7b0" stroke-width="1"/>
-  <line x1="88" y1="220" x2="122" y2="220" stroke="#9aa7b0" stroke-width="1"/>
-  <line x1="100" y1="136" x2="100" y2="214" stroke="#4076AA" stroke-width="2" marker-start="url(#a)" marker-end="url(#a)"/>
-  <text x="80" y="170" text-anchor="end" font-size="18" font-weight="700" fill="#1c2b36">Alto</text>
-  <text x="80" y="190" text-anchor="end" font-size="13" fill="#62727d">deja margen</text>
-  <!-- Grosor -->
-  <line x1="538" y1="226" x2="556" y2="240" stroke="#9aa7b0" stroke-width="1"/>
-  <line x1="588" y1="191" x2="606" y2="205" stroke="#9aa7b0" stroke-width="1"/>
-  <line x1="554" y1="232" x2="597" y2="202" stroke="#4076AA" stroke-width="2" marker-start="url(#a)" marker-end="url(#a)"/>
-  <text x="612" y="232" font-size="18" font-weight="700" fill="#1c2b36">Grosor</text>
-  <text x="612" y="252" font-size="13" fill="#62727d">= ancho de</text>
-  <text x="612" y="268" font-size="13" fill="#62727d">la ranura</text>
-  <text x="355" y="52" text-anchor="middle" font-size="14" fill="#62727d">Las medidas se dan en milímetros, por ejemplo 55 × 6 × 10 mm</text>
+  <rect width="760" height="330" fill="#ffffff"/>
+  <polygon points="150,175 535.0,175 571.4,154.0 186.4,154.0" fill="#fdf9ef" stroke="#1c2b36" stroke-width="2"/>
+  <polygon points="535.0,175 571.4,154.0 571.4,224.0 535.0,245.0" fill="#e2d1ab" stroke="#1c2b36" stroke-width="2"/>
+  <rect x="150" y="175" width="385.0" height="70.0" fill="url(#bone)" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M162,197 C260,194 350,200 440,195.5 S515.0,200 527.0,197" fill="none" stroke="#d8c59c" stroke-width="1.3"/>
+  <path d="M162,221 C260,217 350,225 440,219.0 S515.0,225 527.0,221" fill="none" stroke="#d8c59c" stroke-width="1.3"/>
+  <path d="M162,235 C260,233 350,237 440,234.0 S515.0,237 527.0,235" fill="none" stroke="#d8c59c" stroke-width="1.3"/>
+  <line x1="150" y1="253.0" x2="150" y2="283.0" stroke="#9aa7b0"/>
+  <line x1="535.0" y1="253.0" x2="535.0" y2="283.0" stroke="#9aa7b0"/>
+  <line x1="155.0" y1="275.0" x2="530.0" y2="275.0" stroke="#4076AA" stroke-width="1.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text x="342.5" y="305.0" font-size="18" font-weight="700" fill="#1c2b36" text-anchor="middle">Largo · 55 mm</text>
+  <text x="342.5" y="325.0" font-size="13" fill="#62727d" text-anchor="middle">ancho del mástil o largo de la ranura del puente</text>
+  <line x1="112" y1="175" x2="142" y2="175" stroke="#9aa7b0"/>
+  <line x1="112" y1="245.0" x2="142" y2="245.0" stroke="#9aa7b0"/>
+  <line x1="124.0" y1="180.0" x2="124.0" y2="240.0" stroke="#4076AA" stroke-width="1.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text x="110.0" y="205.0" font-size="18" font-weight="700" fill="#1c2b36" text-anchor="end">Alto</text>
+  <text x="110.0" y="225.0" font-size="14" fill="#62727d" text-anchor="end">10 mm</text>
+  <line x1="543.0" y1="259.0" x2="551.0" y2="273.0" stroke="#9aa7b0"/>
+  <line x1="579.4" y1="238.0" x2="587.4" y2="252.0" stroke="#9aa7b0"/>
+  <line x1="553.0" y1="269.0" x2="585.4" y2="248.0" stroke="#4076AA" stroke-width="1.8" marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text x="597.4" y="275.0" font-size="18" font-weight="700" fill="#1c2b36">Grosor · 6 mm</text>
+  <text x="597.4" y="295.0" font-size="13" fill="#62727d">= ancho de la ranura</text>
+  <text x="380.0" y="40.0" font-size="14" fill="#62727d" text-anchor="middle">Pieza en bruto para cejuela de 55 × 6 × 10 mm, dibujada a escala</text>
 </svg>

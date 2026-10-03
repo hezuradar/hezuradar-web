@@ -1,34 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" font-family="Inter, Arial, sans-serif">
-  <title>Rebajar la selleta 1 mm baja la altura de las cuerdas en el traste 12 unos 0,5 mm</title>
-  <rect width="760" height="300" fill="#ffffff"/>
-  <!-- Diapasón y cuerpo -->
-  <rect x="60" y="200" width="380" height="16" fill="#4a3324" stroke="#1c2b36" stroke-width="2"/>
-  <rect x="440" y="206" width="280" height="22" fill="#e9cfa3" stroke="#1c2b36" stroke-width="2"/>
-  <rect x="610" y="186" width="60" height="20" rx="4" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
-  <!-- Cejuela -->
-  <rect x="50" y="178" width="12" height="38" fill="#f6eedc" stroke="#1c2b36" stroke-width="1.5"/>
-  <!-- Traste 12 -->
-  <rect x="345" y="193" width="7" height="7" fill="#c9d4db" stroke="#1c2b36" stroke-width="1"/>
-  <!-- Selleta alta y rebajada -->
-  <rect x="632" y="122" width="10" height="64" fill="#f6eedc" stroke="#1c2b36" stroke-width="1.5"/>
-  <line x1="628" y1="142" x2="646" y2="142" stroke="#4076AA" stroke-width="1.5" stroke-dasharray="4 3"/>
-  <!-- Cuerdas -->
-  <line x1="56" y1="180" x2="637" y2="122" stroke="#33424c" stroke-width="2.5"/>
-  <line x1="56" y1="180" x2="637" y2="142" stroke="#4076AA" stroke-width="2.5" stroke-dasharray="7 5"/>
-  <!-- Cotas -->
-  <line x1="690" y1="122" x2="690" y2="142" stroke="#1c2b36" stroke-width="1.5"/>
-  <line x1="684" y1="122" x2="696" y2="122" stroke="#1c2b36" stroke-width="1.5"/>
-  <line x1="684" y1="142" x2="696" y2="142" stroke="#1c2b36" stroke-width="1.5"/>
-  <text x="702" y="128" font-size="14" font-weight="700" fill="#1c2b36">1 mm</text>
-  <text x="702" y="146" font-size="12" fill="#62727d">selleta</text>
-  <line x1="348" y1="151" x2="348" y2="161" stroke="#1c2b36" stroke-width="1.5"/>
-  <line x1="340" y1="151" x2="356" y2="151" stroke="#1c2b36" stroke-width="1.5"/>
-  <line x1="340" y1="161" x2="356" y2="161" stroke="#1c2b36" stroke-width="1.5"/>
-  <line x1="356" y1="156" x2="420" y2="100" stroke="#4076AA" stroke-width="1.6"/>
-  <text x="424" y="92" font-size="15" font-weight="700" fill="#1c2b36">≈ 0,5 mm en el traste 12</text>
-  <text x="424" y="110" font-size="13" fill="#62727d">la mitad de lo que rebajas en la selleta</text>
-  <text x="56" y="244" text-anchor="middle" font-size="13" fill="#62727d">Cejuela</text>
-  <text x="348" y="244" text-anchor="middle" font-size="13" fill="#62727d">Traste 12</text>
-  <text x="637" y="250" text-anchor="middle" font-size="13" fill="#62727d">Selleta</text>
-  <text x="380" y="284" text-anchor="middle" font-size="13" fill="#62727d">El traste 12 está a mitad de camino entre la cejuela y la selleta (escala exagerada)</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" font-family="Inter, Arial, sans-serif">
+  <title>Rebajar la selleta 1 mm baja la altura de las cuerdas en el traste 12 unos 0,5 mm, con las distancias a escala</title>
+  <defs>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e6d6b4"/></linearGradient>
+    <linearGradient id="boneH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe3c8"/><stop offset=".5" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e3d2ad"/></linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f3626"/><stop offset="1" stop-color="#2c1d13"/></linearGradient>
+    <linearGradient id="spruce" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4e2bb"/><stop offset="1" stop-color="#dfbf8a"/></linearGradient>
+    <linearGradient id="mahog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97643c"/><stop offset="1" stop-color="#6b4226"/></linearGradient>
+    <linearGradient id="maple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b07a"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
+    <linearGradient id="ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2b1e"/><stop offset="1" stop-color="#18100a"/></linearGradient>
+    <linearGradient id="nickel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7f9"/><stop offset=".55" stop-color="#bcc6cd"/><stop offset="1" stop-color="#8c99a2"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8890"/><stop offset=".5" stop-color="#d6dde2"/><stop offset="1" stop-color="#6c767d"/></linearGradient>
+    <radialGradient id="ballg" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f2c76a"/><stop offset="1" stop-color="#9b7426"/></radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/></marker>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c9b48a" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="760" height="330" fill="#ffffff"/>
+  <rect x="60.0" y="240.0" width="441.8" height="16" fill="url(#rose)" stroke="#1c2b36" stroke-width="1.2"/>
+  <rect x="417.7" y="256.0" width="342.3" height="14" fill="url(#spruce)" stroke="#1c2b36" stroke-width="1.2"/>
+  <rect x="95.2" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="129.4" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="161.6" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="192.1" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="220.8" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="247.9" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="273.5" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="297.7" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="320.5" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="342.0" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="362.3" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="381.5" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="399.6" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="416.7" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="432.8" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="448.0" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="462.4" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="476.0" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="488.8" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="500.8" y="228.0" width="2.2" height="12.0" fill="#b7c1c8"/>
+  <rect x="54.0" y="218.0" width="6" height="38.0" fill="url(#boneH)" stroke="#1c2b36" stroke-width="1"/>
+  <rect x="675.0" y="242.0" width="60" height="14" rx="3" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.2"/>
+  <rect x="703.0" y="183.0" width="4" height="61.0" fill="url(#boneH)" stroke="#1c2b36" stroke-width="1"/>
+  <line x1="696.0" y1="193.0" x2="714.0" y2="193.0" stroke="#4076AA" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <line x1="60.0" y1="223.0" x2="705.0" y2="183.0" stroke="#4a555c" stroke-width="2"/>
+  <line x1="60.0" y1="223.0" x2="705.0" y2="193.0" stroke="#4076AA" stroke-width="2" stroke-dasharray="7 5"/>
+  <line x1="725.0" y1="183.0" x2="725.0" y2="193.0" stroke="#1c2b36" stroke-width="1.4"/>
+  <line x1="720.0" y1="183.0" x2="730.0" y2="183.0" stroke="#1c2b36" stroke-width="1.4"/>
+  <line x1="720.0" y1="193.0" x2="730.0" y2="193.0" stroke="#1c2b36" stroke-width="1.4"/>
+  <line x1="396.5" y1="203.0" x2="396.5" y2="208.0" stroke="#1c2b36" stroke-width="1.4"/>
+  <line x1="391.5" y1="203.0" x2="401.5" y2="203.0" stroke="#1c2b36" stroke-width="1.4"/>
+  <line x1="391.5" y1="208.0" x2="401.5" y2="208.0" stroke="#1c2b36" stroke-width="1.4"/>
+  <path d="M725.0,188.0 L665.0,122.0" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <text x="665.0" y="98.0" font-size="14" font-weight="700" fill="#1c2b36" text-anchor="middle">1 mm menos</text>
+  <text x="665.0" y="114.0" font-size="12" fill="#62727d" text-anchor="middle">de selleta</text>
+  <path d="M396.5,205.5 L342.5,122.0" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <circle cx="396.5" cy="205.5" r="2.8" fill="#4076AA"/>
+  <text x="342.5" y="98.0" font-size="15" font-weight="700" fill="#1c2b36" text-anchor="middle">≈ 0,5 mm menos en el traste 12</text>
+  <text x="342.5" y="116.0" font-size="13" fill="#62727d" text-anchor="middle">la mitad de lo que rebajas</text>
+  <text x="60.0" y="292.0" font-size="13" fill="#62727d" text-anchor="middle">Cejuela</text>
+  <text x="382.5" y="292.0" font-size="13" fill="#62727d" text-anchor="middle">Traste 12 · 322,5 mm</text>
+  <text x="705.0" y="292.0" font-size="13" fill="#62727d" text-anchor="middle">Selleta · 645 mm</text>
+  <text x="380.0" y="318.0" font-size="13" fill="#62727d" text-anchor="middle">Distancias a escala; las alturas, ampliadas 10 veces para que se vean</text>
 </svg>

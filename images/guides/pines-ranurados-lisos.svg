@@ -1,33 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 360" font-family="Inter, Arial, sans-serif">
-  <title>Pin ranurado para puentes sin ranura y pin liso para puentes ranurados</title>
-  <rect width="720" height="360" fill="#ffffff"/>
-  <line x1="360" y1="20" x2="360" y2="340" stroke="#e1e8ed" stroke-width="2"/>
-  <!-- Pin ranurado -->
-  <g transform="translate(180,0)">
-    <text x="0" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#1c2b36">Pin ranurado</text>
-    <ellipse cx="0" cy="66" rx="28" ry="10" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
-    <path d="M-28,66 L-28,84 Q0,96 28,84 L28,66" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
-    <path d="M-17,92 L-9,206 Q0,216 9,206 L17,92 Q0,98 -17,92 Z" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
-    <path d="M-4,95 L-2,208 L3,208 L5,95 Z" fill="#c9b48a" stroke="#1c2b36" stroke-width="1"/>
-    <text x="34" y="150" font-size="13" fill="#62727d">ranura</text>
-    <line x1="32" y1="146" x2="6" y2="146" stroke="#4076AA" stroke-width="1.6"/>
-    <!-- Agujero del puente sin ranura -->
-    <rect x="-90" y="244" width="180" height="56" rx="8" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
-    <circle cx="0" cy="272" r="13" fill="#1c2b36"/>
-    <text x="0" y="326" text-anchor="middle" font-size="14" font-weight="700" fill="#1c2b36">para agujeros SIN ranura</text>
-  </g>
-  <!-- Pin liso -->
-  <g transform="translate(540,0)">
-    <text x="0" y="36" text-anchor="middle" font-size="17" font-weight="700" fill="#1c2b36">Pin liso (sin ranurar)</text>
-    <ellipse cx="0" cy="66" rx="28" ry="10" fill="#3a2a1c" stroke="#1c2b36" stroke-width="2"/>
-    <path d="M-28,66 L-28,84 Q0,96 28,84 L28,66" fill="#3a2a1c" stroke="#1c2b36" stroke-width="2"/>
-    <path d="M-17,92 L-9,206 Q0,216 9,206 L17,92 Q0,98 -17,92 Z" fill="#3a2a1c" stroke="#1c2b36" stroke-width="2"/>
-    <!-- Agujero del puente con ranura -->
-    <rect x="-90" y="244" width="180" height="56" rx="8" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
-    <circle cx="0" cy="272" r="13" fill="#1c2b36"/>
-    <rect x="-24" y="268" width="14" height="8" fill="#1c2b36"/>
-    <text x="-58" y="238" font-size="13" fill="#62727d">ranura en el puente</text>
-    <line x1="-28" y1="242" x2="-18" y2="266" stroke="#4076AA" stroke-width="1.6"/>
-    <text x="0" y="326" text-anchor="middle" font-size="14" font-weight="700" fill="#1c2b36">para agujeros CON ranura</text>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" font-family="Inter, Arial, sans-serif">
+  <title>Pin ranurado para puentes sin ranura y pin liso para puentes ranurados, a escala</title>
+  <defs>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e6d6b4"/></linearGradient>
+    <linearGradient id="boneH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe3c8"/><stop offset=".5" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e3d2ad"/></linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f3626"/><stop offset="1" stop-color="#2c1d13"/></linearGradient>
+    <linearGradient id="spruce" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4e2bb"/><stop offset="1" stop-color="#dfbf8a"/></linearGradient>
+    <linearGradient id="mahog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97643c"/><stop offset="1" stop-color="#6b4226"/></linearGradient>
+    <linearGradient id="maple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b07a"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
+    <linearGradient id="ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2b1e"/><stop offset="1" stop-color="#18100a"/></linearGradient>
+    <linearGradient id="nickel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7f9"/><stop offset=".55" stop-color="#bcc6cd"/><stop offset="1" stop-color="#8c99a2"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8890"/><stop offset=".5" stop-color="#d6dde2"/><stop offset="1" stop-color="#6c767d"/></linearGradient>
+    <radialGradient id="ballg" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f2c76a"/><stop offset="1" stop-color="#9b7426"/></radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/></marker>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c9b48a" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="760" height="440" fill="#ffffff"/>
+  <line x1="380" y1="20" x2="380" y2="400" stroke="#e1e8ed" stroke-width="2"/>
+  <text x="190.0" y="36.0" font-size="17" font-weight="700" fill="#1c2b36" text-anchor="middle">Pin ranurado</text>
+  <path d="M160.0,73.5 Q160.0,62.0 190.0,62.0 Q220.0,62.0 220.0,73.5 L220.0,87.6 L160.0,87.6 Z" fill="url(#bone)" stroke="#1c2b36" stroke-width="1.6"/>
+  <path d="M169.2,87.6 L174.4,243.1 Q190.0,263.4 205.6,243.1 L210.8,87.6 Z" fill="url(#bone)" stroke="#1c2b36" stroke-width="1.6"/>
+  <path d="M184.4,88.6 L185.4,240.0 L194.6,240.0 L195.6,88.6 Z" fill="#b39a6c" stroke="#1c2b36" stroke-width=".8"/>
+  <ellipse cx="179.2" cy="69.7" rx="10.8" ry="3.1" fill="#ffffff" fill-opacity=".45"/>
+  <path d="M194.0,150.0 L250.0,150.0" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <text x="254.0" y="154.0" font-size="13" fill="#62727d">ranura</text>
+  <text x="260.0" y="110.0" font-size="12" fill="#62727d">≈ 27 mm</text>
+  <rect x="62.0" y="290.0" width="256.0" height="96.0" rx="6" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.5"/>
+  <circle cx="190" cy="338.0" r="20.8" fill="#0d0905" stroke="#5a4634" stroke-width="1"/>
+  <text x="190.0" y="412.0" font-size="14" font-weight="700" fill="#1c2b36" text-anchor="middle">para agujeros SIN ranura</text>
+  <text x="190.0" y="430.0" font-size="12" fill="#62727d" text-anchor="middle">agujero de 5,2 mm, visto desde arriba</text>
+  <text x="570.0" y="36.0" font-size="17" font-weight="700" fill="#1c2b36" text-anchor="middle">Pin liso (sin ranurar)</text>
+  <path d="M540.0,73.5 Q540.0,62.0 570.0,62.0 Q600.0,62.0 600.0,73.5 L600.0,87.6 L540.0,87.6 Z" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.6"/>
+  <path d="M549.2,87.6 L554.4,243.1 Q570.0,263.4 585.6,243.1 L590.8,87.6 Z" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.6"/>
+  <ellipse cx="559.2" cy="69.7" rx="10.8" ry="3.1" fill="#ffffff" fill-opacity=".45"/>
+  <text x="640.0" y="110.0" font-size="12" fill="#62727d">≈ 27 mm</text>
+  <rect x="442.0" y="290.0" width="256.0" height="96.0" rx="6" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.5"/>
+  <circle cx="570" cy="338.0" r="20.8" fill="#0d0905" stroke="#5a4634" stroke-width="1"/>
+  <rect x="534.8" y="332.4" width="16.4" height="11.2" fill="#0d0905"/>
+  <path d="M539.6,338.0 L490.0,272.0" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <circle cx="539.6" cy="338.0" r="2.8" fill="#4076AA"/>
+  <text x="486.0" y="266.0" font-size="13" fill="#62727d">ranura en el puente</text>
+  <text x="570.0" y="412.0" font-size="14" font-weight="700" fill="#1c2b36" text-anchor="middle">para agujeros CON ranura</text>
+  <text x="570.0" y="430.0" font-size="12" fill="#62727d" text-anchor="middle">agujero de 5,2 mm, visto desde arriba</text>
 </svg>

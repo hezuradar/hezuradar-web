@@ -1,26 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" font-family="Inter, Arial, sans-serif">
-  <title>La base de la selleta debe apoyar entera en el fondo de la ranura del puente</title>
+  <title>Selleta de 72 mm en la ranura del puente: base plana que apoya entera frente a base curvada con huecos</title>
+  <defs>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e6d6b4"/></linearGradient>
+    <linearGradient id="boneH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe3c8"/><stop offset=".5" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e3d2ad"/></linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f3626"/><stop offset="1" stop-color="#2c1d13"/></linearGradient>
+    <linearGradient id="spruce" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4e2bb"/><stop offset="1" stop-color="#dfbf8a"/></linearGradient>
+    <linearGradient id="mahog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97643c"/><stop offset="1" stop-color="#6b4226"/></linearGradient>
+    <linearGradient id="maple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b07a"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
+    <linearGradient id="ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2b1e"/><stop offset="1" stop-color="#18100a"/></linearGradient>
+    <linearGradient id="nickel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7f9"/><stop offset=".55" stop-color="#bcc6cd"/><stop offset="1" stop-color="#8c99a2"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8890"/><stop offset=".5" stop-color="#d6dde2"/><stop offset="1" stop-color="#6c767d"/></linearGradient>
+    <radialGradient id="ballg" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f2c76a"/><stop offset="1" stop-color="#9b7426"/></radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/></marker>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c9b48a" stroke-width="2"/></pattern>
+  </defs>
   <rect width="760" height="300" fill="#ffffff"/>
-  <line x1="380" y1="20" x2="380" y2="280" stroke="#e1e8ed" stroke-width="2"/>
-  <!-- Bien -->
-  <g transform="translate(30,0)">
-    <text x="160" y="40" text-anchor="middle" font-size="17" font-weight="700" fill="#2e7d4f">✓ Base plana</text>
-    <rect x="10" y="150" width="300" height="70" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
-    <rect x="40" y="150" width="240" height="40" fill="#2a1c12"/>
-    <path d="M40,110 Q160,96 280,110 L280,190 L40,190 Z" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
-    <rect x="40" y="190" width="240" height="4" fill="#4076AA"/>
-    <text x="160" y="250" text-anchor="middle" font-size="14" fill="#33424c">Apoya en toda su longitud</text>
-  </g>
-  <!-- Mal -->
-  <g transform="translate(410,0)">
-    <text x="160" y="40" text-anchor="middle" font-size="17" font-weight="700" fill="#c0392b">✗ Base curvada o torcida</text>
-    <rect x="10" y="150" width="300" height="70" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
-    <rect x="40" y="150" width="240" height="40" fill="#2a1c12"/>
-    <path d="M40,104 Q160,90 280,104 L280,186 Q160,174 40,190 Z" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
-    <path d="M60,190 Q160,176 270,187" fill="none" stroke="#d9534f" stroke-width="2" stroke-dasharray="4 3"/>
-    <text x="160" y="250" text-anchor="middle" font-size="14" fill="#33424c">Quedan huecos: peor transmisión</text>
-    <text x="160" y="270" text-anchor="middle" font-size="14" fill="#33424c">y, con pastilla, cuerdas desiguales</text>
-  </g>
-  <text x="190" y="140" text-anchor="middle" font-size="13" fill="#62727d">selleta</text>
-  <text x="570" y="134" text-anchor="middle" font-size="13" fill="#62727d">selleta</text>
+  <line x1="380" y1="20" x2="380" y2="300" stroke="#e1e8ed" stroke-width="2"/>
+  <text x="190.0" y="40.0" font-size="17" font-weight="700" fill="#2e7d4f" text-anchor="middle">✓ Base plana</text>
+  <rect x="30.0" y="150.0" width="320.0" height="36.0" rx="4" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.5"/>
+  <rect x="46.0" y="150.0" width="288.0" height="18.0" fill="#120c07"/>
+  <rect x="20.0" y="186.0" width="340.0" height="11.2" fill="url(#spruce)" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M46.0,143.6 Q190.0,130.8 334.0,143.6 L334.0,168.0 L46.0,168.0 Z" fill="url(#boneH)" stroke="#1c2b36" stroke-width="1.5"/>
+  <line x1="46.0" y1="167.0" x2="334.0" y2="167.0" stroke="#2e7d4f" stroke-width="3"/>
+  <text x="190.0" y="236.0" font-size="14" fill="#33424c" text-anchor="middle">Apoya en todo su largo</text>
+  <text x="190.0" y="118.8" font-size="12" fill="#62727d" text-anchor="middle">selleta de 72 mm</text>
+  <text x="570.0" y="40.0" font-size="17" font-weight="700" fill="#c0392b" text-anchor="middle">✗ Base curvada o torcida</text>
+  <rect x="410.0" y="150.0" width="320.0" height="36.0" rx="4" fill="url(#ebony)" stroke="#1c2b36" stroke-width="1.5"/>
+  <rect x="426.0" y="150.0" width="288.0" height="18.0" fill="#120c07"/>
+  <rect x="400.0" y="186.0" width="340.0" height="11.2" fill="url(#spruce)" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M426.0,143.6 Q570.0,130.8 714.0,143.6 L714.0,163.2 Q570.0,154.4 426.0,168.0 Z" fill="url(#boneH)" stroke="#1c2b36" stroke-width="1.5"/>
+  <path d="M570.0,166.0 L610.0,236.0" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <text x="570.0" y="252.0" font-size="13" fill="#33424c" text-anchor="middle">Quedan huecos (exagerados en el dibujo):</text>
+  <text x="570.0" y="270.0" font-size="13" fill="#33424c" text-anchor="middle">peor transmisión y, con pastilla,</text>
+  <text x="570.0" y="288.0" font-size="13" fill="#33424c" text-anchor="middle">cuerdas que suenan desiguales</text>
+  <text x="570.0" y="118.8" font-size="12" fill="#62727d" text-anchor="middle">selleta de 72 mm</text>
 </svg>
