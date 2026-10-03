@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" font-family="Inter, Arial, sans-serif">
+  <title>Dónde están la cejuela y la selleta en una guitarra acústica</title>
+  <rect width="760" height="300" fill="#ffffff"/>
+  <!-- Cuerpo -->
+  <path d="M360,150 C360,82 420,62 470,80 C500,92 512,98 532,88 C584,50 696,58 706,150 C696,242 584,250 532,212 C512,202 500,208 470,220 C420,238 360,218 360,150 Z" fill="#e9cfa3" stroke="#1c2b36" stroke-width="2"/>
+  <circle cx="455" cy="150" r="31" fill="#3a2a1c" stroke="#1c2b36" stroke-width="2"/>
+  <circle cx="455" cy="150" r="37" fill="none" stroke="#b88a55" stroke-width="3"/>
+  <!-- Puente y pines -->
+  <rect x="588" y="114" width="54" height="72" rx="8" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
+  <rect x="604" y="118" width="7" height="64" rx="2" fill="#f6eedc" stroke="#4076AA" stroke-width="2"/>
+  <g fill="#f6eedc" stroke="#1c2b36" stroke-width="1.2">
+    <circle cx="627" cy="124" r="4"/><circle cx="627" cy="135" r="4"/><circle cx="627" cy="145" r="4"/>
+    <circle cx="627" cy="155" r="4"/><circle cx="627" cy="165" r="4"/><circle cx="627" cy="176" r="4"/>
+  </g>
+  <!-- Mástil, diapasón y pala -->
+  <path d="M30,124 L112,134 L112,166 L30,176 Z" fill="#7a5132" stroke="#1c2b36" stroke-width="2"/>
+  <g fill="#d8dee3" stroke="#1c2b36" stroke-width="1.2">
+    <circle cx="50" cy="128" r="5"/><circle cx="74" cy="131" r="5"/><circle cx="98" cy="134" r="5"/>
+    <circle cx="50" cy="172" r="5"/><circle cx="74" cy="169" r="5"/><circle cx="98" cy="166" r="5"/>
+  </g>
+  <rect x="114" y="137" width="290" height="26" fill="#4a3324" stroke="#1c2b36" stroke-width="2"/>
+  <g stroke="#c9d4db" stroke-width="2">
+    <line x1="142" y1="137" x2="142" y2="163"/><line x1="169" y1="137" x2="169" y2="163"/>
+    <line x1="194" y1="137" x2="194" y2="163"/><line x1="218" y1="137" x2="218" y2="163"/>
+    <line x1="241" y1="137" x2="241" y2="163"/><line x1="262" y1="137" x2="262" y2="163"/>
+    <line x1="282" y1="137" x2="282" y2="163"/><line x1="301" y1="137" x2="301" y2="163"/>
+    <line x1="319" y1="137" x2="319" y2="163"/><line x1="336" y1="137" x2="336" y2="163"/>
+    <line x1="352" y1="137" x2="352" y2="163"/><line x1="367" y1="137" x2="367" y2="163"/>
+    <line x1="381" y1="137" x2="381" y2="163"/><line x1="394" y1="137" x2="394" y2="163"/>
+  </g>
+  <!-- Cejuela -->
+  <rect x="108" y="134" width="8" height="32" rx="2" fill="#f6eedc" stroke="#4076AA" stroke-width="2.5"/>
+  <!-- Cuerdas -->
+  <g stroke="#9aa7b0" stroke-width="1">
+    <line x1="112" y1="140" x2="607" y2="122"/><line x1="112" y1="144" x2="607" y2="134"/>
+    <line x1="112" y1="148" x2="607" y2="145"/><line x1="112" y1="152" x2="607" y2="155"/>
+    <line x1="112" y1="156" x2="607" y2="166"/><line x1="112" y1="160" x2="607" y2="178"/>
+  </g>
+  <!-- Etiquetas -->
+  <g stroke="#4076AA" stroke-width="1.6" fill="none">
+    <path d="M112,132 L112,74"/>
+    <path d="M607,116 L607,50"/>
+    <path d="M627,182 L627,262"/>
+    <path d="M455,188 L455,262"/>
+  </g>
+  <g fill="#4076AA"><circle cx="112" cy="132" r="3"/><circle cx="607" cy="116" r="3"/><circle cx="627" cy="182" r="3"/><circle cx="455" cy="188" r="3"/></g>
+  <text x="112" y="44" text-anchor="middle" font-size="17" font-weight="700" fill="#1c2b36">Cejuela</text>
+  <text x="112" y="63" text-anchor="middle" font-size="13" fill="#62727d">junto al clavijero</text>
+  <text x="607" y="22" text-anchor="middle" font-size="17" font-weight="700" fill="#1c2b36">Selleta</text>
+  <text x="607" y="40" text-anchor="middle" font-size="13" fill="#62727d">en el puente</text>
+  <text x="627" y="280" text-anchor="middle" font-size="15" font-weight="600" fill="#1c2b36">Pines</text>
+  <text x="455" y="280" text-anchor="middle" font-size="15" font-weight="600" fill="#1c2b36">Boca</text>
+</svg>

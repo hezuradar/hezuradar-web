@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 320" font-family="Inter, Arial, sans-serif">
+  <title>Ranura de la cejuela inclinada hacia el clavijero, con la cuerda apoyada en el borde delantero</title>
+  <rect width="760" height="320" fill="#ffffff"/>
+  <!-- Pala inclinada -->
+  <polygon points="300,236 40,292 40,314 300,258" fill="#7a5132" stroke="#1c2b36" stroke-width="2"/>
+  <!-- Mástil y diapasón -->
+  <rect x="300" y="236" width="440" height="40" fill="#c99b68" stroke="#1c2b36" stroke-width="2"/>
+  <rect x="380" y="214" width="360" height="22" fill="#4a3324" stroke="#1c2b36" stroke-width="2"/>
+  <g fill="#c9d4db" stroke="#1c2b36" stroke-width="1">
+    <rect x="470" y="207" width="6" height="7"/><rect x="580" y="207" width="6" height="7"/><rect x="680" y="207" width="6" height="7"/>
+  </g>
+  <!-- Cejuela en corte -->
+  <rect x="300" y="150" width="80" height="86" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
+  <polygon points="300,150 380,150 380,176 300,204" fill="#f6eedc" fill-opacity=".4" stroke="#1c2b36" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <line x1="300" y1="204" x2="380" y2="176" stroke="#4076AA" stroke-width="3"/>
+  <!-- Cuerda -->
+  <path d="M740,173 L380,173 L60,255" fill="none" stroke="#33424c" stroke-width="3"/>
+  <circle cx="380" cy="174" r="5" fill="#d9534f"/>
+  <!-- Etiquetas -->
+  <g stroke="#4076AA" stroke-width="1.6" fill="none">
+    <path d="M384,168 L470,110"/><path d="M326,196 L250,120"/>
+  </g>
+  <text x="474" y="96" font-size="15" font-weight="700" fill="#1c2b36">La cuerda apoya en el borde</text>
+  <text x="474" y="114" font-size="15" font-weight="700" fill="#1c2b36">delantero de la cejuela</text>
+  <text x="246" y="92" text-anchor="end" font-size="15" font-weight="700" fill="#1c2b36">Fondo de la ranura</text>
+  <text x="246" y="110" text-anchor="end" font-size="15" font-weight="700" fill="#1c2b36">inclinado hacia el clavijero</text>
+  <text x="170" y="210" text-anchor="middle" font-size="13" fill="#62727d">Clavijero</text>
+  <text x="620" y="300" text-anchor="middle" font-size="13" fill="#62727d">Diapasón</text>
+  <text x="340" y="228" text-anchor="middle" font-size="13" fill="#62727d">Cejuela</text>
+</svg>

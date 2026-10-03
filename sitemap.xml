@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://hezuradar.com/</loc>
-    <lastmod>2026-10-02T20:13:20+02:00</lastmod>
+    <lastmod>2026-10-03T09:55:28+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
@@ -20,23 +20,25 @@
   </url>
   <url>
     <loc>https://hezuradar.com/guia-hueso-vs-cuerno.html</loc>
-    <lastmod>2026-10-02T20:13:20+02:00</lastmod>
+    <lastmod>2026-10-03T09:55:28+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-medidas-cejuela-selleta.html</loc>
-    <lastmod>2026-10-03T09:42:43+02:00</lastmod>
+    <lastmod>2026-10-03T09:55:28+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-tallar-cejuela.html</loc>
+    <lastmod>2026-10-03T09:55:28+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-cambiar-pines-guitarra.html</loc>
+    <lastmod>2026-10-03T09:55:28+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
@@ -66,7 +68,7 @@
   </url>
   <url>
     <loc>https://hezuradar.com/cejuelas.html</loc>
-    <lastmod>2026-10-02T20:13:20+02:00</lastmod>
+    <lastmod>2026-10-03T09:55:28+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -78,7 +80,7 @@
   </url>
   <url>
     <loc>https://hezuradar.com/pines-guitarra-acustica.html</loc>
-    <lastmod>2026-10-02T20:13:20+02:00</lastmod>
+    <lastmod>2026-10-03T09:55:28+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 340" font-family="Inter, Arial, sans-serif">
+  <title>Corte del puente: la bola de la cuerda hace tope contra la placa del puente, no contra la punta del pin</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/>
+    </marker>
+  </defs>
+  <rect width="760" height="340" fill="#ffffff"/>
+  <!-- Tapa -->
+  <rect x="30" y="200" width="700" height="14" fill="#e9cfa3" stroke="#1c2b36" stroke-width="2"/>
+  <!-- Puente -->
+  <path d="M250,200 L250,168 Q250,158 262,158 L508,158 Q520,158 520,168 L520,200 Z" fill="#5a3b22" stroke="#1c2b36" stroke-width="2"/>
+  <!-- Placa del puente (bajo la tapa) -->
+  <rect x="240" y="214" width="290" height="20" fill="#c99b68" stroke="#1c2b36" stroke-width="2"/>
+  <!-- Selleta -->
+  <rect x="300" y="132" width="10" height="34" rx="2" fill="#f6eedc" stroke="#1c2b36" stroke-width="1.5"/>
+  <!-- Agujero -->
+  <rect x="404" y="158" width="26" height="76" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <!-- Cuerda -->
+  <path d="M30,122 L305,132 L408,160 L408,232" fill="none" stroke="#33424c" stroke-width="3"/>
+  <circle cx="404" cy="243" r="10" fill="#b0b8bf" stroke="#1c2b36" stroke-width="2"/>
+  <!-- Pin -->
+  <ellipse cx="420" cy="138" rx="22" ry="8" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M398,138 L398,152 Q420,162 442,152 L442,138" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M407,158 L413,246 Q420,254 427,246 L433,158 Z" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
+  <!-- Flecha: tirar de la cuerda -->
+  <line x1="120" y1="104" x2="120" y2="62" stroke="#4076AA" stroke-width="2.5" marker-end="url(#a)"/>
+  <text x="136" y="72" font-size="15" font-weight="700" fill="#1c2b36">Tira de la cuerda hacia arriba</text>
+  <text x="136" y="90" font-size="13" fill="#62727d">mientras sujetas el pin con un dedo</text>
+  <!-- Etiquetas -->
+  <g stroke="#4076AA" stroke-width="1.6" fill="none">
+    <path d="M392,246 L330,292"/><path d="M528,224 L600,256"/><path d="M90,214 L90,250"/><path d="M442,140 L560,110"/><path d="M300,146 L236,146"/>
+  </g>
+  <text x="330" y="310" text-anchor="middle" font-size="14" font-weight="700" fill="#1c2b36">La bola hace tope contra la placa</text>
+  <text x="604" y="272" font-size="13" fill="#62727d">Placa del puente</text>
+  <text x="90" y="268" text-anchor="middle" font-size="13" fill="#62727d">Tapa</text>
+  <text x="564" y="108" font-size="13" fill="#62727d">Pin</text>
+  <text x="230" y="150" text-anchor="end" font-size="13" fill="#62727d">Selleta</text>
+  <text x="470" y="190" font-size="13" fill="#f6eedc">Puente</text>
+</svg>

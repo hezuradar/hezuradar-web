@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 330" font-family="Inter, Arial, sans-serif">
+  <title>Marcar la altura de la cejuela con un lápiz apoyado en los trastes</title>
+  <rect width="760" height="330" fill="#ffffff"/>
+  <!-- Vista lateral -->
+  <text x="215" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#62727d">VISTA LATERAL</text>
+  <polygon points="14,262 104,242 104,266 14,290" fill="#7a5132" stroke="#1c2b36" stroke-width="2"/>
+  <rect x="104" y="232" width="320" height="34" fill="#c99b68" stroke="#1c2b36" stroke-width="2"/>
+  <rect x="120" y="210" width="304" height="22" fill="#4a3324" stroke="#1c2b36" stroke-width="2"/>
+  <g fill="#c9d4db" stroke="#1c2b36" stroke-width="1">
+    <rect x="150" y="204" width="5" height="6"/><rect x="190" y="204" width="5" height="6"/>
+    <rect x="227" y="204" width="5" height="6"/><rect x="262" y="204" width="5" height="6"/>
+    <rect x="295" y="204" width="5" height="6"/><rect x="326" y="204" width="5" height="6"/>
+    <rect x="355" y="204" width="5" height="6"/><rect x="382" y="204" width="5" height="6"/>
+    <rect x="407" y="204" width="5" height="6"/>
+  </g>
+  <rect x="104" y="128" width="16" height="104" fill="#f6eedc" stroke="#4076AA" stroke-width="2.5"/>
+  <!-- Lápiz apoyado en los trastes -->
+  <rect x="136" y="192" width="250" height="12" fill="#f2c94c" stroke="#1c2b36" stroke-width="1.5"/>
+  <rect x="386" y="192" width="18" height="12" fill="#e98b8b" stroke="#1c2b36" stroke-width="1.5"/>
+  <polygon points="136,192 136,204 121,198" fill="#f3d9b1" stroke="#1c2b36" stroke-width="1.5"/>
+  <polygon points="126,195.5 126,200.5 121,198" fill="#33424c"/>
+  <line x1="104" y1="198" x2="120" y2="198" stroke="#d9534f" stroke-width="2.5"/>
+  <g stroke="#4076AA" stroke-width="1.6" fill="none">
+    <path d="M112,128 L112,84"/><path d="M260,192 L260,150"/>
+  </g>
+  <g fill="#4076AA"><circle cx="112" cy="128" r="3"/><circle cx="260" cy="192" r="3"/></g>
+  <text x="112" y="76" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2b36">Pieza en bruto</text>
+  <text x="260" y="142" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2b36">Lápiz plano sobre los trastes</text>
+  <text x="215" y="300" text-anchor="middle" font-size="13" fill="#62727d">Desliza el lápiz de lado a lado: la punta marca la altura de los trastes</text>
+  <!-- Vista frontal -->
+  <line x1="452" y1="50" x2="452" y2="300" stroke="#e1e8ed" stroke-width="2"/>
+  <text x="610" y="34" text-anchor="middle" font-size="14" font-weight="700" fill="#62727d">VISTA DE FRENTE</text>
+  <defs>
+    <pattern id="h" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line x1="0" y1="0" x2="0" y2="8" stroke="#c9b48a" stroke-width="2"/>
+    </pattern>
+    <clipPath id="c"><rect x="490" y="80" width="240" height="140"/></clipPath>
+  </defs>
+  <rect x="490" y="80" width="240" height="140" fill="#f6eedc" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M490,80 L730,80 L730,150 Q610,130 490,150 Z" fill="url(#h)" clip-path="url(#c)"/>
+  <path d="M490,150 Q610,130 730,150" fill="none" stroke="#1c2b36" stroke-width="2" stroke-dasharray="7 5"/>
+  <path d="M490,172 Q610,152 730,172" fill="none" stroke="#d9534f" stroke-width="2.5"/>
+  <rect x="478" y="220" width="264" height="14" fill="#4a3324" stroke="#1c2b36" stroke-width="2"/>
+  <text x="610" y="112" text-anchor="middle" font-size="14" font-weight="700" fill="#33424c">Sobrante</text>
+  <text x="610" y="198" text-anchor="middle" font-size="13" fill="#d9534f" font-weight="700">línea de los trastes</text>
+  <text x="610" y="262" text-anchor="middle" font-size="13" fill="#62727d">Corta por la línea discontinua:</text>
+  <text x="610" y="280" text-anchor="middle" font-size="13" fill="#62727d">1-2 mm por encima de la marca roja</text>
+</svg>

@@ -343,6 +343,15 @@ input[type=file]::file-selector-button:hover{border-color:var(--color-primary)}
 .size-table{width:100%;border-collapse:collapse;margin:0 0 1.2em;font-size:.92rem}
 .size-table th,.size-table td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--color-border);vertical-align:top}
 .size-table th{background:var(--color-bg);font-weight:600}
+.guide-figure{margin:1.6em 0}
+.guide-figure img{display:block;width:100%;height:auto;border:1px solid var(--color-border);border-radius:var(--radius);background:#fff}
+.guide-figure figcaption{margin-top:.5em;font-size:.85rem;color:var(--color-muted);line-height:1.5}
+.guide-figure-img{display:block;cursor:zoom-in}
+/* En móvil el dibujo mantiene un ancho legible y se desplaza de lado. */
+@media (max-width:600px){
+  .guide-figure-img{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius)}
+  .guide-figure img{min-width:560px}
+}
 .size-table .m{white-space:nowrap}
 .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 @media (max-width:600px){

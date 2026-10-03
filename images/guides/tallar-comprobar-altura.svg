@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 320" font-family="Inter, Arial, sans-serif">
+  <title>Comprobar la altura de la cejuela pisando la cuerda en el tercer traste</title>
+  <rect width="760" height="320" fill="#ffffff"/>
+  <!-- Mástil -->
+  <rect x="40" y="200" width="680" height="34" fill="#c99b68" stroke="#1c2b36" stroke-width="2"/>
+  <rect x="80" y="182" width="640" height="18" fill="#4a3324" stroke="#1c2b36" stroke-width="2"/>
+  <rect x="60" y="140" width="20" height="60" fill="#f6eedc" stroke="#4076AA" stroke-width="2.5"/>
+  <g fill="#c9d4db" stroke="#1c2b36" stroke-width="1">
+    <rect x="216" y="174" width="7" height="8"/><rect x="340" y="174" width="7" height="8"/><rect x="452" y="174" width="7" height="8"/><rect x="556" y="174" width="7" height="8"/>
+  </g>
+  <!-- Cuerda pisada en el traste 3 -->
+  <path d="M70,144 L452,173 L720,150" fill="none" stroke="#33424c" stroke-width="2.5"/>
+  <ellipse cx="430" cy="150" rx="34" ry="20" fill="#f1c9a5" stroke="#1c2b36" stroke-width="2"/>
+  <!-- Lupa en el traste 1 -->
+  <circle cx="220" cy="168" r="30" fill="none" stroke="#4076AA" stroke-width="2.5"/>
+  <circle cx="190" cy="82" r="48" fill="#f5f7f9" stroke="#4076AA" stroke-width="2.5"/>
+  <line x1="220" y1="138" x2="205" y2="128" stroke="#4076AA" stroke-width="1.6"/>
+  <rect x="166" y="96" width="48" height="30" fill="#c9d4db" stroke="#1c2b36" stroke-width="1.5"/>
+  <line x1="146" y1="84" x2="234" y2="80" stroke="#33424c" stroke-width="5"/>
+  <line x1="190" y1="88" x2="190" y2="95" stroke="#d9534f" stroke-width="2"/>
+  <!-- Etiquetas -->
+  <text x="254" y="58" font-size="15" font-weight="700" fill="#1c2b36">Traste 1: holgura mínima</text>
+  <text x="254" y="76" font-size="13" fill="#62727d">la cuerda no debe tocarlo</text>
+  <text x="430" y="120" text-anchor="middle" font-size="15" font-weight="700" fill="#1c2b36">Pisa en el traste 3</text>
+  <text x="70" y="266" text-anchor="middle" font-size="13" fill="#62727d">Cejuela</text>
+  <text x="220" y="266" text-anchor="middle" font-size="13" fill="#62727d">1</text>
+  <text x="344" y="266" text-anchor="middle" font-size="13" fill="#62727d">2</text>
+  <text x="456" y="266" text-anchor="middle" font-size="13" fill="#62727d">3</text>
+  <text x="380" y="300" text-anchor="middle" font-size="13" fill="#62727d">Si la holgura es grande, baja la ranura; si la cuerda toca el traste 1, te has pasado</text>
+</svg>
