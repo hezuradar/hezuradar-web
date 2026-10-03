@@ -2,108 +2,114 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://hezuradar.com/</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/disenador.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/disenador-puas.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://hezuradar.com/guias.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://hezuradar.com/guia-hueso-vs-cuerno.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-medidas-cejuela-selleta.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-tallar-cejuela.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-tallar-selleta.html</loc>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/guia-cambiar-pines-guitarra.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/condiciones.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/privacidad.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/cookies.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/aviso-legal.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>yearly</changefreq>
     <priority>0.2</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/cejuelas.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/selletas.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/pines-guitarra-acustica.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/puas.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/madre-perla-abalone.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
     <loc>https://hezuradar.com/bloques-placas.html</loc>
-    <lastmod>2026-10-03T10:04:18+02:00</lastmod>
+    <lastmod>2026-10-03T10:25:58+02:00</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

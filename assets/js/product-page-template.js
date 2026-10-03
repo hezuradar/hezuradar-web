@@ -362,7 +362,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003c">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003f">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -377,6 +377,7 @@
       '      <div class="header-links">\n' +
       '        <a class="pill-btn" href="/disenador.html">Personaliza tu placa</a>\n' +
       '        <a class="pill-btn" href="/disenador-puas.html">Personaliza tus púas</a>\n' +
+      '        <a class="pill-btn" href="/guias.html">Guías</a>\n' +
       '        <a class="pill-btn" href="/#about">Quiénes somos</a>\n' +
       "      </div>\n" +
       '      <div class="header-icons">\n' +
@@ -643,7 +644,7 @@
   // Fila de enlaces a las guías (se repite en el pie de todas las páginas).
   function footerGuidesHtml() {
     return (
-      '<nav class="footer-cats footer-guides" aria-label="Guías"><span>Guías:</span>' +
+      '<nav class="footer-cats footer-guides" aria-label="Guías"><a class="footer-guides-all" href="/guias.html">Guías:</a>' +
       GUIDE_PAGES.map(function (g) {
         return '<a href="/' + g.file + '">' + escapeHtml(g.name) + "</a>";
       }).join("") +
@@ -724,7 +725,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003c">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003f">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
@@ -739,6 +740,7 @@
       '      <div class="header-links">\n' +
       '        <a class="pill-btn" href="/disenador.html">Personaliza tu placa</a>\n' +
       '        <a class="pill-btn" href="/disenador-puas.html">Personaliza tus púas</a>\n' +
+      '        <a class="pill-btn" href="/guias.html">Guías</a>\n' +
       '        <a class="pill-btn" href="/">← Volver a la tienda</a>\n' +
       "      </div>\n" +
       "    </nav>\n" +
@@ -784,6 +786,7 @@
     { path: "", changefreq: "weekly", priority: "1.0", file: "index.html" },
     { path: "disenador.html", changefreq: "monthly", priority: "0.7" },
     { path: "disenador-puas.html", changefreq: "monthly", priority: "0.7" },
+    { path: "guias.html", changefreq: "monthly", priority: "0.6" },
     { path: "guia-hueso-vs-cuerno.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-medidas-cejuela-selleta.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-tallar-cejuela.html", changefreq: "monthly", priority: "0.5" },
