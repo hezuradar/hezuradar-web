@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 365" font-family="Inter, Arial, sans-serif">
+  <title>Ranura de una cejuela de plástico gastada y ensanchada frente a una de hueso que conserva su forma</title>
+  <defs>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e6d6b4"/></linearGradient>
+    <linearGradient id="boneH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe3c8"/><stop offset=".5" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e3d2ad"/></linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f3626"/><stop offset="1" stop-color="#2c1d13"/></linearGradient>
+    <linearGradient id="spruce" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4e2bb"/><stop offset="1" stop-color="#dfbf8a"/></linearGradient>
+    <linearGradient id="mahog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97643c"/><stop offset="1" stop-color="#6b4226"/></linearGradient>
+    <linearGradient id="maple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b07a"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
+    <linearGradient id="ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2b1e"/><stop offset="1" stop-color="#18100a"/></linearGradient>
+    <linearGradient id="nickel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7f9"/><stop offset=".55" stop-color="#bcc6cd"/><stop offset="1" stop-color="#8c99a2"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8890"/><stop offset=".5" stop-color="#d6dde2"/><stop offset="1" stop-color="#6c767d"/></linearGradient>
+    <radialGradient id="ballg" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f2c76a"/><stop offset="1" stop-color="#9b7426"/></radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/></marker>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c9b48a" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="760" height="365" fill="#ffffff"/>
+  <line x1="380" y1="20" x2="380" y2="330" stroke="#e1e8ed" stroke-width="2"/>
+  <text x="190.0" y="38.0" font-size="16" font-weight="700" fill="#c0392b" text-anchor="middle">Plástico, tras meses de uso</text>
+  <path d="M70.0,120.0 L70.0,264.0 L310.0,264.0 L310.0,120.0 Z" fill="#f4f4f1" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M150.0,120.0 C152.0,156.0 158.0,190.0 190.0,192.0 C222.0,190.0 228.0,156.0 230.0,120.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="2"/>
+  <circle cx="190.0" cy="170.6" r="21.4" fill="url(#steel)" stroke="#1c2b36" stroke-width="1.5"/>
+  <circle cx="190.0" cy="170.6" r="15.4" fill="none" stroke="#5f6a71" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="244.0" y1="164.4" x2="244.0" y2="192.0" stroke="#1c2b36" stroke-width="1.4"/>
+  <text x="252.0" y="176.0" font-size="12" fill="#62727d">la cuerda</text>
+  <text x="252.0" y="191.0" font-size="12" fill="#62727d">ha bajado</text>
+  <text x="190.0" y="280.0" font-size="13" fill="#33424c" text-anchor="middle">La ranura se ensancha y se hunde:</text>
+  <text x="190.0" y="299.0" font-size="13" fill="#33424c" text-anchor="middle">la cuerda baja, puede trastear en el</text>
+  <text x="190.0" y="318.0" font-size="13" fill="#33424c" text-anchor="middle">primer traste y se mueve de lado.</text>
+  <text x="570.0" y="38.0" font-size="16" font-weight="700" fill="#2e7d4f" text-anchor="middle">Hueso, tras años de uso</text>
+  <path d="M450.0,120.0 L450.0,264.0 L690.0,264.0 L690.0,120.0 Z" fill="url(#bone)" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M547.6,120.0 L547.6,142.0 A22.4,22.4 0 0 0 592.4,142.0 L592.4,120.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="2"/>
+  <circle cx="570.0" cy="143.0" r="21.4" fill="url(#steel)" stroke="#1c2b36" stroke-width="1.5"/>
+  <circle cx="570.0" cy="143.0" r="15.4" fill="none" stroke="#5f6a71" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="570.0" y="280.0" font-size="13" fill="#33424c" text-anchor="middle">La ranura mantiene su forma:</text>
+  <text x="570.0" y="299.0" font-size="13" fill="#33424c" text-anchor="middle">la cuerda sigue a la misma altura</text>
+  <text x="570.0" y="318.0" font-size="13" fill="#33424c" text-anchor="middle">y bien sujeta.</text>
+  <text x="380.0" y="352.0" font-size="12" fill="#62727d" text-anchor="middle">Corte de la ranura de la 6ª cuerda (1,07 mm) ampliado 40 veces</text>
+</svg>

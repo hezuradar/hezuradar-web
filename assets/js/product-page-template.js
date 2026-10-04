@@ -362,7 +362,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003f">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261004a">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -472,7 +472,8 @@
       intro:
         "<p>La cejuela marca el punto donde empiezan a vibrar las cuerdas al aire y define su separación y su altura en el primer traste. " +
         "Aquí tienes dos opciones: <strong>cejuelas ya talladas a mano</strong>, listas para ajustar a tu guitarra, y <strong>piezas en bruto</strong> " +
-        "de hueso, cuerno o madre perla para tallarla tú a medida.</p>",
+        "de hueso, cuerno o madre perla para tallarla tú a medida.</p>" +
+        '<p>¿Tu guitarra lleva la cejuela de plástico de fábrica? Te contamos <a href="/guia-cejuela-hueso-vs-plastico.html">por qué merece la pena cambiarla por una de hueso</a>.</p>',
       guide:
         "<h2>Qué medida necesito</h2>" +
         '<ul class="guide-list">' +
@@ -634,6 +635,7 @@
 
   // Guías del sitio, en el orden en que salen en el pie de página.
   var GUIDE_PAGES = [
+    { file: "guia-cejuela-hueso-vs-plastico.html", name: "Hueso o plástico" },
     { file: "guia-hueso-vs-cuerno.html", name: "Hueso o cuerno" },
     { file: "guia-medidas-cejuela-selleta.html", name: "Medidas de cejuelas y selletas" },
     { file: "guia-tallar-cejuela.html", name: "Tallar una cejuela" },
@@ -725,7 +727,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261003f">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261004a">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
@@ -787,6 +789,7 @@
     { path: "disenador.html", changefreq: "monthly", priority: "0.7" },
     { path: "disenador-puas.html", changefreq: "monthly", priority: "0.7" },
     { path: "guias.html", changefreq: "monthly", priority: "0.6" },
+    { path: "guia-cejuela-hueso-vs-plastico.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-hueso-vs-cuerno.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-medidas-cejuela-selleta.html", changefreq: "monthly", priority: "0.5" },
     { path: "guia-tallar-cejuela.html", changefreq: "monthly", priority: "0.5" },

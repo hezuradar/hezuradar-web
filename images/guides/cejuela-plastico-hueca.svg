@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 335" font-family="Inter, Arial, sans-serif">
+  <title>Cejuela de plástico con huecos interiores frente a una cejuela de hueso maciza, a escala</title>
+  <defs>
+    <linearGradient id="bone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e6d6b4"/></linearGradient>
+    <linearGradient id="boneH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#efe3c8"/><stop offset=".5" stop-color="#fdf9ef"/><stop offset="1" stop-color="#e3d2ad"/></linearGradient>
+    <linearGradient id="rose" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f3626"/><stop offset="1" stop-color="#2c1d13"/></linearGradient>
+    <linearGradient id="spruce" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f4e2bb"/><stop offset="1" stop-color="#dfbf8a"/></linearGradient>
+    <linearGradient id="mahog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#97643c"/><stop offset="1" stop-color="#6b4226"/></linearGradient>
+    <linearGradient id="maple" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9b07a"/><stop offset="1" stop-color="#b98a55"/></linearGradient>
+    <linearGradient id="ebony" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b2b1e"/><stop offset="1" stop-color="#18100a"/></linearGradient>
+    <linearGradient id="nickel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f7f9"/><stop offset=".55" stop-color="#bcc6cd"/><stop offset="1" stop-color="#8c99a2"/></linearGradient>
+    <linearGradient id="steel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7d8890"/><stop offset=".5" stop-color="#d6dde2"/><stop offset="1" stop-color="#6c767d"/></linearGradient>
+    <radialGradient id="ballg" cx=".35" cy=".35" r=".7"><stop offset="0" stop-color="#f2c76a"/><stop offset="1" stop-color="#9b7426"/></radialGradient>
+    <marker id="ar" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="#4076AA"/></marker>
+    <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="7" stroke="#c9b48a" stroke-width="2"/></pattern>
+  </defs>
+  <rect width="760" height="335" fill="#ffffff"/>
+  <line x1="380" y1="20" x2="380" y2="330" stroke="#e1e8ed" stroke-width="2"/>
+  <text x="190.0" y="38.0" font-size="17" font-weight="700" fill="#c0392b" text-anchor="middle">Cejuela de plástico</text>
+  <rect x="61.0" y="90.0" width="258.0" height="54.0" rx="2" fill="#f4f4f1" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M81.4,90.0 L82.9,97.2 L87.1,97.2 L88.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M123.4,90.0 L124.9,97.2 L129.1,97.2 L130.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M165.4,90.0 L166.9,97.2 L171.1,97.2 L172.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M207.4,90.0 L208.9,97.2 L213.1,97.2 L214.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M249.4,90.0 L250.9,97.2 L255.1,97.2 L256.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M291.4,90.0 L292.9,97.2 L297.1,97.2 L298.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <rect x="85.0" y="109.2" width="60.0" height="35.8" rx="3" fill="#ffffff" stroke="#1c2b36" stroke-width="1.2"/>
+  <rect x="160.0" y="109.2" width="60.0" height="35.8" rx="3" fill="#ffffff" stroke="#1c2b36" stroke-width="1.2"/>
+  <rect x="235.0" y="109.2" width="60.0" height="35.8" rx="3" fill="#ffffff" stroke="#1c2b36" stroke-width="1.2"/>
+  <path d="M115.0,129.0 L115.0,184.0" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <circle cx="115.0" cy="129.0" r="2.8" fill="#4076AA"/>
+  <text x="115.0" y="202.0" font-size="13" fill="#62727d" text-anchor="middle">huecos interiores</text>
+  <text x="190.0" y="236.0" font-size="13" fill="#33424c" text-anchor="middle">Muchas son huecas por dentro:</text>
+  <text x="190.0" y="255.0" font-size="13" fill="#33424c" text-anchor="middle">menos material para transmitir</text>
+  <text x="190.0" y="274.0" font-size="13" fill="#33424c" text-anchor="middle">la vibración. Más blanda: las</text>
+  <text x="190.0" y="293.0" font-size="13" fill="#33424c" text-anchor="middle">ranuras se desgastan antes.</text>
+  <text x="570.0" y="38.0" font-size="17" font-weight="700" fill="#2e7d4f" text-anchor="middle">Cejuela de hueso</text>
+  <rect x="441.0" y="90.0" width="258.0" height="54.0" rx="2" fill="url(#bone)" stroke="#1c2b36" stroke-width="2"/>
+  <path d="M461.4,90.0 L462.9,97.2 L467.1,97.2 L468.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M503.4,90.0 L504.9,97.2 L509.1,97.2 L510.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M545.4,90.0 L546.9,97.2 L551.1,97.2 L552.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M587.4,90.0 L588.9,97.2 L593.1,97.2 L594.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M629.4,90.0 L630.9,97.2 L635.1,97.2 L636.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M671.4,90.0 L672.9,97.2 L677.1,97.2 L678.6,90.0 Z" fill="#ffffff" stroke="#1c2b36" stroke-width="1"/>
+  <path d="M449.0,105.6 C521.0,103.6 601.0,107.6 691.0,105.6" fill="none" stroke="#d8c59c" stroke-width="1.2"/>
+  <path d="M449.0,121.2 C521.0,118.2 601.0,124.2 691.0,121.2" fill="none" stroke="#d8c59c" stroke-width="1.2"/>
+  <path d="M449.0,134.4 C521.0,132.4 601.0,136.4 691.0,134.4" fill="none" stroke="#d8c59c" stroke-width="1.2"/>
+  <path d="M570.0,123.0 L570.0,184.0" fill="none" stroke="#4076AA" stroke-width="1.5"/>
+  <circle cx="570.0" cy="123.0" r="2.8" fill="#4076AA"/>
+  <text x="570.0" y="202.0" font-size="13" fill="#62727d" text-anchor="middle">hueso macizo</text>
+  <text x="570.0" y="236.0" font-size="13" fill="#33424c" text-anchor="middle">Pieza maciza y densa: transmite</text>
+  <text x="570.0" y="255.0" font-size="13" fill="#33424c" text-anchor="middle">mejor la vibración y gana sustain.</text>
+  <text x="570.0" y="274.0" font-size="13" fill="#33424c" text-anchor="middle">Más dura: las ranuras conservan</text>
+  <text x="570.0" y="293.0" font-size="13" fill="#33424c" text-anchor="middle">su forma durante años.</text>
+  <text x="380.0" y="322.0" font-size="12" fill="#62727d" text-anchor="middle">Cejuela de 43 × 9 × 6 mm vista de frente, a escala. El número y la forma de los huecos varía según el fabricante.</text>
+</svg>
