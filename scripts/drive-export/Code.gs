@@ -55,7 +55,19 @@ function doPost(e) {
     const lock = LockService.getScriptLock();
     lock.waitLock(30000);
     try {
-      return json_({ ok: true, ...exportOrder_(orderId) });
+      // Con sesión de administrador ("Enviar a cortar") se puede reexportar siempre.
+      // Sin ella (la página del cliente) solo la primera vez y con el pedido recién
+      // creado, y sin devolver el enlace a la carpeta: así nadie puede usar un ID de
+      // pedido para regenerar archivos en Drive una y otra vez.
+      if (body.idToken) {
+        verifyAdmin_(String(body.idToken));
+        return json_({ ok: true, ...exportOrder_(orderId) });
+      }
+      const o = getOrder_(orderId);
+      if (o.driveExportedAt) return json_({ ok: true, exported: false, reason: "ya exportado" });
+      checkRecent_(o);
+      exportOrder_(orderId, o);
+      return json_({ ok: true, exported: true });
     } finally {
       lock.releaseLock();
     }
@@ -94,8 +106,8 @@ function designsLabel_(designs) {
   return designs.length > 1 ? "Varios diseños" : DESIGN_KINDS[designs[0].kind] || "Diseño personalizado";
 }
 
-function exportOrder_(orderId) {
-  const o = getOrder_(orderId);
+function exportOrder_(orderId, order) {
+  const o = order || getOrder_(orderId);
   const designs = orderDesigns_(o);
   if (!designs.length) throw new Error("Solo se exportan pedidos de placa o púa personalizada.");
   const c = o.customer || {};
@@ -178,15 +190,20 @@ function confirmCustomer_(orderId, captchaToken) {
   try {
     const o = getOrder_(orderId);
     if (o.customerEmailSentAt) return { sent: false, reason: "ya enviado" };
-    const created = new Date(o.createdAtServer || o.createdAt || 0).getTime();
-    if (!created || Date.now() - created > CONFIRM_WINDOW_MINUTES * 60 * 1000) {
-      throw new Error("El pedido es demasiado antiguo para enviar la confirmación automática.");
-    }
+    checkRecent_(o);
     sendCustomerEmail_(o);
     markCustomerEmailed_(orderId);
     return { sent: true };
   } finally {
     lock.releaseLock();
+  }
+}
+
+// Solo cuenta la hora del servidor (createdAtServer): createdAt lo escribe el navegador.
+function checkRecent_(o) {
+  const created = new Date(o.createdAtServer || 0).getTime();
+  if (!created || Date.now() - created > CONFIRM_WINDOW_MINUTES * 60 * 1000) {
+    throw new Error("El pedido es demasiado antiguo para esta acción automática.");
   }
 }
 

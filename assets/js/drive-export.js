@@ -9,13 +9,14 @@
 
   // Se manda como text/plain para que sea una petición "simple" sin preflight CORS,
   // que Apps Script no sabe responder. Solo viaja el ID del documento de Firestore:
-  // el script lee el pedido por su cuenta.
-  async function exportOrder(orderId) {
+  // el script lee el pedido por su cuenta. Desde el panel va con el ID token del
+  // administrador: sin él, el script solo exporta pedidos recién creados y una vez.
+  async function exportOrder(orderId, idToken) {
     if (!DRIVE_EXPORT_URL) throw new Error("La exportación a Drive no está configurada (assets/js/drive-export.js).");
     const res = await fetch(DRIVE_EXPORT_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ orderId }),
+      body: JSON.stringify({ orderId, idToken }),
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || "Error desconocido al exportar a Drive.");

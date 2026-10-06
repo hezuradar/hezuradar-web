@@ -1094,7 +1094,8 @@ ${bodyHtml}
       btn.textContent = "⏳ Subiendo a Drive...";
     }
     try {
-      const res = await window.HA_DRIVE.exportOrder(docId);
+      const idToken = await firebase.auth().currentUser.getIdToken();
+      const res = await window.HA_DRIVE.exportOrder(docId, idToken);
       if (win) win.location.href = res.folderUrl;
       if (res.fileMissing) {
         alert("Subido a Drive, pero falta el archivo original del cliente (era demasiado grande): pídeselo y añádelo a la carpeta.");

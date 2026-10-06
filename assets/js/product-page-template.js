@@ -442,7 +442,7 @@
       '<script src="/assets/js/emailjs-config.js?v=20261002e"></script>\n' +
       '<script src="/assets/js/emailjs-notify.js?v=20261002e"></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261002d"></script>\n' +
-      '<script src="/assets/js/drive-export.js?v=20261002e"></script>\n' +
+      '<script src="/assets/js/drive-export.js?v=20261006a"></script>\n' +
       '<script src="/assets/js/cart.js?v=20261002f"></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261002f" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
       "</body>\n" +

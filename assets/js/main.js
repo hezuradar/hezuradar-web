@@ -319,7 +319,7 @@
               </div>
               <div class="modal-actions">
                 <button class="btn btn-primary" id="modal-add-cart" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Sin stock" : "Añadir a la cesta"}</button>
-                <a class="btn btn-outline" target="_blank" rel="noopener" href="${productWaLink(p)}">Consultar por WhatsApp</a>
+                <a class="btn btn-outline" target="_blank" rel="noopener" href="${escapeAttr(productWaLink(p))}">Consultar por WhatsApp</a>
               </div>
             </div>
           </div>
