@@ -33,16 +33,20 @@
     if (!window.HA_FIREBASE_ENABLED) return;
     if (!firebase.apps.length) firebase.initializeApp(window.HA_FIREBASE_CONFIG);
 
-    firebase.auth().onAuthStateChanged((user) => {
-      if (user) {
-        $("stats-login-notice").style.display = "none";
-        $("stats-panel").style.display = "block";
-        loadAnalyticsDaily();
-      } else {
-        $("stats-login-notice").style.display = "block";
-        $("stats-panel").style.display = "none";
-      }
-    });
+    const watchAuth = () =>
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          $("stats-login-notice").style.display = "none";
+          $("stats-panel").style.display = "block";
+          loadAnalyticsDaily();
+        } else {
+          $("stats-login-notice").style.display = "block";
+          $("stats-panel").style.display = "none";
+        }
+      });
+    // Igual que en admin-orders.js: solo tras desbloquear el panel con el PIN.
+    if (window.HA_ADMIN_UNLOCKED) watchAuth();
+    else window.addEventListener("ha-admin-unlocked", watchAuth, { once: true });
 
     if (window.HA_LATEST_ORDERS) onOrdersReady(window.HA_LATEST_ORDERS);
     window.addEventListener("ha-orders-updated", (e) => onOrdersReady(e.detail.orders));

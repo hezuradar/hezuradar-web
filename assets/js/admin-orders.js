@@ -49,6 +49,9 @@
     }
 
     if (!firebase.apps.length) firebase.initializeApp(window.HA_FIREBASE_CONFIG);
+    // La sesión de pedidos dura lo que la pestaña: al cerrarla hay que volver a entrar.
+    // Si había una sesión guardada de antes, Firebase la pasa a este modo.
+    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => {});
 
     $("orders-login-btn").addEventListener("click", login);
     $("orders-password").addEventListener("keydown", (e) => {
@@ -90,7 +93,8 @@
     $("revenue-from").addEventListener("change", renderRevenue);
     $("revenue-to").addEventListener("change", renderRevenue);
 
-    firebase.auth().onAuthStateChanged((user) => {
+    // Nada de datos de clientes hasta que el panel se desbloquee con el PIN (admin.js).
+    whenAdminUnlocked(() => firebase.auth().onAuthStateChanged((user) => {
       if (user) {
         $("orders-login").querySelector(".field-row").style.display = "none";
         $("orders-login-btn").style.display = "none";
@@ -110,8 +114,13 @@
         if (unsubscribe) unsubscribe();
         orders = [];
       }
-    });
+    }));
   });
+
+  function whenAdminUnlocked(fn) {
+    if (window.HA_ADMIN_UNLOCKED) fn();
+    else window.addEventListener("ha-admin-unlocked", fn, { once: true });
+  }
 
   function initTabs() {
     document.querySelectorAll(".admin-tab").forEach((btn) => {
@@ -133,7 +142,9 @@
     }
     setAuthStatus("info", "Entrando...");
     try {
+      await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
       await firebase.auth().signInWithEmailAndPassword(email, password);
+      $("orders-password").value = "";
     } catch (e) {
       setAuthStatus("err", "No se pudo iniciar sesión: " + e.message);
     }

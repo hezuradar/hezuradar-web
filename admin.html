@@ -31,14 +31,16 @@
 
 <div id="lock-screen" class="admin-lock">
   <h2 id="lock-title">Panel privado</h2>
-  <p style="color:var(--color-muted);font-size:.88rem">Introduce tu PIN de acceso.</p>
-  <input type="password" id="pin-input" inputmode="numeric" placeholder="••••" maxlength="20" autofocus>
+  <p id="lock-help" style="color:var(--color-muted);font-size:.88rem">Introduce tu PIN de acceso.</p>
+  <input type="password" id="pin-input" placeholder="PIN" maxlength="64" autocomplete="current-password" aria-label="PIN" autofocus>
+  <input type="password" id="pin-confirm" placeholder="Repite el PIN" maxlength="64" autocomplete="new-password" aria-label="Repite el PIN" style="display:none;margin-top:0">
   <button class="btn btn-primary" id="pin-submit" style="width:100%">Entrar</button>
   <div id="lock-msg"></div>
   <p style="margin-top:18px;font-size:.75rem;color:var(--color-muted)">
-    Este PIN solo oculta el panel en este navegador. La protección real de los datos
-    es tu token de GitHub, que se pide a continuación y nunca sale de tu navegador.
+    El PIN cifra tu token de GitHub en este navegador (AES-256) y no se guarda en ningún sitio.
+    El panel se bloquea solo tras 15 minutos sin uso. Los pedidos piden además tu cuenta de Firebase.
   </p>
+  <button type="button" class="pill-btn" id="pin-reset" style="margin-top:6px;font-size:.75rem">He olvidado el PIN</button>
 </div>
 
 <div id="admin-shell" class="admin-shell" style="display:none">
@@ -58,7 +60,7 @@
       Para publicar cambios en la web necesitas un <b>Personal Access Token</b> de GitHub con permiso
       <code>repo</code> (o <code>Contents: Read and write</code> si es un token fine-grained) sobre este repositorio.
       Se genera en GitHub → Settings → Developer settings → Personal access tokens.
-      El token se guarda únicamente en este navegador (localStorage), nunca se envía a ningún sitio salvo a la API de GitHub.
+      El token se guarda cifrado con tu PIN en este navegador y solo se envía a la API de GitHub.
     </p>
     <p class="help-text">
       Estos tres primeros datos son siempre los mismos para esta web (ya vienen rellenos) — el
@@ -507,10 +509,10 @@
 <script src="assets/js/emailjs-notify.js?v=20261002e"></script>
 <script src="assets/js/product-page-template.js?v=20261004c"></script>
 <script src="assets/js/catalog-template.js?v=20261002d"></script>
-<script src="assets/js/admin.js?v=20261002f"></script>
+<script src="assets/js/admin.js?v=20261006b"></script>
 <script src="assets/js/drive-export.js?v=20261006a"></script>
-<script src="assets/js/admin-orders.js?v=20261006a"></script>
+<script src="assets/js/admin-orders.js?v=20261006b"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
-<script src="assets/js/admin-stats.js?v=20261002d"></script>
+<script src="assets/js/admin-stats.js?v=20261006b"></script>
 </body>
 </html>

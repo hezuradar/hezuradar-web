@@ -9,20 +9,38 @@
   }
 
   const LS = {
-    pinHash: "ha_pin_hash",
     owner: "ha_gh_owner",
     repo: "ha_gh_repo",
     branch: "ha_gh_branch",
-    token: "ha_gh_token",
+    vault: "ha_vault_v2",
+    fails: "ha_pin_fails",
+    // Formato antiguo (hash SHA-256 del PIN + token en claro): solo se lee para migrarlo.
+    legacyPinHash: "ha_pin_hash",
+    legacyToken: "ha_gh_token",
   };
-  const SS_UNLOCKED = "ha_unlocked";
   const PRODUCTS_PATH = "data/products.json";
+
+  // El PIN no se guarda en ningún sitio: de él se deriva (PBKDF2) la clave AES-GCM que
+  // cifra el token de GitHub. Sin el PIN correcto el token no se puede descifrar, y cada
+  // intento cuesta ~0,5 s de cálculo, así que probar PINs a ciegas es muy lento.
+  const PIN_MIN_LENGTH = 6;
+  const PBKDF2_ITERATIONS = 600000;
+  const VAULT_CHECK = "hezuradar-admin";
+  const MAX_FREE_ATTEMPTS = 5;
+  const IDLE_LOCK_MS = 15 * 60 * 1000;
 
   let products = [];
   let productsSha = null;
   let editingId = null;
   let pendingFiles = [];
   let currentImages = [];
+
+  // Solo en memoria: se pierden al recargar o cerrar la pestaña.
+  let vaultKey = null;
+  let vaultSalt = null;
+  let ghToken = "";
+  let lockMode = "unlock"; // unlock | create | migrate | newpin
+  let migratedToken = "";
 
   const $ = (id) => document.getElementById(id);
 
@@ -38,60 +56,259 @@
     $("p-images").addEventListener("change", onFilesSelected);
     $("p-category").addEventListener("change", () => updateSubcategoryOptions(""));
     $("p-filter").addEventListener("input", renderTable);
-    $("logout-btn").addEventListener("click", () => {
-      sessionStorage.removeItem(SS_UNLOCKED);
-      location.reload();
-    });
-
-    if (sessionStorage.getItem(SS_UNLOCKED) === "1") {
-      showShell();
-    }
+    $("logout-btn").addEventListener("click", lockPanel);
   });
 
-  /* ---------------- PIN LOCK ---------------- */
+  /* ---------------- PIN + CIFRADO ---------------- */
 
-  async function sha256(text) {
+  const b64 = {
+    enc: (buf) => btoa(String.fromCharCode.apply(null, new Uint8Array(buf))),
+    dec: (str) => Uint8Array.from(atob(str), (c) => c.charCodeAt(0)),
+  };
+
+  async function sha256Hex(text) {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
-  function initLock() {
-    const hasPin = !!localStorage.getItem(LS.pinHash);
-    $("lock-title").textContent = hasPin ? "Panel privado" : "Crea tu PIN de acceso";
-    $("pin-input").placeholder = hasPin ? "••••" : "Elige un PIN nuevo";
-    $("pin-submit").textContent = hasPin ? "Entrar" : "Crear PIN";
-    $("pin-submit").addEventListener("click", onPinSubmit);
-    $("pin-input").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") onPinSubmit();
-    });
+  async function deriveKey(pin, salt, iterations) {
+    const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pin), "PBKDF2", false, ["deriveKey"]);
+    return crypto.subtle.deriveKey(
+      { name: "PBKDF2", salt, iterations: iterations || PBKDF2_ITERATIONS, hash: "SHA-256" },
+      base,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt", "decrypt"]
+    );
   }
 
+  async function writeVault(token) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const plain = new TextEncoder().encode(JSON.stringify({ check: VAULT_CHECK, token }));
+    const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, vaultKey, plain);
+    localStorage.setItem(
+      LS.vault,
+      JSON.stringify({ v: 2, iter: PBKDF2_ITERATIONS, salt: b64.enc(vaultSalt), iv: b64.enc(iv), ct: b64.enc(ct) })
+    );
+  }
+
+  function readVault() {
+    try {
+      const v = JSON.parse(localStorage.getItem(LS.vault));
+      return v && v.v === 2 && v.salt && v.iv && v.ct ? v : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Devuelve el token si el PIN es correcto; si no, null (AES-GCM no descifra con otra clave).
+  async function openVault(pin, vault) {
+    const salt = b64.dec(vault.salt);
+    const key = await deriveKey(pin, salt, vault.iter);
+    try {
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv: b64.dec(vault.iv) }, key, b64.dec(vault.ct));
+      const data = JSON.parse(new TextDecoder().decode(plain));
+      if (data.check !== VAULT_CHECK) return null;
+      vaultKey = key;
+      vaultSalt = salt;
+      return String(data.token || "");
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async function createVault(pin, token) {
+    vaultSalt = crypto.getRandomValues(new Uint8Array(16));
+    vaultKey = await deriveKey(pin, vaultSalt);
+    await writeVault(token);
+    localStorage.removeItem(LS.legacyPinHash);
+    localStorage.removeItem(LS.legacyToken);
+  }
+
+  // Tras MAX_FREE_ATTEMPTS fallos seguidos, espera creciente: 30 s, 1 min, 2 min... hasta 1 h.
+  function readFails() {
+    try {
+      return JSON.parse(localStorage.getItem(LS.fails)) || { count: 0, until: 0 };
+    } catch (e) {
+      return { count: 0, until: 0 };
+    }
+  }
+  function registerFail() {
+    const f = readFails();
+    f.count += 1;
+    if (f.count >= MAX_FREE_ATTEMPTS) {
+      f.until = Date.now() + Math.min(3600, 30 * 2 ** (f.count - MAX_FREE_ATTEMPTS)) * 1000;
+    }
+    localStorage.setItem(LS.fails, JSON.stringify(f));
+    return f;
+  }
+
+  function setLockMode(mode) {
+    lockMode = mode;
+    const texts = {
+      unlock: ["Panel privado", "Introduce tu PIN de acceso.", "Entrar"],
+      create: [
+        "Crea tu PIN de acceso",
+        `Elige un PIN de al menos ${PIN_MIN_LENGTH} caracteres (mejor con letras y números). Con él se cifra tu token de GitHub en este navegador.`,
+        "Crear PIN",
+      ],
+      migrate: ["Panel privado", "Introduce tu PIN actual para pasar al nuevo acceso cifrado.", "Entrar"],
+      newpin: [
+        "Elige un PIN nuevo",
+        `Tu PIN es demasiado corto. Elige uno de al menos ${PIN_MIN_LENGTH} caracteres (mejor con letras y números).`,
+        "Guardar PIN",
+      ],
+    }[mode];
+    $("lock-title").textContent = texts[0];
+    $("lock-help").textContent = texts[1];
+    $("pin-submit").textContent = texts[2];
+    const confirming = mode === "create" || mode === "newpin";
+    $("pin-confirm").style.display = confirming ? "block" : "none";
+    $("pin-input").value = "";
+    $("pin-confirm").value = "";
+    $("pin-input").autocomplete = confirming ? "new-password" : "current-password";
+  }
+
+  function lockMsg(type, msg) {
+    $("lock-msg").innerHTML = msg ? `<div class="status-msg ${type}">${escapeHtml(msg)}</div>` : "";
+  }
+
+  function initLock() {
+    if (readVault()) setLockMode("unlock");
+    else if (localStorage.getItem(LS.legacyPinHash)) setLockMode("migrate");
+    else setLockMode("create");
+    $("pin-submit").addEventListener("click", onPinSubmit);
+    $("pin-input").addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      if ($("pin-confirm").style.display === "none") onPinSubmit();
+      else $("pin-confirm").focus();
+    });
+    $("pin-confirm").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") onPinSubmit();
+    });
+    $("pin-reset").addEventListener("click", resetVault);
+  }
+
+  function isTrivialPin(pin) {
+    return /^(.)\1*$/.test(pin) || "01234567890123456789".includes(pin) || "98765432109876543210".includes(pin);
+  }
+
+  let busy = false;
   async function onPinSubmit() {
-    const val = $("pin-input").value.trim();
-    if (!val) return;
-    const hasPin = !!localStorage.getItem(LS.pinHash);
-    const hash = await sha256(val);
-    if (!hasPin) {
-      localStorage.setItem(LS.pinHash, hash);
-      sessionStorage.setItem(SS_UNLOCKED, "1");
-      showShell();
+    if (busy) return;
+    const pin = $("pin-input").value;
+    if (!pin) return;
+    const f = readFails();
+    if (f.until > Date.now()) {
+      lockMsg("err", `Demasiados intentos fallidos. Espera ${Math.ceil((f.until - Date.now()) / 1000)} s.`);
       return;
     }
-    if (hash === localStorage.getItem(LS.pinHash)) {
-      sessionStorage.setItem(SS_UNLOCKED, "1");
-      showShell();
-    } else {
-      $("lock-msg").innerHTML = '<div class="status-msg err">PIN incorrecto</div>';
-      $("pin-input").value = "";
+    busy = true;
+    $("pin-submit").disabled = true;
+    lockMsg("info", "Comprobando...");
+    try {
+      if (lockMode === "create" || lockMode === "newpin") {
+        if (pin.length < PIN_MIN_LENGTH) return lockMsg("err", `El PIN debe tener al menos ${PIN_MIN_LENGTH} caracteres.`);
+        if (isTrivialPin(pin)) return lockMsg("err", "Ese PIN es demasiado fácil de adivinar.");
+        if (pin !== $("pin-confirm").value) return lockMsg("err", "Los dos PIN no coinciden.");
+        const token = lockMode === "newpin" ? migratedToken : "";
+        await createVault(pin, token);
+        migratedToken = "";
+        return unlocked(token);
+      }
+
+      if (lockMode === "migrate") {
+        // El panel antiguo guardaba el hash del PIN sin espacios alrededor.
+        if ((await sha256Hex(pin.trim())) !== localStorage.getItem(LS.legacyPinHash)) return failed();
+        const token = localStorage.getItem(LS.legacyToken) || "";
+        if (pin.length < PIN_MIN_LENGTH || isTrivialPin(pin)) {
+          migratedToken = token;
+          localStorage.removeItem(LS.fails);
+          setLockMode("newpin");
+          return lockMsg("", "");
+        }
+        await createVault(pin, token);
+        return unlocked(token);
+      }
+
+      const token = await openVault(pin, readVault());
+      if (token === null) return failed();
+      unlocked(token);
+    } catch (e) {
+      lockMsg("err", "Error: " + e.message);
+    } finally {
+      busy = false;
+      $("pin-submit").disabled = false;
     }
+  }
+
+  function failed() {
+    const f = registerFail();
+    $("pin-input").value = "";
+    const left = MAX_FREE_ATTEMPTS - f.count;
+    lockMsg(
+      "err",
+      left > 0
+        ? `PIN incorrecto. Te quedan ${left} intento(s) antes de un bloqueo temporal.`
+        : `PIN incorrecto. Bloqueado ${Math.ceil((f.until - Date.now()) / 1000)} s.`
+    );
+  }
+
+  function unlocked(token) {
+    ghToken = token || "";
+    localStorage.removeItem(LS.fails);
+    lockMsg("", "");
+    showShell();
+  }
+
+  async function resetVault() {
+    const ok = confirm(
+      "Se borrarán el PIN y el token de GitHub guardados en este navegador, y se cerrará la sesión de pedidos. " +
+        "Tendrás que crear un PIN nuevo y volver a pegar el token. ¿Continuar?"
+    );
+    if (!ok) return;
+    [LS.vault, LS.fails, LS.legacyPinHash, LS.legacyToken].forEach((k) => localStorage.removeItem(k));
+    await signOutFirebase();
+    location.reload();
+  }
+
+  async function signOutFirebase() {
+    try {
+      if (window.firebase && firebase.apps.length) await firebase.auth().signOut();
+    } catch (e) {
+      // Sin sesión de Firebase no hay nada que cerrar.
+    }
+  }
+
+  // Bloquear el panel borra de memoria la clave y el token, y cierra la sesión de pedidos.
+  async function lockPanel() {
+    vaultKey = null;
+    ghToken = "";
+    await signOutFirebase();
+    location.reload();
+  }
+
+  function startIdleLock() {
+    let idleTimer = null;
+    const reset = () => {
+      clearTimeout(idleTimer);
+      idleTimer = setTimeout(lockPanel, IDLE_LOCK_MS);
+    };
+    ["pointerdown", "keydown", "scroll", "touchstart"].forEach((ev) =>
+      document.addEventListener(ev, reset, { passive: true })
+    );
+    reset();
   }
 
   function showShell() {
     $("lock-screen").style.display = "none";
     $("admin-shell").style.display = "block";
     $("logout-btn").style.display = "inline-block";
-    // El token solo se rellena tras desbloquear el panel con el PIN.
-    $("gh-token").value = localStorage.getItem(LS.token) || "";
+    $("gh-token").value = ghToken;
+    startIdleLock();
+    // admin-orders.js y admin-stats.js esperan a esto para conectar con Firebase.
+    window.HA_ADMIN_UNLOCKED = true;
+    window.dispatchEvent(new Event("ha-admin-unlocked"));
     loadProducts();
   }
 
@@ -102,16 +319,26 @@
       owner: localStorage.getItem(LS.owner) || "hezuradar",
       repo: localStorage.getItem(LS.repo) || "hezuradar-web",
       branch: localStorage.getItem(LS.branch) || "main",
-      token: localStorage.getItem(LS.token) || "",
+      token: ghToken,
     };
   }
 
-  function saveGhConfig() {
+  async function saveGhConfig() {
+    if (!vaultKey) {
+      setStatus("gh-status", "err", "El panel está bloqueado: vuelve a entrar con tu PIN.");
+      return;
+    }
     localStorage.setItem(LS.owner, $("gh-owner").value.trim());
     localStorage.setItem(LS.repo, $("gh-repo").value.trim());
     localStorage.setItem(LS.branch, $("gh-branch").value.trim() || "main");
-    localStorage.setItem(LS.token, $("gh-token").value.trim());
-    setStatus("gh-status", "ok", "Conexión guardada en este navegador.");
+    ghToken = $("gh-token").value.trim();
+    try {
+      await writeVault(ghToken);
+    } catch (e) {
+      setStatus("gh-status", "err", "No se pudo cifrar el token: " + e.message);
+      return;
+    }
+    setStatus("gh-status", "ok", "Conexión guardada. El token queda cifrado con tu PIN en este navegador.");
     loadProducts();
   }
 
