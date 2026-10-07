@@ -1343,5 +1343,26 @@
     "imageWidth": 1600,
     "imageHeight": 1200,
     "updatedAt": "2026-10-02"
+  },
+  {
+    "id": "cb3eff93-fccb-4fab-b8b0-749fd04ce83a",
+    "title": "Marco de madreperla fino",
+    "description": "Marco de madre Perla \n\nMedida exterior 80x12x2 mm\nMedida interior 75,5 x 8.1 mm",
+    "price": 14.5,
+    "sku": "RR0069",
+    "category": "Madre perla y abalone",
+    "subcategory": "Bloques y placas",
+    "stock": 9,
+    "discountPercent": null,
+    "images": [
+      "images/products/cb3eff93-fccb-4fab-b8b0-749fd04ce83a_1791404932031_0.jpg",
+      "images/products/cb3eff93-fccb-4fab-b8b0-749fd04ce83a_1791404936444_1.jpg",
+      "images/products/cb3eff93-fccb-4fab-b8b0-749fd04ce83a_1791404940748_2.jpg",
+      "images/products/cb3eff93-fccb-4fab-b8b0-749fd04ce83a_1791404944536_3.jpg"
+    ],
+    "slug": "marco-de-madreperla-fino-cb3eff93",
+    "imageWidth": 1600,
+    "imageHeight": 1200,
+    "updatedAt": "2026-10-07"
   }
 ]
