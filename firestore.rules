@@ -60,6 +60,15 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
+    // Token de GitHub del panel de administración (admin.js): se guarda aquí para poder
+    // entrar desde cualquier móvil con el login, sin repetir la configuración en cada navegador.
+    match /adminConfig/github {
+      allow get, delete: if isAdmin();
+      allow create, update: if isAdmin()
+        && request.resource.data.keys().hasOnly(['token', 'updatedAt', 'updatedBy'])
+        && isStr(request.resource.data.token, 255);
+    }
+
     // Contadores de analytics.js. Los escribe cualquier visitante, así que cada escritura
     // solo puede sumar 1 a las visitas y tocar una clave de cada mapa, sin borrar nada:
     // nadie puede poner a cero ni inflar de golpe las estadísticas.

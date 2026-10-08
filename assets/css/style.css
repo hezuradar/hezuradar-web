@@ -580,6 +580,12 @@ input[type=file]::file-selector-button:hover{border-color:var(--color-primary)}
   width:100%;padding:11px 14px;border-radius:8px;border:1px solid var(--color-border);
   margin:14px 0;font-size:1rem;text-align:center;letter-spacing:.1em;
 }
+.admin-lock input[type=email]{letter-spacing:normal}
+.link-btn{
+  background:none;border:none;margin-top:8px;padding:10px 8px;min-height:44px;
+  font-size:.88rem;font-weight:600;color:var(--color-primary-dark);text-decoration:underline;
+}
+.link-btn:disabled{color:var(--color-muted);text-decoration:none}
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;min-width:0}
 .field label{font-size:.82rem;font-weight:700;color:var(--color-ink)}
 .field input,.field textarea,.field select{

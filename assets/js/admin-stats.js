@@ -44,7 +44,7 @@
           $("stats-panel").style.display = "none";
         }
       });
-    // Igual que en admin-orders.js: solo tras desbloquear el panel con el PIN.
+    // Igual que en admin-orders.js: solo tras iniciar sesión en el panel.
     if (window.HA_ADMIN_UNLOCKED) watchAuth();
     else window.addEventListener("ha-admin-unlocked", watchAuth, { once: true });
 

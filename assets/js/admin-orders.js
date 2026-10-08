@@ -44,20 +44,11 @@
     if (!window.HA_FIREBASE_ENABLED) {
       $("orders-auth-status").innerHTML =
         '<div class="status-msg info">Todavía no has conectado la base de datos de pedidos. Sigue las instrucciones del README (assets/js/firebase-config.js) para activarla.</div>';
-      $("orders-login-btn").disabled = true;
       return;
     }
 
     if (!firebase.apps.length) firebase.initializeApp(window.HA_FIREBASE_CONFIG);
-    // La sesión de pedidos dura lo que la pestaña: al cerrarla hay que volver a entrar.
-    // Si había una sesión guardada de antes, Firebase la pasa a este modo.
-    firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(() => {});
 
-    $("orders-login-btn").addEventListener("click", login);
-    $("orders-password").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") login();
-    });
-    $("orders-logout-btn").addEventListener("click", () => firebase.auth().signOut());
     document.querySelectorAll(".status-tab").forEach((btn) => {
       btn.addEventListener("click", () => {
         statusFilter = btn.dataset.status;
@@ -93,21 +84,15 @@
     $("revenue-from").addEventListener("change", renderRevenue);
     $("revenue-to").addEventListener("change", renderRevenue);
 
-    // Nada de datos de clientes hasta que el panel se desbloquee con el PIN (admin.js).
+    // Nada de datos de clientes hasta que el panel se desbloquee con el login (admin.js).
     whenAdminUnlocked(() => firebase.auth().onAuthStateChanged((user) => {
       if (user) {
-        $("orders-login").querySelector(".field-row").style.display = "none";
-        $("orders-login-btn").style.display = "none";
-        $("orders-logout-btn").style.display = "inline-block";
-        setAuthStatus("ok", `Sesión iniciada como ${user.email}`);
+        setAuthStatus("", "");
         $("orders-panel").style.display = "block";
         $("customers-panel").style.display = "block";
         $("customers-login-notice").style.display = "none";
         subscribeOrders();
       } else {
-        $("orders-login").querySelector(".field-row").style.display = "grid";
-        $("orders-login-btn").style.display = "inline-block";
-        $("orders-logout-btn").style.display = "none";
         $("orders-panel").style.display = "none";
         $("customers-panel").style.display = "none";
         $("customers-login-notice").style.display = "block";
@@ -131,23 +116,6 @@
         document.getElementById(btn.dataset.tab).style.display = "block";
       });
     });
-  }
-
-  async function login() {
-    const email = $("orders-email").value.trim();
-    const password = $("orders-password").value;
-    if (!email || !password) {
-      setAuthStatus("err", "Introduce email y contraseña.");
-      return;
-    }
-    setAuthStatus("info", "Entrando...");
-    try {
-      await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
-      await firebase.auth().signInWithEmailAndPassword(email, password);
-      $("orders-password").value = "";
-    } catch (e) {
-      setAuthStatus("err", "No se pudo iniciar sesión: " + e.message);
-    }
   }
 
   function setAuthStatus(type, msg) {

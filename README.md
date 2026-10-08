@@ -38,8 +38,8 @@ Es la **única parte visible solo para ti**: no aparece en ningún menú de la w
 
 Funciona en dos capas:
 
-- **PIN local**: la primera vez que entras, eliges un PIN. Se guarda cifrado (hash) en el navegador que uses. Solo oculta el panel a quien abra la página por curiosidad; no es una contraseña de servidor porque GitHub Pages no tiene servidor.
-- **Token de GitHub**: es la protección real. Para publicar cambios necesitas un *Personal Access Token* con permiso de escritura sobre el repositorio. Sin ese token nadie puede modificar el catálogo, aunque conozca la URL del panel y el PIN.
+- **Login con tu cuenta de administrador** (email + contraseña de Firebase Authentication): solo entran los emails de `isAdmin()` en `firestore.rules`. La sesión se conserva en el dispositivo hasta 12 horas y el panel se bloquea solo tras 15 minutos sin uso. Si olvidas la contraseña, "He olvidado la contraseña" envía un enlace al correo para crear una nueva (el alta de usuarios debe seguir desactivada en Firebase → Authentication → Settings).
+- **Token de GitHub**: es la protección de la publicación. Para publicar cambios necesitas un *Personal Access Token* con permiso de escritura sobre el repositorio. Se guarda una sola vez en tu cuenta (documento `adminConfig/github` de Firestore, legible solo por los emails de administrador), así que vale en cualquier móvil u ordenador sin repetirlo. Protege con verificación en dos pasos las cuentas de Google de esos emails: quien controle el correo puede restablecer la contraseña.
 
 ### Crear el token
 

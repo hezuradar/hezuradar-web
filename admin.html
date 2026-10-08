@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20261004a">
+<link rel="stylesheet" href="assets/css/style.css?v=20261008a">
 <script src="assets/js/device.js?v=20260915l"></script>
 </head>
 <body class="admin-body">
@@ -31,16 +31,23 @@
 
 <div id="lock-screen" class="admin-lock">
   <h2 id="lock-title">Panel privado</h2>
-  <p id="lock-help" style="color:var(--color-muted);font-size:.88rem">Introduce tu PIN de acceso.</p>
-  <input type="password" id="pin-input" placeholder="PIN" maxlength="64" autocomplete="current-password" aria-label="PIN" autofocus>
-  <input type="password" id="pin-confirm" placeholder="Repite el PIN" maxlength="64" autocomplete="new-password" aria-label="Repite el PIN" style="display:none;margin-top:0">
-  <button class="btn btn-primary" id="pin-submit" style="width:100%">Entrar</button>
-  <div id="lock-msg"></div>
+  <p id="lock-help" style="color:var(--color-muted);font-size:.88rem">Entra con tu cuenta de administrador.</p>
+  <form id="login-form" novalidate>
+    <input type="email" id="login-email" placeholder="Email" maxlength="200" autocomplete="username" inputmode="email" aria-label="Email" autofocus>
+    <input type="password" id="login-password" placeholder="Contraseña" maxlength="200" autocomplete="current-password" aria-label="Contraseña">
+    <button class="btn btn-primary" id="login-submit" type="submit" style="width:100%">Entrar</button>
+  </form>
+  <form id="import-form" style="display:none" novalidate>
+    <input type="password" id="import-pin" placeholder="PIN anterior" maxlength="64" autocomplete="off" aria-label="PIN anterior">
+    <button class="btn btn-primary" id="import-submit" type="submit" style="width:100%">Importar token</button>
+    <button type="button" class="link-btn" id="import-skip">Omitir: pegaré el token de nuevo</button>
+  </form>
+  <div id="lock-msg" role="status" aria-live="polite"></div>
+  <button type="button" class="link-btn" id="forgot-password">He olvidado la contraseña</button>
   <p style="margin-top:18px;font-size:.75rem;color:var(--color-muted)">
-    El PIN cifra tu token de GitHub en este navegador (AES-256) y no se guarda en ningún sitio.
-    El panel se bloquea solo tras 15 minutos sin uso. Los pedidos piden además tu cuenta de Firebase.
+    Te enviaremos un enlace al correo para crear una contraseña nueva.
+    El panel se bloquea solo tras 15 minutos sin uso y la sesión caduca a las 12 horas.
   </p>
-  <button type="button" class="pill-btn" id="pin-reset" style="margin-top:6px;font-size:.75rem">He olvidado el PIN</button>
 </div>
 
 <div id="admin-shell" class="admin-shell" style="display:none">
@@ -60,7 +67,8 @@
       Para publicar cambios en la web necesitas un <b>Personal Access Token</b> de GitHub con permiso
       <code>repo</code> (o <code>Contents: Read and write</code> si es un token fine-grained) sobre este repositorio.
       Se genera en GitHub → Settings → Developer settings → Personal access tokens.
-      El token se guarda cifrado con tu PIN en este navegador y solo se envía a la API de GitHub.
+      El token se guarda en tu cuenta de administrador (solo lo pueden leer tus emails de admin) y solo se envía a la API de GitHub:
+      lo pegas una vez y vale para todos tus dispositivos.
     </p>
     <p class="help-text">
       Estos tres primeros datos son siempre los mismos para esta web (ya vienen rellenos) — el
@@ -172,27 +180,7 @@
 
   <div id="tab-orders" class="admin-tab-panel" style="display:none">
 
-    <div id="orders-login" class="card-panel">
-      <h3>Acceso a pedidos</h3>
-      <p class="help-text">
-        Los pedidos se guardan en una base de datos (Firebase) separada del PIN de este panel:
-        solo se pueden leer iniciando sesión con la cuenta de administrador que creaste en Firebase.
-        Así, aunque alguien adivine el PIN, no puede ver los pedidos ni los datos de tus clientes.
-      </p>
-      <div class="field-row">
-        <div class="field">
-          <label>Email de administrador</label>
-          <input id="orders-email" type="email" placeholder="tucorreo@ejemplo.com">
-        </div>
-        <div class="field">
-          <label>Contraseña</label>
-          <input id="orders-password" type="password" placeholder="••••••••">
-        </div>
-      </div>
-      <button class="btn btn-primary" id="orders-login-btn">Entrar</button>
-      <button class="pill-btn-dark" id="orders-logout-btn" style="display:none">Cerrar sesión de pedidos</button>
-      <div id="orders-auth-status"></div>
-    </div>
+    <div id="orders-auth-status"></div>
 
     <div id="orders-panel" style="display:none">
 
@@ -351,7 +339,7 @@
 
   <div id="tab-customers" class="admin-tab-panel" style="display:none">
     <div id="customers-login-notice" class="card-panel">
-      <p class="help-text">Inicia sesión en la pestaña "Pedidos" para ver los clientes: los datos se obtienen de tus pedidos guardados.</p>
+      <p class="help-text">Cargando clientes: los datos se obtienen de tus pedidos guardados.</p>
     </div>
     <div id="customers-panel" style="display:none">
       <div class="card-panel">
@@ -382,7 +370,7 @@
 
   <div id="tab-stats" class="admin-tab-panel" style="display:none">
     <div id="stats-login-notice" class="card-panel">
-      <p class="help-text">Inicia sesión en la pestaña "Pedidos" para ver las estadísticas.</p>
+      <p class="help-text">Cargando estadísticas...</p>
     </div>
     <div id="stats-panel" style="display:none">
       <div class="stats-toolbar">
@@ -509,10 +497,10 @@
 <script src="assets/js/emailjs-notify.js?v=20261002e"></script>
 <script src="assets/js/product-page-template.js?v=20261004c"></script>
 <script src="assets/js/catalog-template.js?v=20261002d"></script>
-<script src="assets/js/admin.js?v=20261006b"></script>
+<script src="assets/js/admin.js?v=20261008a"></script>
 <script src="assets/js/drive-export.js?v=20261006a"></script>
-<script src="assets/js/admin-orders.js?v=20261006b"></script>
+<script src="assets/js/admin-orders.js?v=20261008d"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
-<script src="assets/js/admin-stats.js?v=20261006b"></script>
+<script src="assets/js/admin-stats.js?v=20261008a"></script>
 </body>
 </html>
