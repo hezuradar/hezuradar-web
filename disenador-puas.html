@@ -4,18 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://firestore.googleapis.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
-<title>Personaliza tus púas — HezurAdar</title>
+<title>Púas personalizadas con tu logo en hueso o cuerno — HezurAdar</title>
 <meta name="description" content="Sube tu logo (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso o cuerno natural. Púas personalizadas en Legazpi, con presupuesto sin compromiso.">
 <link rel="canonical" href="https://hezuradar.com/disenador-puas.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="HezurAdar">
-<meta property="og:title" content="Personaliza tus púas — HezurAdar">
+<meta property="og:title" content="Púas personalizadas con tu logo en hueso o cuerno — HezurAdar">
 <meta property="og:description" content="Sube tu logo (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso o cuerno natural. Púas personalizadas en Legazpi, con presupuesto sin compromiso. Pedido mínimo: 20 unidades.">
 <meta property="og:url" content="https://hezuradar.com/disenador-puas.html">
 <meta property="og:image" content="https://hezuradar.com/images/site/hero/photo-2.jpg">
 <meta property="og:locale" content="es_ES">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Personaliza tus púas — HezurAdar">
+<meta name="twitter:title" content="Púas personalizadas con tu logo en hueso o cuerno — HezurAdar">
 <meta name="twitter:description" content="Sube tu logo (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso o cuerno natural. Púas personalizadas en Legazpi, con presupuesto sin compromiso.">
 <meta name="twitter:image" content="https://hezuradar.com/images/site/hero/photo-2.jpg">
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -25,10 +25,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20261008a">
+<link rel="stylesheet" href="assets/css/style.css?v=20261009e">
 <script src="assets/js/device.js?v=20260915q"></script>
 </head>
 <body>
+<a class="skip-link" href="#main">Saltar al contenido</a>
 
 <header class="site-header">
   <div class="container">
@@ -36,7 +37,7 @@
       <img src="images/site/logo.jpg" alt="Logo HezurAdar">
       HezurAdar
     </a>
-    <nav class="header-nav">
+    <nav class="header-nav" aria-label="Principal">
       <a class="pill-btn" href="disenador.html">Personaliza tu placa</a>
       <a class="pill-btn" href="/guias.html">Guías</a>
       <a class="pill-btn" href="/">← Volver a la tienda</a>
@@ -44,7 +45,7 @@
   </div>
 </header>
 
-<main class="container designer-page">
+<main id="main" class="container designer-page">
   <div class="designer-intro">
     <h1>Personaliza tus púas</h1>
     <p>Sube el logo de tu diseño en PDF o DXF y ajústalo sobre la púa de 27&nbsp;×&nbsp;32&nbsp;mm.
@@ -57,16 +58,20 @@
 
       <div class="card-panel">
         <h2>1. Elige el material</h2>
-        <div class="material-swatches" id="material-swatches"></div>
+        <div class="material-swatches" id="material-swatches" role="group" aria-label="Material"></div>
       </div>
 
       <div class="card-panel">
         <h2>2. Sube tu diseño</h2>
         <p class="help-text">Formatos admitidos: <b>PDF</b> y <b>DXF</b> (el formato abierto de CAD). Si solo tienes un
         archivo <b>DWG</b>, expórtalo a DXF desde tu programa de diseño — es gratis y tarda segundos.</p>
-        <input type="file" id="design-file-input" accept="*/*" aria-label="Archivo de tu diseño (PDF o DXF)">
-        <div id="design-file-status"></div>
-        <button class="btn btn-outline" id="remove-design-btn" type="button" style="display:none;margin-top:10px">✕ Quitar diseño</button>
+        <div class="file-picker">
+          <input type="file" id="design-file-input" class="file-picker-input" accept="*/*" aria-describedby="design-file-name">
+          <label for="design-file-input" class="btn btn-outline file-picker-btn">Elegir archivo (PDF o DXF)</label>
+          <p class="help-text file-picker-name" id="design-file-name">Ningún archivo seleccionado</p>
+        </div>
+        <div id="design-file-status" aria-live="polite"></div>
+        <button class="btn btn-outline" id="remove-design-btn" type="button" style="display:none;margin-top:10px"><span aria-hidden="true">✕</span> Quitar diseño</button>
       </div>
 
       <div class="card-panel">
@@ -77,7 +82,7 @@
 
         <div class="plate-stage">
           <div class="plate-canvas-wrap shape-pick">
-            <canvas id="plate-canvas" width="405" height="480"></canvas>
+            <canvas id="plate-canvas" width="405" height="480" role="img" tabindex="0" aria-label="Vista previa de la púa"></canvas>
             <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la púa</div>
             <div class="plate-ruler plate-ruler-bottom" id="ruler-bottom"></div>
             <div class="plate-ruler plate-ruler-side" id="ruler-side"></div>
@@ -88,15 +93,22 @@
         <div class="plate-controls" id="plate-controls" style="display:none">
           <div class="plate-control-row">
             <label for="scale-range">Tamaño (mm)</label>
-            <button type="button" class="small-btn" data-scale="-1">−</button>
+            <button type="button" class="small-btn" data-scale="-1" aria-label="Reducir el tamaño 2 mm"><span aria-hidden="true">−</span></button>
             <input type="range" id="scale-range" min="5" max="80" step="0.5" value="26.2">
-            <button type="button" class="small-btn" data-scale="1">+</button>
+            <button type="button" class="small-btn" data-scale="1" aria-label="Aumentar el tamaño 2 mm"><span aria-hidden="true">+</span></button>
           </div>
           <div class="plate-control-row">
             <label for="rotate-range">Girar</label>
-            <button type="button" class="small-btn" data-rotate="-1">↶ 15°</button>
+            <button type="button" class="small-btn" data-rotate="-1" aria-label="Girar 15 grados a la izquierda"><span aria-hidden="true">↶ 15°</span></button>
             <input type="range" id="rotate-range" min="0" max="359" step="1" value="0">
-            <button type="button" class="small-btn" data-rotate="1">15° ↷</button>
+            <button type="button" class="small-btn" data-rotate="1" aria-label="Girar 15 grados a la derecha"><span aria-hidden="true">15° ↷</span></button>
+          </div>
+          <div class="plate-control-row" role="group" aria-labelledby="move-label">
+            <span class="plate-control-label" id="move-label">Mover</span>
+            <button type="button" class="small-btn" data-move="-1,0" aria-label="Mover a la izquierda"><span aria-hidden="true">←</span></button>
+            <button type="button" class="small-btn" data-move="1,0" aria-label="Mover a la derecha"><span aria-hidden="true">→</span></button>
+            <button type="button" class="small-btn" data-move="0,-1" aria-label="Mover hacia arriba"><span aria-hidden="true">↑</span></button>
+            <button type="button" class="small-btn" data-move="0,1" aria-label="Mover hacia abajo"><span aria-hidden="true">↓</span></button>
           </div>
           <div class="plate-control-row">
             <button type="button" class="btn btn-outline" id="reset-fit-btn">Centrar y ajustar a la púa</button>
@@ -104,7 +116,7 @@
           </div>
           <div class="plate-control-row">
             <button type="button" class="btn btn-outline" id="duplicate-btn">Duplicar pieza</button>
-            <button type="button" class="btn btn-outline" id="remove-duplicate-btn" style="display:none">✕ Quitar copia</button>
+            <button type="button" class="btn btn-outline" id="remove-duplicate-btn" style="display:none"><span aria-hidden="true">✕</span> Quitar copia</button>
           </div>
           <p class="help-text" id="duplicate-hint" style="display:none">
             Con la pieza duplicada no se puede cambiar el tamaño (las dos usan el mismo); arrastra
@@ -118,67 +130,69 @@
         <p class="help-text"><b>Recuerda:</b> el pedido mínimo de púas personalizadas es de 20 unidades; si quieres más, indícalo abajo.</p>
         <div class="field">
           <label for="d-name">Nombre y apellidos *</label>
-          <input id="d-name" placeholder="Nombre completo">
+          <input id="d-name" autocomplete="name" maxlength="190" required aria-required="true" placeholder="Nombre completo">
         </div>
         <div class="field-row">
           <div class="field">
             <label for="d-phone">Teléfono *</label>
-            <input id="d-phone" placeholder="+34 600 000 000">
+            <input id="d-phone" type="tel" autocomplete="tel" maxlength="39" required aria-required="true" placeholder="+34 600 000 000">
           </div>
           <div class="field">
             <label for="d-email">Email</label>
-            <input id="d-email" type="email" placeholder="tucorreo@ejemplo.com">
+            <input id="d-email" type="email" autocomplete="email" maxlength="190" placeholder="tucorreo@ejemplo.com">
           </div>
         </div>
         <div class="field">
           <label for="d-qty">Cantidad de púas *</label>
-          <input id="d-qty" type="number" min="20" step="1" value="20">
+          <input id="d-qty" type="number" inputmode="numeric" min="20" max="5000" step="1" value="20" required aria-required="true">
         </div>
         <p id="d-qty-total" class="card-price" style="margin:0 0 14px"></p>
         <div class="field">
           <label for="d-address">Dirección de envío *</label>
-          <input id="d-address" placeholder="Calle, número, piso">
+          <input id="d-address" autocomplete="street-address" maxlength="290" required aria-required="true" placeholder="Calle, número, piso">
         </div>
         <div class="field-row">
           <div class="field">
             <label for="d-postal">Código postal *</label>
-            <input id="d-postal" placeholder="20230">
+            <input id="d-postal" autocomplete="postal-code" maxlength="19" required aria-required="true" placeholder="20230">
           </div>
           <div class="field">
             <label for="d-city">Ciudad *</label>
-            <input id="d-city" placeholder="Legazpi">
+            <input id="d-city" autocomplete="address-level2" maxlength="119" required aria-required="true" placeholder="Legazpi">
           </div>
         </div>
         <div class="field">
           <label for="d-province">Provincia</label>
-          <input id="d-province" placeholder="Gipuzkoa">
+          <input id="d-province" autocomplete="address-level1" maxlength="119" placeholder="Gipuzkoa">
         </div>
         <div class="field">
           <label for="d-notes">Notas del pedido (opcional)</label>
-          <textarea id="d-notes" placeholder="Plazo, acabado que buscas..."></textarea>
+          <textarea id="d-notes" maxlength="990" placeholder="Plazo, acabado que buscas..."></textarea>
         </div>
 
-        <h3 class="checkout-section-title">Forma de pago *</h3>
+        <fieldset class="payment-fieldset" style="border:0;padding:0;margin:0;min-width:0">
+        <legend class="checkout-section-title" style="padding:0">Forma de pago *</legend>
         <div class="payment-methods">
           <label class="payment-method-btn">
-            <input type="radio" name="d-payment" value="paypal">
+            <input type="radio" name="d-payment" required value="paypal">
             <img src="images/site/payment/paypal.png" alt="PayPal">
           </label>
           <label class="payment-method-btn">
-            <input type="radio" name="d-payment" value="bizum">
+            <input type="radio" name="d-payment" required value="bizum">
             <img src="images/site/payment/bizum.png" alt="Bizum">
           </label>
           <label class="payment-method-btn">
-            <input type="radio" name="d-payment" value="otros">
+            <input type="radio" name="d-payment" required value="otros">
             <img src="images/site/payment/otros.png" alt="Otros">
           </label>
         </div>
+        </fieldset>
 
         <p class="help-text checkout-legal">Es una solicitud de presupuesto, sin compromiso de compra. Tratamos tus datos
         solo para preparar y gestionar tu pedido, según la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.
         Las piezas personalizadas no admiten desistimiento (ver <a href="/condiciones.html" target="_blank" rel="noopener">condiciones</a>).</p>
         <button class="btn btn-primary" id="send-request-btn" type="button" style="width:100%">Enviar solicitud</button>
-        <div id="request-status"></div>
+        <div id="request-status" aria-live="polite"></div>
       </div>
 
     </div>
@@ -200,16 +214,13 @@
   </div>
 </footer>
 
-<script src="assets/js/year.js?v=20260915q"></script>
-<script src="/assets/js/vendor/pdf-3.11.174.min.js"></script>
-<script src="assets/js/dxf-mini.js?v=20260915q"></script>
-<script src="/assets/js/vendor/firebase-app-compat-10.12.2.js"></script>
-<script src="/assets/js/vendor/firebase-firestore-compat-10.12.2.js"></script>
-<script src="assets/js/firebase-config.js?v=20260915q"></script>
-<script src="assets/js/firebase-orders.js?v=20260924a"></script>
-<script src="assets/js/drive-export.js?v=20261006a"></script>
-<script src="assets/js/analytics.js?v=20261002d"></script>
-<script src="assets/js/disenador-puas-config.js?v=20260918b"></script>
-<script src="assets/js/disenador.js?v=20261002f"></script>
+<script src="assets/js/year.js?v=20260915q" defer></script>
+<script src="assets/js/dxf-mini.js?v=20261009c" defer></script>
+<script src="assets/js/firebase-config.js?v=20260915q" defer></script>
+<script src="assets/js/firebase-orders.js?v=20261009a" defer></script>
+<script src="assets/js/drive-export.js?v=20261009b" defer></script>
+<script src="assets/js/analytics.js?v=20261009a" defer></script>
+<script src="assets/js/disenador-puas-config.js?v=20261009a" defer></script>
+<script src="assets/js/disenador.js?v=20261009s" defer></script>
 </body>
 </html>

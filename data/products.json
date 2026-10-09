@@ -234,8 +234,8 @@
   },
   {
     "id": "e75142ac-5bf2-4f4b-adc8-9a8010c4eb41",
-    "title": "Cejuela de hueso vacuno blanco veta",
-    "description": "Cejuela de hueso vacuno blanco veta para Les Paul, SG y guitarras acústicas, tallada a mano, en cuatro largos: 42, 43, 44 o 45 mm, siempre con 9 mm de alto y 6 mm de grosor. Es un blanco limpio, con una veta fina y sutil que prueba que es hueso natural.\n\nEs la que más variedad de largos cubre de todas nuestras cejuelas con esta sección; indica el largo que necesitas al pedirla. Respuesta clara, definida y equilibrada, como es habitual en el hueso. Hay una versión sin blanquear con las mismas medidas.\n\nMedidas: 42, 43, 44 o 45 × 9 × 6 mm.",
+    "title": "Cejuela de hueso vacuno blanco con veta",
+    "description": "Cejuela de hueso vacuno blanco con veta para Les Paul, SG y guitarras acústicas, tallada a mano, en cuatro largos: 42, 43, 44 o 45 mm, siempre con 9 mm de alto y 6 mm de grosor. Es un blanco limpio, con una veta fina y sutil que prueba que es hueso natural.\n\nEs la que más variedad de largos cubre de todas nuestras cejuelas con esta sección; indica el largo que necesitas al pedirla. Respuesta clara, definida y equilibrada, como es habitual en el hueso. Hay una versión sin blanquear con las mismas medidas.\n\nMedidas: 42, 43, 44 o 45 × 9 × 6 mm.",
     "price": 10,
     "sku": "RR0063",
     "category": "Accesorios",
@@ -249,7 +249,7 @@
     "slug": "cejuela-de-hueso-vacuno-blanco-veta-e75142ac",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-08"
+    "updatedAt": "2026-10-09"
   },
   {
     "id": "f51a4829-3417-411c-b63a-7d1815ceb8df",
@@ -1320,8 +1320,8 @@
       "images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948739180_2.jpeg"
     ],
     "slug": "marco-de-madre-perla-5488f43b",
-    "imageWidth": 1600,
-    "imageHeight": 1200,
+    "imageWidth": 1100,
+    "imageHeight": 825,
     "updatedAt": "2026-10-04"
   },
   {
@@ -1340,8 +1340,8 @@
       "images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948932815_2.jpeg"
     ],
     "slug": "bloque-hueso-tenido-negro-90x7x10-4ecabbdf",
-    "imageWidth": 1600,
-    "imageHeight": 1200,
+    "imageWidth": 1100,
+    "imageHeight": 825,
     "updatedAt": "2026-10-08"
   },
   {
@@ -1361,8 +1361,8 @@
       "images/products/cb3eff93-fccb-4fab-b8b0-749fd04ce83a_1791404944536_3.jpg"
     ],
     "slug": "marco-de-madreperla-fino-cb3eff93",
-    "imageWidth": 1600,
-    "imageHeight": 1200,
+    "imageWidth": 1100,
+    "imageHeight": 825,
     "updatedAt": "2026-10-08"
   }
 ]

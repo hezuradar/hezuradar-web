@@ -5,7 +5,12 @@
   "use strict";
 
   var SITE_URL = "https://hezuradar.com";
-  var STANDARD_SHIPPING_EUR = "5.50"; // Coincide con SHIPPING_COST en assets/js/cart.js
+  // Coincide con SHIPPING_COST en assets/js/cart.js. Regla real de la cesta: con
+  // 1 unidad el envío queda "a confirmar" (no se cobra en la web) y con 2 o más se
+  // cobran 5,50 €. En los datos estructurados se declara 5,50 € para cualquier
+  // pedido: es lo que paga como mínimo un pedido con importe de envío cerrado, y
+  // Google pide no declarar envío gratis (0) cuando no lo es.
+  var STANDARD_SHIPPING_EUR = "5.50";
   // Mínimo legal para ventas a distancia a consumidores en España (art. 102 TRLGDCU).
   var RETURN_WINDOW_DAYS = 14;
   // Política real de devoluciones y envío (confirmada por el propietario, no
@@ -133,9 +138,106 @@
       }
     }
     if (plain.length <= 160) return plain;
-    var cut = plain.slice(0, 158);
-    cut = cut.slice(0, cut.lastIndexOf(" ")).replace(/[\s,;:.\-—]+$/, "");
-    return cut + "…";
+    return trimToSentence(plain);
+  }
+
+  // Palabras con las que no debe acabar una descripción recortada ("...con una base de.").
+  var DANGLING_WORDS = /\s+(?:a|al|con|de|del|e|el|en|la|las|lo|los|o|para|por|que|sin|su|sus|u|un|una|y|×)$/i;
+
+  function stripDangling(str) {
+    var prev;
+    do {
+      prev = str;
+      str = str.replace(/[\s,;:.\-—(]+$/, "").replace(DANGLING_WORDS, "");
+    } while (str !== prev);
+    return str;
+  }
+
+  // Recorta un texto largo para la meta description sin dejar frases a medias
+  // ni "…" (Google muestra unos 155-160 caracteres). Por orden de preferencia:
+  // hasta el último final de frase que quepa en 158 caracteres; si así queda
+  // demasiado corto, hasta el último corte de oración (", ", ": ", "; ", " — ")
+  // fuera de paréntesis, cerrado con punto; y si no hay ninguno, hasta la última
+  // palabra completa antes de 155, también con punto.
+  function trimToSentence(text) {
+    var head = text.slice(0, 159);
+    var sentence = "";
+    var clause = "";
+    var m;
+    var re = /[.!?](?=\s)/g;
+    while ((m = re.exec(head))) sentence = head.slice(0, m.index + 1);
+    var reClause = /(?:,|;|:|\s—)\s/g;
+    while ((m = reClause.exec(head))) {
+      var before = head.slice(0, m.index);
+      var open = (before.match(/[(«]/g) || []).length;
+      var close = (before.match(/[)»]/g) || []).length;
+      if (open === close && m.index + 1 <= 158) clause = stripDangling(before) + ".";
+    }
+    if (sentence && (sentence.length >= 110 || sentence.length >= clause.length - 25)) return sentence;
+    if (clause.length >= 90) return clause;
+    if (sentence.length >= 70) return sentence;
+    var cut = text.slice(0, 155);
+    return stripDangling(cut.slice(0, cut.lastIndexOf(" "))) + ".";
+  }
+
+  // <title> de la ficha: con la marca detrás si cabe en ~60 caracteres (lo que
+  // Google suele mostrar); si no, solo el título, para que no se corte a medias.
+  var TITLE_SUFFIX = " — HezurAdar";
+  function pageTitle(product) {
+    var title = String(product.title || "").trim();
+    return (title + TITLE_SUFFIX).length <= 60 ? title + TITLE_SUFFIX : title;
+  }
+
+  // Texto oculto que avisa a los lectores de pantalla de que el enlace abre otra
+  // pestaña (.visually-hidden está en style.css).
+  var NEW_TAB_HTML = '<span class="visually-hidden"> (se abre en una pestaña nueva)</span>';
+  var NEW_TAB_LABEL = " (se abre en una pestaña nueva)";
+
+  // Enlace para saltar la cabecera con el teclado (primer elemento del <body>).
+  var SKIP_LINK_HTML = '<a class="skip-link" href="#main">Saltar al contenido</a>';
+
+  // Logo de la cabecera: alt="" porque el nombre de la marca ya va escrito al lado.
+  var BRAND_HTML =
+    '    <a class="brand" href="/">\n' +
+    '      <img src="/images/site/logo.jpg" alt="">\n' +
+    "      HezurAdar\n" +
+    "    </a>\n";
+
+  function catalogVersionMeta(allProducts) {
+    var api = catalogApi();
+    return Array.isArray(allProducts) && api && api.catalogVersionMetaHtml ? api.catalogVersionMetaHtml(allProducts) : "";
+  }
+
+  // Guías que tienen que ver con cada tipo de pieza, para enlazarlas desde su ficha.
+  var GUIDE_LINKS = {
+    medidas: { file: "guia-medidas-cejuela-selleta.html", text: "guía de medidas de cejuelas y selletas" },
+    plastico: { file: "guia-cejuela-hueso-vs-plastico.html", text: "por qué cambiar la cejuela de plástico por una de hueso" },
+    tallarCejuela: { file: "guia-tallar-cejuela.html", text: "cómo tallar una cejuela paso a paso" },
+    tallarSelleta: { file: "guia-tallar-selleta.html", text: "cómo tallar una selleta paso a paso" },
+    pines: { file: "guia-cambiar-pines-guitarra.html", text: "guía para elegir y cambiar los pines" },
+    materiales: { file: "guia-hueso-vs-cuerno.html", text: "guía de hueso, cuerno y madre perla" },
+  };
+
+  function productGuides(product) {
+    switch (product.subcategory) {
+      case "Cejuelas talladas":
+        return [GUIDE_LINKS.medidas, GUIDE_LINKS.plastico];
+      case "Cejuela":
+        return [GUIDE_LINKS.medidas, GUIDE_LINKS.tallarCejuela];
+      case "Selleta":
+        return [GUIDE_LINKS.medidas, GUIDE_LINKS.tallarSelleta];
+      case "Pines":
+        return [GUIDE_LINKS.pines];
+      default:
+        return [GUIDE_LINKS.materiales];
+    }
+  }
+
+  function productGuidesHtml(product) {
+    var links = productGuides(product).map(function (g) {
+      return '<a href="/' + g.file + '">' + escapeHtml(g.text) + "</a>";
+    });
+    return '<p class="product-guides">Antes de elegir, consulta: ' + links.join(" y ") + ".</p>";
   }
 
   function waLink(phone, text) {
@@ -184,6 +286,8 @@
       image: images,
       description: fullDescription(product),
       sku: product.sku || undefined,
+      // No hay GTIN (son piezas artesanales): la referencia propia hace de código del fabricante.
+      mpn: product.sku || undefined,
       category: product.subcategory ? product.category + " / " + product.subcategory : product.category,
       brand: { "@type": "Brand", name: "HezurAdar" },
       offers: {
@@ -191,6 +295,10 @@
         url: canonicalUrl,
         priceCurrency: "EUR",
         price: effectivePrice(product).toFixed(2),
+        // Los precios no caducan: se declara hasta el 31 de diciembre del año
+        // siguiente y se renueva solo cada vez que se regeneran las fichas.
+        priceValidUntil: new Date().getFullYear() + 1 + "-12-31",
+        seller: { "@type": "Organization", name: "HezurAdar", url: SITE_URL + "/" },
         availability: isOutOfStock(product) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
         itemCondition: "https://schema.org/NewCondition",
         shippingDetails: {
@@ -275,7 +383,7 @@
     return (
       '<a class="card' + (isOutOfStock(p) ? " out-of-stock" : "") + '" href="' + href + '">' +
       '<div class="card-img"><span class="card-cat">' + escapeHtml(p.subcategory || p.category) + "</span>" +
-      '<img src="/' + escapeAttr(thumbPath(img)) + '" alt="' + escapeAttr(p.title) + '" loading="lazy"></div>' +
+      '<img src="/' + escapeAttr(thumbPath(img)) + '" alt="' + escapeAttr(p.title) + '" width="500" height="375" loading="lazy" decoding="async"></div>' +
       '<div class="card-body"><h3 class="card-title">' + escapeHtml(p.title) + "</h3>" +
       '<div class="card-price">' + formatPrice(effectivePrice(p)) + (isOutOfStock(p) ? " · Sin stock" : "") + "</div></div>" +
       "</a>"
@@ -313,20 +421,28 @@
     var instagram = (store && store.instagram) || "https://www.instagram.com/hezuradar/";
     var waFloatHref = whatsapp ? waLink(whatsapp, "Hola, tengo una consulta sobre vuestros productos.") : "#";
 
+    // Miniaturas como botones (se manejan con teclado y anuncian cuál está
+    // seleccionada con aria-pressed); la imagen va con alt="" porque el nombre
+    // lo da el aria-label del botón. La clase "active" se mantiene también en la
+    // imagen para el estilo del borde.
     var thumbsHtml =
       images.length > 1
         ? '<div class="product-gallery-thumbs" id="product-thumbs">' +
           images
             .map(function (im, i) {
               return (
-                '<img src="/' + escapeAttr(thumbPath(im)) + '" data-full="/' + escapeAttr(im) + '"' +
-                ' class="' + (i === 0 ? "active" : "") + '"' +
-                ' alt="' + escapeAttr(product.title) + " - foto " + (i + 1) + '" loading="lazy">'
+                '<button type="button" class="thumb-btn' + (i === 0 ? " active" : "") + '"' +
+                ' data-full="/' + escapeAttr(im) + '"' +
+                ' aria-label="Ver foto ' + (i + 1) + " de " + images.length + '"' +
+                ' aria-pressed="' + (i === 0 ? "true" : "false") + '">' +
+                '<img src="/' + escapeAttr(thumbPath(im)) + '" alt=""' + (i === 0 ? ' class="active"' : "") + ' loading="lazy">' +
+                "</button>"
               );
             })
             .join("") +
           "</div>"
         : "";
+    var catPage = categoryPageFor(product);
 
     return (
       "<!DOCTYPE html>\n" +
@@ -335,8 +451,9 @@
       '<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
       '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://www.google.com https://www.gstatic.com; frame-src https://www.google.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://firestore.googleapis.com https://api.emailjs.com https://script.google.com https://script.googleusercontent.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
-      "<title>" + escapeHtml(product.title) + " — HezurAdar</title>\n" +
+      "<title>" + escapeHtml(pageTitle(product)) + "</title>\n" +
       '<meta name="description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
+      (catalogVersionMeta(allProducts) ? catalogVersionMeta(allProducts) + "\n" : "") +
       '<link rel="canonical" href="' + canonicalUrl + '">\n' +
       '<meta property="og:type" content="product">\n' +
       '<meta property="og:site_name" content="HezurAdar">\n' +
@@ -366,14 +483,12 @@
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
-      "<body>\n\n" +
+      "<body>\n" +
+      SKIP_LINK_HTML + "\n\n" +
       '<header class="site-header">\n' +
       '  <div class="container">\n' +
-      '    <a class="brand" href="/">\n' +
-      '      <img src="/images/site/logo.jpg" alt="Logo HezurAdar">\n' +
-      "      HezurAdar\n" +
-      "    </a>\n" +
-      '    <nav class="header-nav">\n' +
+      BRAND_HTML +
+      '    <nav class="header-nav" aria-label="Principal">\n' +
       '      <div class="header-links">\n' +
       '        <a class="pill-btn" href="/disenador.html">Personaliza tu placa</a>\n' +
       '        <a class="pill-btn" href="/disenador-puas.html">Personaliza tus púas</a>\n' +
@@ -381,22 +496,21 @@
       '        <a class="pill-btn" href="/#about">Quiénes somos</a>\n' +
       "      </div>\n" +
       '      <div class="header-icons">\n' +
-      '        <a class="icon-btn" href="' + escapeAttr(instagram) + '" target="_blank" rel="noopener" aria-label="Instagram">\n' +
+      '        <a class="icon-btn" href="' + escapeAttr(instagram) + '" target="_blank" rel="noopener" aria-label="Instagram' + NEW_TAB_LABEL + '">\n' +
       '          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>\n' +
       "        </a>\n" +
       '        <button class="icon-btn cart-icon-btn" id="cart-btn" aria-label="Cesta">\n' +
       '          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>\n' +
-      '          <span class="cart-badge" id="cart-badge">0</span>\n' +
+      '          <span class="cart-badge" id="cart-badge" aria-hidden="true">0</span>\n' +
       "        </button>\n" +
       "      </div>\n" +
       "    </nav>\n" +
       "  </div>\n" +
       "</header>\n\n" +
-      '<main class="container product-page">\n' +
-      '  <nav class="breadcrumb"><a href="/">Tienda</a> › ' +
-      (categoryPageFor(product)
-        ? '<a href="/' + categoryPageFor(product).file + '">' + escapeHtml(categoryPageFor(product).name) + "</a>"
-        : escapeHtml(catLabel)) +
+      '<main id="main" class="container product-page">\n' +
+      '  <nav class="breadcrumb" aria-label="Migas de pan"><a href="/">Tienda</a> › ' +
+      (catPage ? '<a href="/' + catPage.file + '">' + escapeHtml(catPage.name) + "</a>" : escapeHtml(catLabel)) +
+      ' › <span aria-current="page">' + escapeHtml(product.title) + "</span>" +
       "</nav>\n" +
       '  <div class="product-detail">\n' +
       '    <div class="product-gallery-page">\n' +
@@ -413,6 +527,7 @@
       (outOfStock ? '      <div class="status-msg err">Sin stock disponible.</div>\n' : "") +
       '      <p class="product-desc-page">' + escapeHtml(product.description || "") + "</p>\n" +
       '      <div class="product-sku-page">Ref. ' + escapeHtml(product.sku || "-") + "</div>\n" +
+      "      " + productGuidesHtml(product) + "\n" +
       '      <div class="qty-stepper">\n' +
       '        <button type="button" id="product-qty-dec" aria-label="Menos"' + (outOfStock ? " disabled" : "") + ">&minus;</button>\n" +
       '        <input type="number" id="product-qty" value="1" min="1" inputmode="numeric" aria-label="Cantidad"' + (outOfStock ? " disabled" : "") + ">\n" +
@@ -420,7 +535,7 @@
       "      </div>\n" +
       '      <div class="product-actions-page">\n' +
       '        <button class="btn btn-primary" id="product-add-btn"' + (outOfStock ? " disabled" : "") + ">" + (outOfStock ? "Sin stock" : "Añadir a la cesta") + "</button>\n" +
-      '        <a class="btn btn-outline" target="_blank" rel="noopener" href="' + escapeAttr(waHref) + '">Consultar por WhatsApp</a>\n' +
+      '        <a class="btn btn-outline" target="_blank" rel="noopener" href="' + escapeAttr(waHref) + '">Consultar por WhatsApp' + NEW_TAB_HTML + "</a>\n" +
       "      </div>\n" +
       '      <a class="btn btn-outline" href="/">← Volver al catálogo</a>\n' +
       "    </div>\n" +
@@ -428,23 +543,25 @@
       relatedProductsHtml(product, allProducts) +
       "</main>\n\n" +
       footerHtml(instagram) +
-      '<a class="wa-float" href="' + escapeAttr(waFloatHref) + '" target="_blank" rel="noopener" aria-label="WhatsApp">\n' +
+      '<a class="wa-float" href="' + escapeAttr(waFloatHref) + '" target="_blank" rel="noopener" aria-label="WhatsApp' + NEW_TAB_LABEL + '">\n' +
       '  <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.9 9.9 0 0 0 4.79 1.22h.01c5.46 0 9.9-4.45 9.9-9.91C21.96 6.45 17.5 2 12.04 2zm0 18.02c-1.5 0-2.96-.4-4.24-1.16l-.3-.18-3.12.82.83-3.04-.2-.31a8.06 8.06 0 0 1-1.24-4.24c0-4.46 3.63-8.09 8.1-8.09 2.16 0 4.2.85 5.73 2.38a8.05 8.05 0 0 1 2.37 5.72c0 4.46-3.63 8.1-8.1 8.1zm4.44-6.06c-.24-.12-1.44-.71-1.66-.79-.22-.08-.39-.12-.55.12-.16.24-.63.79-.78.95-.14.16-.29.18-.53.06-.24-.12-1.02-.38-1.94-1.2-.72-.64-1.2-1.43-1.34-1.67-.14-.24-.01-.37.11-.49.11-.11.24-.29.36-.43.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.55-1.33-.76-1.82-.2-.48-.4-.42-.55-.42h-.47c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.6 4.13 3.64.58.25 1.03.4 1.38.51.58.18 1.11.16 1.53.1.47-.07 1.44-.59 1.64-1.16.2-.57.2-1.06.14-1.16-.06-.1-.22-.16-.46-.28z"/></svg>\n' +
       "</a>\n\n" +
       '<div id="cart-root"></div>\n\n' +
-      '<script src="/assets/js/year.js?v=20260915l"></script>\n' +
-      '<script src="/assets/js/vendor/firebase-app-compat-10.12.2.js"></script>\n' +
-      '<script src="/assets/js/vendor/firebase-firestore-compat-10.12.2.js"></script>\n' +
-      '<script src="/assets/js/firebase-config.js?v=20260915l"></script>\n' +
-      '<script src="/assets/js/firebase-orders.js?v=20260915l"></script>\n' +
-      '<script src="/assets/js/analytics.js?v=20261002d"></script>\n' +
-      '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js"></script>\n' +
-      '<script src="/assets/js/emailjs-config.js?v=20261002e"></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20261002e"></script>\n' +
-      '<script src="/assets/js/catalog-template.js?v=20261002d"></script>\n' +
-      '<script src="/assets/js/drive-export.js?v=20261006a"></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261002f"></script>\n' +
-      '<script src="/assets/js/product-page.js?v=20261002f" data-product-id="' + escapeAttr(product.id) + '"></script>\n' +
+      // Todos con defer: se ejecutan en este mismo orden, con el HTML ya leído y
+      // antes de DOMContentLoaded. El SDK de Firebase ya no va aquí:
+      // firebase-orders.js lo carga solo al enviar un pedido. Las versiones ?v=
+      // las alinea scripts/generate-product-pages.js con las de index.html.
+      '<script src="/assets/js/year.js?v=20260915l" defer></script>\n' +
+      '<script src="/assets/js/firebase-config.js?v=20260915l" defer></script>\n' +
+      '<script src="/assets/js/firebase-orders.js?v=20261009a" defer></script>\n' +
+      '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
+      '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
+      '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
+      '<script src="/assets/js/emailjs-notify.js?v=20261002e" defer></script>\n' +
+      '<script src="/assets/js/catalog-template.js?v=20261009a" defer></script>\n' +
+      '<script src="/assets/js/drive-export.js?v=20261006a" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261009a" defer></script>\n' +
+      '<script src="/assets/js/product-page.js?v=20261009a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
     );
@@ -613,7 +730,7 @@
       '      <a href="/condiciones.html">Envíos y devoluciones</a>\n' +
       '      <a href="/privacidad.html">Privacidad</a>\n' +
       '      <a href="/aviso-legal.html">Aviso legal</a>\n' +
-      '      <a href="' + escapeAttr(instagram || "https://www.instagram.com/hezuradar/") + '" target="_blank" rel="noopener">Instagram</a>\n' +
+      '      <a href="' + escapeAttr(instagram || "https://www.instagram.com/hezuradar/") + '" target="_blank" rel="noopener">Instagram' + NEW_TAB_HTML + "</a>\n" +
       "    </div>\n" +
       "    " + footerCatsHtml() + "\n" +
       "    " + footerGuidesHtml() + "\n" +
@@ -715,6 +832,10 @@
       '<meta property="og:description" content="' + escapeAttr(cat.description) + '">\n' +
       '<meta property="og:url" content="' + url + '">\n' +
       '<meta property="og:image" content="' + escapeAttr(ogImage) + '">\n' +
+      (items.length && items[0].imageWidth && items[0].imageHeight
+        ? '<meta property="og:image:width" content="' + items[0].imageWidth + '">\n' +
+          '<meta property="og:image:height" content="' + items[0].imageHeight + '">\n'
+        : "") +
       '<meta property="og:locale" content="es_ES">\n' +
       '<meta name="twitter:card" content="summary_large_image">\n' +
       '<meta name="twitter:title" content="' + escapeAttr(fullTitle) + '">\n' +
@@ -731,14 +852,12 @@
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
-      "<body>\n\n" +
+      "<body>\n" +
+      SKIP_LINK_HTML + "\n\n" +
       '<header class="site-header">\n' +
       '  <div class="container">\n' +
-      '    <a class="brand" href="/">\n' +
-      '      <img src="/images/site/logo.jpg" alt="Logo HezurAdar">\n' +
-      "      HezurAdar\n" +
-      "    </a>\n" +
-      '    <nav class="header-nav">\n' +
+      BRAND_HTML +
+      '    <nav class="header-nav" aria-label="Principal">\n' +
       '      <div class="header-links">\n' +
       '        <a class="pill-btn" href="/disenador.html">Personaliza tu placa</a>\n' +
       '        <a class="pill-btn" href="/disenador-puas.html">Personaliza tus púas</a>\n' +
@@ -748,8 +867,8 @@
       "    </nav>\n" +
       "  </div>\n" +
       "</header>\n\n" +
-      '<main class="container product-page category-page">\n' +
-      '  <nav class="breadcrumb"><a href="/">Tienda</a> › ' + escapeHtml(cat.name) + "</nav>\n" +
+      '<main id="main" class="container product-page category-page">\n' +
+      '  <nav class="breadcrumb" aria-label="Migas de pan"><a href="/">Tienda</a> › <span aria-current="page">' + escapeHtml(cat.name) + "</span></nav>\n" +
       '  <div class="category-intro">\n' +
       "    <h1>" + escapeHtml(cat.h1) + "</h1>\n" +
       "    " + cat.intro + "\n" +
@@ -762,7 +881,7 @@
       '      <a class="btn btn-primary" href="/">Ver todo el catálogo</a>\n' +
       '      <a class="btn btn-outline" target="_blank" rel="noopener" href="' +
       escapeAttr(waLink(phone, "Hola, tengo una consulta sobre " + cat.name.toLowerCase() + ".")) +
-      '">Consultar por WhatsApp</a>\n' +
+      '">Consultar por WhatsApp' + NEW_TAB_HTML + "</a>\n" +
       "    </div>\n" +
       '    <p class="category-others">También te puede interesar: ' +
       others
@@ -774,7 +893,7 @@
       "  </section>\n" +
       "</main>\n\n" +
       footerHtml(instagram) +
-      '<script src="/assets/js/year.js?v=20260915l"></script>\n' +
+      '<script src="/assets/js/year.js?v=20260915l" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
     );

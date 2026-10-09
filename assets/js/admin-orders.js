@@ -10,8 +10,21 @@
     "pua-personalizada": "Púa personalizada",
   };
   const isDesignOrder = (o) => !!DESIGN_KINDS[o && o.kind];
+  // Regla única de facturación (resumen de ventas, clientes y Estadísticas): los pedidos
+  // normales cuentan salvo cancelados; las solicitudes de diseño solo cuando ya están
+  // confirmadas (o enviadas/entregadas) y presupuestadas, para no sumar presupuestos sin aceptar.
+  const BILLED_DESIGN_STATUSES = ["confirmado", "enviado", "entregado"];
+  function countsAsRevenue(o) {
+    if (!o || o.status === "cancelado") return false;
+    if (!isDesignOrder(o)) return true;
+    return BILLED_DESIGN_STATUSES.includes(o.status) && (Number(o.subtotal) || 0) > 0;
+  }
+  // admin-stats.js se carga después y usa la misma regla.
+  window.HA_ORDER_COUNTS_AS_REVENUE = countsAsRevenue;
+  const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
   let orders = [];
   let catalogProducts = [];
+  let catalogLoadError = false;
   let statusFilter = "";
   let unsubscribe = null;
   let editingDocId = null;
@@ -125,22 +138,43 @@
   async function loadCatalog() {
     try {
       const res = await fetch("data/products.json?v=" + Date.now(), { cache: "no-store" });
-      catalogProducts = await res.json();
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error("formato inesperado");
+      catalogProducts = data;
+      catalogLoadError = false;
     } catch (e) {
+      console.warn("No se pudo cargar data/products.json en el panel de pedidos:", e);
       catalogProducts = [];
+      catalogLoadError = true;
     }
     renderItemRows();
+    // Si los pedidos ya estaban pintados, se repintan para mostrar (o quitar) el aviso.
+    if (orders.length) renderOrders();
+  }
+
+  // Momento de creación para ordenar: la hora del servidor si existe y, si no (pedidos
+  // antiguos o escrituras aún pendientes), la que guardó el navegador en createdAt.
+  function orderTimeMs(o) {
+    const ts = o.createdAtServer;
+    if (ts && typeof ts.toMillis === "function") return ts.toMillis();
+    const t = Date.parse(o.createdAt || "");
+    return isNaN(t) ? 0 : t;
   }
 
   function subscribeOrders() {
     if (unsubscribe) unsubscribe();
     const db = firebase.firestore();
+    // Sin orderBy en la consulta: Firestore excluye de un orderBy los documentos que no
+    // tienen ese campo, y hay pedidos antiguos (o creados a mano antes de existir
+    // createdAtServer) que se quedarían fuera. Se ordenan aquí, más recientes primero.
     unsubscribe = db
       .collection("orders")
-      .orderBy("createdAt", "desc")
       .onSnapshot(
         (snap) => {
-          orders = snap.docs.map((d) => normalizeOrder({ docId: d.id, ...d.data() }));
+          orders = snap.docs
+            .map((d) => normalizeOrder({ docId: d.id, ...d.data({ serverTimestamps: "estimate" }) }))
+            .sort((a, b) => orderTimeMs(b) - orderTimeMs(a));
           renderOrders();
           renderRevenue();
           renderCustomers();
@@ -181,12 +215,19 @@
       });
     }
     if (o.createdAt != null && typeof o.createdAt !== "string") o.createdAt = str(o.createdAt);
+    // Los escribe el Apps Script del email al cliente (fecha ISO / texto del error).
+    ["customerEmailSentAt", "customerEmailError", "notifyError", "notifiedAt"].forEach((k) => {
+      if (o[k] != null && typeof o[k] !== "string") o[k] = str(o[k]);
+    });
     return o;
   }
 
   // Precio unitario que debería tener una línea según el catálogo publicado (con
   // descuentos por cantidad y porcentaje), para detectar pedidos con precios alterados.
+  // Solo en pedidos pendientes: se compara con el catálogo actual, así que un pedido ya
+  // confirmado saldría marcado en cuanto cambiase un precio después de hacerlo.
   function catalogPriceMismatches(o) {
+    if (o.status !== "pendiente") return [];
     if (!catalogProducts.length || !window.HA_CATALOG_TEMPLATE) return [];
     return (o.items || []).filter((it) => {
       const p = catalogProducts.find((x) => x.id === it.id);
@@ -216,12 +257,16 @@
       if (el) el.textContent = orders.filter((o) => o.status === s2).length;
     });
 
+    const catalogNotice = catalogLoadError
+      ? '<div class="status-msg err">No se pudo cargar el catálogo (data/products.json): la detección de precios alterados en los pedidos está desactivada. Recarga la página para reintentarlo.</div>'
+      : "";
+
     if (!list.length) {
-      $("orders-list").innerHTML = '<div class="empty-state">No hay pedidos que mostrar.</div>';
+      $("orders-list").innerHTML = catalogNotice + '<div class="empty-state">No hay pedidos que mostrar.</div>';
       return;
     }
 
-    $("orders-list").innerHTML = list.map(orderCard).join("");
+    $("orders-list").innerHTML = catalogNotice + list.map(orderCard).join("");
 
     list.forEach((o) => {
       const sel = document.getElementById(`status-${o.docId}`);
@@ -335,8 +380,7 @@
     const from = $("revenue-from").value ? new Date($("revenue-from").value + "T00:00:00") : null;
     const to = $("revenue-to").value ? new Date($("revenue-to").value + "T23:59:59") : null;
     const included = orders.filter((o) => {
-      if (isDesignOrder(o)) return false;
-      if (o.status === "cancelado") return false;
+      if (!countsAsRevenue(o)) return false;
       const created = o.createdAt ? new Date(o.createdAt) : null;
       if (!created) return false;
       if (from && created < from) return false;
@@ -383,7 +427,7 @@
         city: s.city || prev.city || "",
         province: s.province || prev.province || "",
         orderCount: prev.orderCount + 1,
-        totalSpent: prev.totalSpent + (o.status === "cancelado" ? 0 : orderTotal(o)),
+        totalSpent: prev.totalSpent + (countsAsRevenue(o) ? orderTotal(o) : 0),
         firstOrderAt: prev.firstOrderAt || o.createdAt,
         lastOrderAt: o.createdAt,
       });
@@ -483,17 +527,17 @@
         <tr>
           <td colspan="7">
             <div class="field-row">
-              <div class="field"><label>Nombre *</label><input id="cedit-name-${key}" value="${escapeAttr(c.name)}"></div>
-              <div class="field"><label>Teléfono *</label><input id="cedit-phone-${key}" value="${escapeAttr(c.phone)}"></div>
+              <div class="field"><label for="cedit-name-${key}">Nombre *</label><input id="cedit-name-${key}" value="${escapeAttr(c.name)}"></div>
+              <div class="field"><label for="cedit-phone-${key}">Teléfono *</label><input id="cedit-phone-${key}" value="${escapeAttr(c.phone)}"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Email</label><input id="cedit-email-${key}" type="email" value="${escapeAttr(c.email)}"></div>
-              <div class="field"><label>Dirección</label><input id="cedit-address-${key}" value="${escapeAttr(c.address)}"></div>
+              <div class="field"><label for="cedit-email-${key}">Email</label><input id="cedit-email-${key}" type="email" value="${escapeAttr(c.email)}"></div>
+              <div class="field"><label for="cedit-address-${key}">Dirección</label><input id="cedit-address-${key}" value="${escapeAttr(c.address)}"></div>
             </div>
             <div class="field-row">
-              <div class="field"><label>Código postal</label><input id="cedit-postal-${key}" value="${escapeAttr(c.postalCode)}"></div>
-              <div class="field"><label>Ciudad</label><input id="cedit-city-${key}" value="${escapeAttr(c.city)}"></div>
-              <div class="field"><label>Provincia</label><input id="cedit-province-${key}" value="${escapeAttr(c.province)}"></div>
+              <div class="field"><label for="cedit-postal-${key}">Código postal</label><input id="cedit-postal-${key}" value="${escapeAttr(c.postalCode)}"></div>
+              <div class="field"><label for="cedit-city-${key}">Ciudad</label><input id="cedit-city-${key}" value="${escapeAttr(c.city)}"></div>
+              <div class="field"><label for="cedit-province-${key}">Provincia</label><input id="cedit-province-${key}" value="${escapeAttr(c.province)}"></div>
             </div>
             <p class="help-text">Se actualizará en ${c.orderCount} pedido(s) de este cliente.</p>
             <div style="display:flex;gap:10px;margin-top:6px">
@@ -643,7 +687,7 @@
         )
       )
     );
-    const subtotal = items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
+    const subtotal = round2(items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0));
     const shippingCost = Math.max(...group.map((o) => Number(o.shippingCost) || 0));
     const notes = [...new Set(group.map((o) => ((o.shipping && o.shipping.notes) || "").trim()).filter(Boolean))].join("\n");
     const codes = group.map((o) => o.orderCode || o.docId);
@@ -655,7 +699,7 @@
       items,
       subtotal,
       shippingCost,
-      total: subtotal + shippingCost,
+      total: round2(subtotal + shippingCost),
       paymentMethod: target.paymentMethod || (group.find((o) => o.paymentMethod) || {}).paymentMethod || "",
       customer: { ...(target.customer || {}), ...(newest.customer || {}) },
       shipping: { ...(target.shipping || {}), ...(newest.shipping || {}), notes },
@@ -726,7 +770,7 @@
       const db = firebase.firestore();
       const batch = db.batch();
       custOrders.forEach((o) => {
-        batch.update(db.collection("orders").doc(o.docId), {
+        const changes = {
           "customer.name": name,
           "customer.phone": phone,
           "customer.email": email,
@@ -734,7 +778,13 @@
           "shipping.postalCode": postalCode,
           "shipping.city": city,
           "shipping.province": province,
-        });
+        };
+        // Igual que al editar un pedido: con otro email, el envío registrado ya no vale.
+        if (((o.customer && o.customer.email) || "") !== email) {
+          changes.customerEmailSentAt = firebase.firestore.FieldValue.delete();
+          changes.customerEmailError = firebase.firestore.FieldValue.delete();
+        }
+        batch.update(db.collection("orders").doc(o.docId), changes);
       });
       await batch.commit();
       editingCustomerKey = null;
@@ -877,8 +927,9 @@
           </div>
           <div class="order-customer">
             <div class="order-customer-name">${escapeHtml(c.name || "-")}</div>
-            <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${waHref}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
+            <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${escapeAttr(waHref)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
             ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
+            ${customerEmailStatusHtml(o)}
             ${s.address ? `<div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>` : ""}
             ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
             ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
@@ -887,6 +938,28 @@
         </div>
       </article>
     `;
+  }
+
+  // Resultado del email de confirmación al cliente, según lo que deja el Apps Script en el
+  // pedido. Sin email del cliente, o sin ningún dato todavía, no se muestra nada.
+  function customerEmailStatusHtml(o) {
+    const c = o.customer || {};
+    // Pedidos de diseño: el aviso al negocio lo manda el Apps Script al exportar a Drive.
+    const notify = o.notifyError
+      ? `<div class="order-customer-line order-email-status err">⚠️ El aviso por email de este pedido falló: ${escapeHtml(o.notifyError)}</div>`
+      : "";
+    if (!c.email) return notify;
+    return notify + customerEmailLineHtml(o);
+  }
+
+  function customerEmailLineHtml(o) {
+    if (o.customerEmailSentAt) {
+      return `<div class="order-customer-line order-email-status ok">✅ Email enviado (${escapeHtml(formatDate(o.customerEmailSentAt))})</div>`;
+    }
+    if (o.customerEmailError) {
+      return `<div class="order-customer-line order-email-status err">⚠️ Email NO enviado: ${escapeHtml(o.customerEmailError)}</div>`;
+    }
+    return "";
   }
 
   async function updateStatus(docId, status) {
@@ -971,6 +1044,26 @@
     </section>`;
   }
 
+  // La ventana nueva (about:blank) hereda la CSP de la página (script-src 'self'), que
+  // bloquea un <script> en línea: la impresión se lanza desde aquí cuando ha cargado.
+  function printWhenReady(win) {
+    let done = false;
+    const go = () => {
+      if (done || win.closed) return;
+      done = true;
+      try {
+        win.focus();
+        win.print();
+      } catch (e) {
+        console.warn("No se pudo abrir el diálogo de impresión:", e);
+      }
+    };
+    if (win.document.readyState === "complete") setTimeout(go, 250);
+    else win.addEventListener("load", () => setTimeout(go, 100));
+    // Por si el navegador no llega a disparar "load" en una ventana escrita con document.write.
+    setTimeout(go, 1500);
+  }
+
   function openPrintWindow(title, bodyHtml) {
     const win = window.open("", "_blank", "width=800,height=600");
     if (!win) {
@@ -983,9 +1076,9 @@
 <style>${ALBARAN_STYLE}</style>
 </head><body>
 ${bodyHtml}
-<script>window.onload = function(){ window.print(); };<\/script>
 </body></html>`);
     win.document.close();
+    printWhenReady(win);
   }
 
   function printAlbaran(docId) {
@@ -1179,9 +1272,9 @@ ${bodyHtml}
 </head><body>
   <h1>Etiquetas de envío — pedidos confirmados (${confirmed.length})</h1>
   <div class="label-sheet">${labelsHtml}</div>
-  <script>window.onload = function(){ window.print(); };<\/script>
 </body></html>`);
     win.document.close();
+    printWhenReady(win);
   }
 
   function printLabel(docId) {
@@ -1206,9 +1299,9 @@ ${bodyHtml}
 </style>
 </head><body>
   <div class="label">${labelBlockHtml(o)}</div>
-  <script>window.onload = function(){ window.print(); };<\/script>
 </body></html>`);
     win.document.close();
+    printWhenReady(win);
   }
 
   async function deleteOrder(docId) {
@@ -1263,7 +1356,7 @@ ${bodyHtml}
     $("o-shipping-cost").value = o.shippingCost || "";
     itemRows = (o.items || []).map((it) => ({
       productId: it.id || null,
-      title: it.title,
+      title: it.title == null ? "" : String(it.title),
       price: it.price,
       qty: it.qty,
       discountPercent: Number(it.discountPercent) || 0,
@@ -1273,6 +1366,14 @@ ${bodyHtml}
     renderItemRows();
     setOrderFormStatus("", "");
     document.getElementById("order-form-title").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  // Precio unitario de catálogo para `qty` unidades: tramo por cantidad (priceTiers) y,
+  // encima, el descuento en % del producto. Es el mismo cálculo que hace la cesta.
+  function catalogUnitPrice(p, qty) {
+    if (window.HA_CATALOG_TEMPLATE) return window.HA_CATALOG_TEMPLATE.unitPriceFor(p, qty);
+    const pct = Number(p.discountPercent) || 0;
+    return pct > 0 ? round2(p.price * (1 - pct / 100)) : p.price;
   }
 
   function isCustomRow(row) {
@@ -1297,25 +1398,25 @@ ${bodyHtml}
         return `
       <div class="order-item-edit-row">
         <div class="oi-main">
-          <label>Producto</label>
-          <select class="oi-product" data-i="${i}">
+          <label for="oi-product-${i}">Producto</label>
+          <select class="oi-product" id="oi-product-${i}" data-i="${i}">
             <option value="__custom__" ${custom ? "selected" : ""}>Producto personalizado…</option>
             ${productOptionsHtml(custom ? null : row.productId)}
           </select>
           ${
             custom
-              ? `<input type="text" class="oi-title-custom" data-i="${i}" placeholder="Nombre del producto" value="${escapeAttr(row.title)}">`
+              ? `<input type="text" class="oi-title-custom" data-i="${i}" placeholder="Nombre del producto" aria-label="Nombre del producto personalizado" value="${escapeAttr(row.title)}">`
               : ""
           }
         </div>
         <div class="oi-sub">
           <div class="oi-field">
-            <label>Precio (€)</label>
-            <input type="number" min="0" step="0.01" placeholder="0,00" value="${Number(row.price) || 0}" data-i="${i}" class="oi-price">
+            <label for="oi-price-${i}">Precio (€)</label>
+            <input type="number" id="oi-price-${i}" min="0" step="0.01" placeholder="0,00" value="${Number(row.price) || 0}" data-i="${i}" class="oi-price">
           </div>
           <div class="oi-field">
-            <label>Cantidad</label>
-            <input type="number" min="1" step="1" placeholder="1" value="${Number(row.qty) || 1}" data-i="${i}" class="oi-qty">
+            <label for="oi-qty-${i}">Cantidad</label>
+            <input type="number" id="oi-qty-${i}" min="1" step="1" placeholder="1" value="${Number(row.qty) || 1}" data-i="${i}" class="oi-qty">
           </div>
           <button type="button" class="small-btn danger oi-remove" data-i="${i}" title="Eliminar línea">✕ Quitar</button>
         </div>
@@ -1332,11 +1433,10 @@ ${bodyHtml}
         } else {
           const p = catalogProducts.find((x) => x.id === sel.value);
           if (p) {
-            const pct = Number(p.discountPercent) || 0;
             itemRows[i].productId = p.id;
             itemRows[i].title = p.title;
-            itemRows[i].price = pct > 0 ? Math.round(p.price * (1 - pct / 100) * 100) / 100 : p.price;
-            itemRows[i].discountPercent = pct;
+            itemRows[i].price = catalogUnitPrice(p, Number(itemRows[i].qty) || 1);
+            itemRows[i].discountPercent = Number(p.discountPercent) || 0;
           }
         }
         renderItemRows();
@@ -1352,7 +1452,17 @@ ${bodyHtml}
       inp.addEventListener("input", () => {
         const i = parseInt(inp.dataset.i, 10);
         const field = inp.classList.contains("oi-price") ? "price" : "qty";
-        itemRows[i][field] = parseFloat(inp.value) || 0;
+        const row = itemRows[i];
+        const prevQty = Number(row.qty) || 1;
+        row[field] = parseFloat(inp.value) || 0;
+        // Producto del catálogo con precios por cantidad: al cambiar la cantidad se pasa al
+        // precio del tramo que toque, salvo que el precio se haya cambiado a mano.
+        const p = field === "qty" && !isCustomRow(row) ? catalogProducts.find((x) => x.id === row.productId) : null;
+        if (p && row.qty > 0 && Math.abs((Number(row.price) || 0) - catalogUnitPrice(p, prevQty)) < 0.005) {
+          row.price = catalogUnitPrice(p, row.qty);
+          const priceInp = $("order-items-rows").querySelector(`.oi-price[data-i="${i}"]`);
+          if (priceInp) priceInp.value = row.price;
+        }
         updateOrderFormSubtotal();
       });
     });
@@ -1382,41 +1492,46 @@ ${bodyHtml}
       setOrderFormStatus("err", "El nombre y el teléfono del cliente son obligatorios.");
       return;
     }
-    const validItems = itemRows.filter((r) => r.title.trim() && r.qty > 0);
+    // Un ítem antiguo puede no tener título: se trata como vacío en vez de romper el guardado.
+    const validItems = itemRows.filter((r) => String(r.title || "").trim() && r.qty > 0);
     if (!validItems.length) {
       setOrderFormStatus("err", "Añade al menos un producto con título y cantidad.");
       return;
     }
-    const subtotal = validItems.reduce((s, r) => s + (Number(r.price) || 0) * (Number(r.qty) || 0), 0);
-    const shippingCost = Number($("o-shipping-cost").value) || 0;
+    // Importes redondeados a céntimos para no guardar 12.300000000000001.
+    const items = validItems.map((r) => {
+      const p = r.productId ? catalogProducts.find((x) => x.id === r.productId) : null;
+      return {
+        id: r.productId || null,
+        title: String(r.title).trim(),
+        price: round2(r.price),
+        originalPrice: round2(p ? p.price : r.price),
+        discountPercent: Number(r.discountPercent) || 0,
+        qty: Number(r.qty) || 1,
+        image: (p && p.images && p.images[0]) || "",
+      };
+    });
+    const subtotal = round2(items.reduce((s, it) => s + it.price * it.qty, 0));
+    const shippingCost = round2($("o-shipping-cost").value);
     const existing = editingDocId ? orders.find((x) => x.docId === editingDocId) : null;
+    const email = $("o-email").value.trim();
+    const FieldValue = firebase.firestore.FieldValue;
 
+    // Solo los campos que gestiona este formulario. Al editar se usa update(), que deja
+    // intactos los demás (createdAt/createdAtServer, kind/design/material de los diseños,
+    // designs/mergedFrom de los agrupados, datos de Drive, customerEmailSentAt...). Las
+    // listas y los mapas que se envían (items, customer, shipping) se sustituyen enteros,
+    // así que un campo vaciado en el formulario (p.ej. las notas) queda vacío.
     const order = {
       orderCode: $("o-code").value.trim() || (existing && existing.orderCode) || genOrderCode(),
       trackingNumber: $("o-tracking").value.trim(),
       paymentMethod: $("o-payment").value,
-      createdAt: (existing && existing.createdAt) || new Date().toISOString(),
       status: $("o-status").value,
-      items: validItems.map((r) => {
-        const p = r.productId ? catalogProducts.find((x) => x.id === r.productId) : null;
-        return {
-          id: r.productId || null,
-          title: r.title.trim(),
-          price: Number(r.price) || 0,
-          originalPrice: p ? Number(p.price) : Number(r.price) || 0,
-          discountPercent: Number(r.discountPercent) || 0,
-          qty: Number(r.qty) || 1,
-          image: (p && p.images && p.images[0]) || "",
-        };
-      }),
+      items,
       subtotal,
       shippingCost,
-      total: subtotal + shippingCost,
-      customer: {
-        name,
-        phone,
-        email: $("o-email").value.trim(),
-      },
+      total: round2(subtotal + shippingCost),
+      customer: { name, phone, email },
       shipping: {
         address: $("o-address").value.trim(),
         postalCode: $("o-postal").value.trim(),
@@ -1426,19 +1541,17 @@ ${bodyHtml}
       },
     };
 
-    // Las solicitudes de diseño (placas, púas...) guardan además el material y el diseño
-    // subido por el cliente: al editarlas (p.ej. para poner precio y envío) hay que
-    // conservar esos campos, que el formulario de pedido normal no gestiona.
-    if (existing && isDesignOrder(existing)) {
-      order.kind = existing.kind;
-      order.design = existing.design;
-      order.material = existing.material;
-    }
-    // Lo mismo con los diseños de un pedido agrupado y con lo que guarda la exportación a Drive.
     if (existing) {
-      ["designs", "mergedFrom", "driveFolderUrl", "driveExportedAt"].forEach((k) => {
-        if (existing[k] !== undefined) order[k] = existing[k];
-      });
+      // Con otro email, la confirmación que constaba como enviada era para la dirección
+      // anterior: se borra el registro para que el Apps Script pueda enviarla de nuevo.
+      if (((existing.customer && existing.customer.email) || "") !== email) {
+        order.customerEmailSentAt = FieldValue.delete();
+        order.customerEmailError = FieldValue.delete();
+      }
+    } else {
+      order.createdAt = new Date().toISOString();
+      // Igual que los pedidos de la web: hora del servidor para ordenar y para el Apps Script.
+      order.createdAtServer = FieldValue.serverTimestamp();
     }
 
     setOrderFormStatus("info", "Guardando...");
@@ -1446,7 +1559,7 @@ ${bodyHtml}
     try {
       const db = firebase.firestore();
       if (editingDocId) {
-        await db.collection("orders").doc(editingDocId).set(order);
+        await db.collection("orders").doc(editingDocId).update(order);
         setOrderFormStatus("ok", "Pedido actualizado.");
       } else {
         await db.collection("orders").add(order);
@@ -1481,7 +1594,9 @@ ${bodyHtml}
     let digits = String(phone || "").replace(/[^\d+]/g, "");
     const hadPlus = digits.startsWith("+");
     digits = digits.replace(/\+/g, "");
-    if (!hadPlus && digits.length === 9) {
+    // Prefijo internacional escrito con "00" (0034 653...): wa.me lo quiere sin él.
+    if (!hadPlus && digits.startsWith("00")) return digits.slice(2);
+    if (!hadPlus && digits.length === 9 && /^[6-9]/.test(digits)) {
       // Número español sin prefijo de país (p.ej. 653 71 34 28): se asume +34.
       digits = "34" + digits;
     }

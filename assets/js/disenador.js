@@ -29,6 +29,9 @@
   const PLATE_W_MM = DESIGNER_CONFIG.plateWidthMm || 32;
   const PLATE_H_MM = DESIGNER_CONFIG.plateHeightMm || 32;
   const MIN_QTY = DESIGNER_CONFIG.minQty || 1;
+  const MAX_QTY = DESIGNER_CONFIG.maxQty || 5000; // tope razonable: mantiene el subtotal por debajo del límite de las reglas
+  const MOVE_STEP_MM = 0.5; // paso de los botones/flechas para mover el diseño (Mayús: x4)
+  const PDFJS_SRC = "/assets/js/vendor/pdf-3.11.174.min.js";
   const PRICE_PER_UNIT = DESIGNER_CONFIG.pricePerUnit || 0;
   const PLATE_W_PX = PLATE_W_MM * PX_PER_MM;
   const PLATE_H_PX = PLATE_H_MM * PX_PER_MM;
@@ -63,22 +66,82 @@
   };
 
   const materialImages = {};
+  let loadSeq = 0; // cada carga de archivo recibe un número; las que acaben tarde se descartan
+  let shopWhatsapp = ""; // teléfono de la tienda (data/store.json), precargado al abrir la página
+  let drawQueued = false;
+  let pdfjsPromise = null;
 
-  document.addEventListener("DOMContentLoaded", () => {
+  // Se arranca al final del archivo (ver abajo), cuando ya están definidas todas las constantes.
+  function init() {
     renderMaterialSwatches();
     preloadMaterialImages();
+    preloadShopPhone();
     renderRulers();
     bindEvents();
     updateQtyTotal();
     updateEmptyHintColor();
     drawPlate();
-    if (window.pdfjsLib) {
-      // El worker se sirve desde el propio dominio (no desde el CDN): un worker de otro origen
-      // necesita permisos de red (connect-src) para poder cargarse como blob, y en algunos
-      // navegadores eso deja el render() colgado sin avisar. Alojarlo en local es más fiable.
-      pdfjsLib.GlobalWorkerOptions.workerSrc = "assets/js/vendor/pdf.worker.min.js";
+  }
+
+  // Agrupa los repintados que llegan muy seguidos (arrastre, sliders) en uno por fotograma.
+  function scheduleDraw() {
+    if (drawQueued) return;
+    drawQueued = true;
+    requestAnimationFrame(() => {
+      drawQueued = false;
+      drawPlate();
+    });
+  }
+
+  // El teléfono de WhatsApp se obtiene al cargar la página (no al enviar), para que en el
+  // clic de "Enviar solicitud" no haya que esperar a nada antes de abrir la ventana.
+  function preloadShopPhone() {
+    if (window.HA && window.HA.store && window.HA.store.whatsapp) {
+      shopWhatsapp = window.HA.store.whatsapp;
+      return;
     }
-  });
+    fetch("data/store.json", { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((store) => {
+        if (store && store.whatsapp) shopWhatsapp = store.whatsapp;
+      })
+      .catch((err) => console.error("No se pudo cargar data/store.json:", err));
+  }
+
+  function getShopPhone() {
+    return (window.HA && window.HA.store && window.HA.store.whatsapp) || shopWhatsapp || "";
+  }
+
+  // pdf.js pesa bastante: solo se descarga cuando el cliente sube un PDF.
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve(configurePdfJs());
+    if (!pdfjsPromise) {
+      pdfjsPromise = new Promise((resolve, reject) => {
+        const sc = document.createElement("script");
+        sc.src = PDFJS_SRC;
+        sc.async = true;
+        sc.onload = () => {
+          if (window.pdfjsLib) resolve(configurePdfJs());
+          else reject(new Error("No se pudo cargar el lector de PDF. Recarga la página e inténtalo de nuevo."));
+        };
+        sc.onerror = () => {
+          pdfjsPromise = null; // permite reintentar con el siguiente archivo
+          sc.remove();
+          reject(new Error("No se pudo cargar el lector de PDF. Revisa tu conexión e inténtalo de nuevo."));
+        };
+        document.head.appendChild(sc);
+      });
+    }
+    return pdfjsPromise;
+  }
+
+  function configurePdfJs() {
+    // El worker se sirve desde el propio dominio (no desde el CDN): un worker de otro origen
+    // necesita permisos de red (connect-src) para poder cargarse como blob, y en algunos
+    // navegadores eso deja el render() colgado sin avisar. Alojarlo en local es más fiable.
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = "assets/js/vendor/pdf.worker.min.js";
+    return window.pdfjsLib;
+  }
 
   function preloadMaterialImages() {
     MATERIALS.forEach((m) => {
@@ -114,7 +177,7 @@
   function renderMaterialSwatches() {
     $("material-swatches").innerHTML = MATERIALS.map(
       (m) => `
-      <button type="button" class="material-swatch${m.id === state.materialId ? " selected" : ""}" data-material="${m.id}" title="${m.label}">
+      <button type="button" class="material-swatch${m.id === state.materialId ? " selected" : ""}" data-material="${m.id}" aria-pressed="${m.id === state.materialId}" title="${m.label}">
         <img src="${m.img}" alt="">
         <span>${m.label}</span>
       </button>`
@@ -123,8 +186,12 @@
       btn.addEventListener("click", () => {
         state.materialId = btn.dataset.material;
         state.materialImg = materialImages[state.materialId] || null;
-        $("material-swatches").querySelectorAll(".material-swatch").forEach((b) => b.classList.remove("selected"));
+        $("material-swatches").querySelectorAll(".material-swatch").forEach((b) => {
+          b.classList.remove("selected");
+          b.setAttribute("aria-pressed", "false");
+        });
         btn.classList.add("selected");
+        btn.setAttribute("aria-pressed", "true");
         applyContrastColor();
         updateEmptyHintColor();
         drawPlate();
@@ -145,7 +212,7 @@
 
     $("scale-range").addEventListener("input", (e) => {
       state.scale = mmToScale(parseFloat(e.target.value));
-      drawPlate();
+      scheduleDraw();
     });
     document.querySelectorAll("[data-scale]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -160,7 +227,7 @@
 
     $("rotate-range").addEventListener("input", (e) => {
       activePieceState().rotationDeg = parseFloat(e.target.value);
-      drawPlate();
+      scheduleDraw();
     });
     document.querySelectorAll("[data-rotate]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -208,13 +275,29 @@
       const piece = activePieceState();
       piece.offsetX = state.dragOffsetStartX + (px - startPx);
       piece.offsetY = state.dragOffsetStartY + (py - startPy);
-      drawPlate();
+      scheduleDraw();
     });
     ["pointerup", "pointercancel", "pointerleave"].forEach((ev) =>
       canvas.addEventListener(ev, () => {
         state.dragging = false;
       })
     );
+
+    // Alternativa al arrastre para teclado: flechas con el canvas enfocado (Mayús = paso x4)
+    // y botones de mover, que desplazan la pieza activa igual que si se arrastrara.
+    const KEY_DIRS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    canvas.addEventListener("keydown", (e) => {
+      const dir = KEY_DIRS[e.key];
+      if (!dir || !state.logoCanvas) return;
+      e.preventDefault();
+      movePiece(dir[0], dir[1], e.shiftKey ? 4 : 1);
+    });
+    document.querySelectorAll("[data-move]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const [dx, dy] = btn.dataset.move.split(",").map((n) => parseInt(n, 10) || 0);
+        movePiece(dx, dy, 1);
+      });
+    });
 
     $("send-request-btn").addEventListener("click", sendRequest);
 
@@ -223,12 +306,22 @@
       $("d-qty").addEventListener("blur", () => {
         const el = $("d-qty");
         const qty = parseInt(el.value, 10) || 0;
-        if (qty < MIN_QTY) {
-          el.value = MIN_QTY;
+        if (qty < MIN_QTY || qty > MAX_QTY) {
+          el.value = clamp(qty, MIN_QTY, MAX_QTY);
           updateQtyTotal();
         }
       });
     }
+  }
+
+  function movePiece(dx, dy, factor) {
+    if (!state.logoCanvas) return;
+    const piece = activePieceState();
+    const step = MOVE_STEP_MM * PX_PER_MM * factor;
+    // Se limita a que el centro del logo no salga de la pieza (para no "perderlo" con el teclado).
+    piece.offsetX = clamp(piece.offsetX + dx * step, -PLATE_W_PX / 2, PLATE_W_PX / 2);
+    piece.offsetY = clamp(piece.offsetY + dy * step, -PLATE_H_PX / 2, PLATE_H_PX / 2);
+    scheduleDraw();
   }
 
   // Muestra (y mantiene actualizado) el coste total según la cantidad que pida el cliente,
@@ -256,25 +349,35 @@
   /* ---------------- CARGA DE ARCHIVOS ---------------- */
 
   async function onFileSelected(e) {
-    const file = e.target.files && e.target.files[0];
+    const input = e.target;
+    const file = input.files && input.files[0];
     if (!file) return;
+    // Si el cliente elige otro archivo mientras este se procesa, el resultado de este se
+    // descarta al terminar (solo cuenta la última selección).
+    const seq = ++loadSeq;
+    const isStale = () => seq !== loadSeq;
     const ext = (file.name.split(".").pop() || "").toLowerCase();
+    setFileName(file.name);
     setFileStatus("info", "Procesando " + file.name + "...");
     try {
-      let canvas;
+      let rendered;
       if (ext === "pdf") {
-        state.dxfPxPerMm = null;
-        canvas = await renderPdfFile(file);
+        rendered = { canvas: await renderPdfFile(file), pxPerMm: null, warnings: [] };
       } else if (ext === "dxf") {
-        canvas = await renderDxfFile(file);
+        rendered = await renderDxfFile(file);
       } else {
         throw new Error("Formato no admitido. Sube un archivo .pdf o .dxf.");
       }
-      canvas = deriveInkMask(canvas);
-      canvas = trimCanvas(canvas);
+      if (isStale()) return;
+      const canvas = trimCanvas(deriveInkMask(rendered.canvas));
+      const logoFile = await readFileForRequest(file);
+      if (isStale()) return;
+
+      // A partir de aquí el archivo es válido: se sustituye el diseño anterior de una vez.
       state.logoCanvasRaw = canvas;
+      state.dxfPxPerMm = rendered.pxPerMm;
+      state.logoFile = logoFile;
       applyContrastColor();
-      state.logoFile = await readFileForRequest(file);
       applyAutoFit();
       // Si el archivo trae una escala real conocida (DXF), se muestra directamente a su
       // tamaño real sobre la placa de 32x32mm en vez del ajuste automático al 82%.
@@ -282,17 +385,32 @@
       $("remove-design-btn").style.display = "inline-block";
       $("plate-controls").style.display = "block";
       $("plate-empty-hint").style.display = "none";
-      setFileStatus(
-        "ok",
-        real
-          ? `Diseño cargado: ${file.name} (a su tamaño real: ${real.mm.toFixed(1)} mm)`
-          : "Diseño cargado: " + file.name
-      );
+      const notes = rendered.warnings.slice();
+      if (real && real.clipped) {
+        notes.unshift(
+          `Su tamaño original (${real.rawMm.toFixed(1)} mm) no cabe en el rango permitido (${SIZE_MM_MIN}–${SIZE_MM_MAX} mm), así que se ha ajustado a ${real.mm.toFixed(1)} mm.`
+        );
+      }
+      const base = real && !real.clipped
+        ? `Diseño cargado: ${file.name} (a su tamaño real: ${real.mm.toFixed(1)} mm).`
+        : `Diseño cargado: ${file.name}.`;
+      setFileStatus(notes.length ? "info" : "ok", [base].concat(notes).join(" "));
       drawPlate();
     } catch (err) {
+      if (isStale()) return;
       console.error(err);
       setFileStatus("err", err.message || "No se pudo procesar el archivo.");
+      setFileName(state.logoFile ? state.logoFile.name : "");
+      // Vacía el input para que se pueda volver a elegir el mismo archivo (si no, "change" no salta).
+      input.value = "";
     }
+  }
+
+  // Texto visible con el nombre del archivo elegido (el input nativo está oculto y su texto
+  // por defecto se cortaba: "Ningún archi…eleccionado").
+  function setFileName(name) {
+    const el = $("design-file-name");
+    if (el) el.textContent = name || "Ningún archivo seleccionado";
   }
 
   async function readFileForRequest(file) {
@@ -318,7 +436,11 @@
   }
 
   async function renderPdfFile(file) {
-    if (!window.pdfjsLib) throw new Error("No se pudo cargar el lector de PDF. Recarga la página e inténtalo de nuevo.");
+    const pdfjsLib = await withTimeout(
+      loadPdfJs(),
+      30000,
+      "No se pudo cargar el lector de PDF (ha tardado demasiado). Revisa tu conexión e inténtalo de nuevo."
+    );
     const buf = await file.arrayBuffer();
     const timeoutMsg = "No se ha podido procesar este PDF (ha tardado demasiado). Prueba con otro archivo o con un DXF.";
     const pdf = await withTimeout(pdfjsLib.getDocument({ data: buf, isEvalSupported: false }).promise, 20000, timeoutMsg);
@@ -340,18 +462,36 @@
   async function renderDxfFile(file) {
     if (!window.HA_DXF) throw new Error("No se pudo cargar el lector de DXF. Recarga la página e inténtalo de nuevo.");
     const text = await file.text();
-    const entities = window.HA_DXF.parseDXF(text);
-    if (!entities.length) throw new Error("No se han encontrado formas reconocibles en este DXF (líneas, círculos, arcos o polilíneas).");
+    const parsed = window.HA_DXF.parseDXFDetailed(text);
+    const entities = parsed.entities;
+    if (!entities.length) {
+      const skippedMsg = parsed.skippedCount ? ` ${skippedWarning(parsed)}` : "";
+      throw new Error("No se han encontrado formas reconocibles en este DXF (líneas, círculos, arcos, polilíneas, elipses o splines)." + skippedMsg);
+    }
     const targetMax = 900;
     const canvas = window.HA_DXF.renderDxfToCanvas(entities, targetMax);
     if (!canvas) throw new Error("No se ha podido interpretar la geometría de este DXF.");
-    // Se asume que el DXF está dibujado en milímetros reales (lo habitual en archivos para
-    // corte/grabado láser), para poder ofrecer luego el botón "Tamaño original".
+    // Las unidades del dibujo se pasan a mm según la cabecera $INSUNITS (si no la trae, se
+    // asume mm, lo habitual en archivos para corte/grabado láser), para poder ofrecer luego
+    // el botón "Tamaño original". targetMax px del canvas equivalen al lado mayor del dibujo.
     const bounds = window.HA_DXF.computeBounds(entities);
     const boundsW = bounds ? bounds.maxX - bounds.minX : 0;
     const boundsH = bounds ? bounds.maxY - bounds.minY : 0;
-    state.dxfPxPerMm = bounds && Math.max(boundsW, boundsH) > 0 ? targetMax / Math.max(boundsW, boundsH) : null;
-    return canvas;
+    const maxMm = Math.max(boundsW, boundsH) * (parsed.unitsToMm || 1);
+    const warnings = [];
+    if (parsed.skippedCount) warnings.push(skippedWarning(parsed));
+    if (parsed.approximated) {
+      warnings.push(
+        `${parsed.approximated === 1 ? "Una curva SPLINE se ha" : parsed.approximated + " curvas SPLINE se han"} aproximado uniendo sus puntos con rectas; revisa que la forma sea la correcta.`
+      );
+    }
+    return { canvas, pxPerMm: maxMm > 0 ? targetMax / maxMm : null, warnings };
+  }
+
+  function skippedWarning(parsed) {
+    const types = Object.keys(parsed.skipped);
+    const n = parsed.skippedCount;
+    return `Se ${n === 1 ? "ha omitido 1 elemento" : `han omitido ${n} elementos`} de tipo ${types.join(", ")} (no se pueden dibujar aquí); si falta algo, súbelo en PDF o envíanoslo en SVG.`;
   }
 
   // pdf.js siempre pinta un fondo opaco (blanco) al renderizar una página, aunque el canvas
@@ -525,7 +665,12 @@
     if (!state.logoCanvas || !state.fitPxSize || !state.dxfPxPerMm) return null;
     const rawScale = PX_PER_MM / (state.dxfPxPerMm * state.fitPxSize);
     const clampedScale = clamp(rawScale, mmToScale(SIZE_MM_MIN), mmToScale(SIZE_MM_MAX));
-    return { clampedScale, mm: scaleToMm(clampedScale), clipped: Math.abs(clampedScale - rawScale) > 0.001 };
+    return {
+      clampedScale,
+      mm: scaleToMm(clampedScale),
+      rawMm: scaleToMm(rawScale),
+      clipped: Math.abs(clampedScale - rawScale) > 0.001,
+    };
   }
 
   // Aplica el tamaño real calculado por computeRealSize (si lo hay) al estado y al control de
@@ -548,13 +693,18 @@
     }
     drawPlate();
     if (real.clipped) {
-      setFileStatus("info", "El tamaño real del diseño se sale del rango de ajuste permitido, se ha dejado en el máximo posible.");
+      setFileStatus(
+        "info",
+        `El tamaño original del diseño (${real.rawMm.toFixed(1)} mm) no cabe en el rango permitido (${SIZE_MM_MIN}–${SIZE_MM_MAX} mm), así que se ha ajustado a ${real.mm.toFixed(1)} mm.`
+      );
     } else {
       setFileStatus("ok", "Diseño a su tamaño real (según las medidas del DXF).");
     }
   }
 
   function removeDesign() {
+    loadSeq++; // descarta cualquier carga que siguiera en curso
+    setFileName("");
     state.logoCanvas = null;
     state.logoCanvasRaw = null;
     state.logoFile = null;
@@ -573,7 +723,9 @@
   }
 
   function setFileStatus(type, msg) {
-    $("design-file-status").innerHTML = msg ? `<div class="status-msg ${type}">${escapeHtml(msg)}</div>` : "";
+    $("design-file-status").innerHTML = msg
+      ? `<div class="status-msg ${type}"${type === "err" ? ' role="alert"' : ""}>${escapeHtml(msg)}</div>`
+      : "";
   }
 
   /* ---------------- DIBUJO DE LA PLACA ---------------- */
@@ -632,6 +784,30 @@
     ctx.restore();
 
     logoGeoms.forEach((g) => drawDimensions(ctx, g));
+    updateAccessibleState(logoGeoms);
+  }
+
+  // Descripción textual de la vista previa (para lectores de pantalla) y valores legibles
+  // de los sliders, sincronizados con cada repintado.
+  function updateAccessibleState(logoGeoms) {
+    const material = materialById(state.materialId);
+    const pieceName = PLATE_SHAPE === "pick" ? "púa" : "placa";
+    let label = `Vista previa de la ${pieceName} de ${PLATE_W_MM} × ${PLATE_H_MM} mm en ${material.label}`;
+    if (state.logoCanvas && logoGeoms.length) {
+      const g = logoGeoms[0];
+      const sizeMm = scaleToMm(state.scale).toFixed(1);
+      label += `, con tu diseño de ${sizeMm} mm (${(g.w / PX_PER_MM).toFixed(1)} × ${(g.h / PX_PER_MM).toFixed(1)} mm)`;
+      label += `, girado ${Math.round(state.rotationDeg)}°`;
+      if (state.duplicate) label += `, y una copia girada ${Math.round(state.duplicate.rotationDeg)}°`;
+      label += ". Usa las flechas del teclado para mover el diseño.";
+    } else {
+      label += ", sin diseño cargado.";
+    }
+    $("plate-canvas").setAttribute("aria-label", label);
+    const scaleEl = $("scale-range");
+    const rotateEl = $("rotate-range");
+    if (scaleEl) scaleEl.setAttribute("aria-valuetext", `${parseFloat(scaleEl.value).toFixed(1)} mm`);
+    if (rotateEl) rotateEl.setAttribute("aria-valuetext", `${Math.round(parseFloat(rotateEl.value) || 0)} grados`);
   }
 
   // Cotas del diseño cargado: dos líneas con topes y una etiqueta en mm, siguiendo el
@@ -843,6 +1019,10 @@
       setRequestStatus("err", `El pedido mínimo es de ${MIN_QTY} unidades.`);
       return;
     }
+    if (qtyInput && qty > MAX_QTY) {
+      setRequestStatus("err", `Para más de ${MAX_QTY} unidades, escríbenos directamente y te preparamos un presupuesto a medida.`);
+      return;
+    }
     if (!state.logoCanvas) {
       setRequestStatus("err", "Sube primero tu diseño (PDF o DXF).");
       return;
@@ -852,71 +1032,92 @@
     btn.disabled = true;
     setRequestStatus("info", "Enviando...");
 
-    const material = MATERIALS.find((m) => m.id === state.materialId);
-    const snapshot = $("plate-canvas").toDataURL("image/jpeg", 0.85);
-    const requestCode = genRequestCode();
-
-    // Solo adjuntamos el archivo original si, sumado a la miniatura, cabe con margen
-    // en el límite de 1 MiB por documento de Firestore. Se calcula aquí, con el tamaño
-    // real, en vez de con un límite fijo sobre el archivo en bruto.
-    const fileDataUrl = state.logoFile && !state.logoFile.tooLarge ? state.logoFile.dataUrl : null;
-    const usedBytes = new Blob([snapshot, fileDataUrl || ""]).size;
-    const fileFits = !!fileDataUrl && usedBytes <= SAFE_ORDER_BYTES;
-
-    const order = {
-      kind: ORDER_KIND,
-      orderCode: requestCode,
-      createdAt: new Date().toISOString(),
-      status: "pendiente",
-      customer: { name, phone, email },
-      shipping: { address, postalCode, city, province, notes },
-      paymentMethod,
-      items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty, price: PRICE_PER_UNIT }],
-      subtotal: qty * PRICE_PER_UNIT,
-      material: { id: material.id, label: material.label },
-      design: {
-        snapshot,
-        fileName: (state.logoFile && state.logoFile.name) || "",
-        fileType: (state.logoFile && state.logoFile.type) || "",
-        fileData: fileFits ? fileDataUrl : null,
-        fileTooLargeToEmbed: !!(state.logoFile && state.logoFile.tooLarge) || (!!fileDataUrl && !fileFits),
-      },
-    };
-
-    let orderId = null;
-    try {
-      if (window.HA_DB && window.HA_DB.saveOrder) {
-        orderId = await window.HA_DB.saveOrder(order);
-      } else {
-        throw new Error("La base de datos no está disponible ahora mismo.");
-      }
-    } catch (err) {
-      console.error("No se pudo guardar la solicitud:", err);
-      setRequestStatus("err", "No se pudo enviar: " + err.message);
-      btn.disabled = false;
-      return;
-    }
-
-    // Copia el diseño, el archivo original y la nota del pedido a la carpeta
-    // compartida de Drive (cliente/pedido), sin esperar ni avisar al cliente.
-    if (window.HA_DRIVE) window.HA_DRIVE.exportOrderInBackground(orderId);
+    // Se abre ya (de forma síncrona, dentro del gesto de clic) para que los navegadores
+    // móviles no bloqueen la ventana emergente tras los `await` siguientes (igual que en
+    // cart.js). Si el guardado falla, se cierra.
+    const waWindow = getShopPhone() ? window.open("", "_blank") : null;
+    let saved = false;
 
     try {
-      const store = await fetch("data/store.json?v=" + Date.now(), { cache: "no-store" }).then((r) => r.json());
-      const phoneShop = (store && store.whatsapp) || "";
+      const material = materialById(state.materialId);
+      const snapshot = $("plate-canvas").toDataURL("image/jpeg", 0.85);
+      const requestCode = genRequestCode();
+
+      // Solo adjuntamos el archivo original si, sumado a la miniatura, cabe con margen
+      // en el límite de 1 MiB por documento de Firestore. Se calcula aquí, con el tamaño
+      // real, en vez de con un límite fijo sobre el archivo en bruto.
+      const fileDataUrl = state.logoFile && !state.logoFile.tooLarge ? state.logoFile.dataUrl : null;
+      const usedBytes = new Blob([snapshot, fileDataUrl || ""]).size;
+      const fileFits = !!fileDataUrl && usedBytes <= SAFE_ORDER_BYTES;
+
+      const order = {
+        kind: ORDER_KIND,
+        orderCode: requestCode,
+        createdAt: new Date().toISOString(),
+        status: "pendiente",
+        customer: { name, phone, email },
+        shipping: { address, postalCode, city, province, notes },
+        paymentMethod,
+        items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty, price: PRICE_PER_UNIT }],
+        subtotal: Math.round(qty * PRICE_PER_UNIT * 100) / 100,
+        material: { id: material.id, label: material.label },
+        design: {
+          snapshot,
+          fileName: (state.logoFile && state.logoFile.name) || "",
+          fileType: (state.logoFile && state.logoFile.type) || "",
+          fileData: fileFits ? fileDataUrl : null,
+          fileTooLargeToEmbed: !!(state.logoFile && state.logoFile.tooLarge) || (!!fileDataUrl && !fileFits),
+        },
+      };
+
+      if (!window.HA_DB || !window.HA_DB.saveOrder) throw new Error("La base de datos no está disponible ahora mismo.");
+      const orderId = await window.HA_DB.saveOrder(order);
+      saved = true;
+
+      // Copia el diseño, el archivo original y la nota del pedido a la carpeta
+      // compartida de Drive (cliente/pedido), sin esperar ni avisar al cliente.
+      if (window.HA_DRIVE) window.HA_DRIVE.exportOrderInBackground(orderId);
+
+      const phoneShop = getShopPhone();
+      let waUrl = "";
       if (phoneShop) {
-        const text = buildWhatsAppMessage(order);
-        window.open(`https://api.whatsapp.com/send?phone=${phoneShop.replace("+", "")}&text=${encodeURIComponent(text)}`, "_blank");
+        waUrl = `https://api.whatsapp.com/send?phone=${phoneShop.replace("+", "")}&text=${encodeURIComponent(buildWhatsAppMessage(order))}`;
+        if (waWindow && !waWindow.closed) waWindow.location.href = waUrl;
+      } else if (waWindow) {
+        waWindow.close();
       }
-    } catch (err) {
-      console.error("No se pudo abrir WhatsApp:", err);
-    }
 
-    setRequestStatus(
-      "ok",
-      `¡Solicitud enviada! Código ${requestCode}. Hemos abierto WhatsApp con el resumen para que nos lo confirmes; te contactaremos con un presupuesto.`
-    );
-    btn.disabled = false;
+      // No se afirma que WhatsApp se haya abierto (el navegador puede haberlo bloqueado):
+      // se deja siempre un enlace visible para enviar el resumen.
+      setRequestStatus(
+        "ok",
+        waUrl
+          ? `¡Solicitud enviada! Código ${requestCode}. Te contactaremos con un presupuesto. Para confirmárnosla, envíanos también el resumen por WhatsApp.`
+          : `¡Solicitud enviada! Código ${requestCode}. Te contactaremos con un presupuesto.`,
+        waUrl ? { href: waUrl, text: "Enviar el resumen por WhatsApp" } : null
+      );
+    } catch (err) {
+      console.error(saved ? "Error tras guardar la solicitud:" : "No se pudo guardar la solicitud:", err);
+      if (!saved) {
+        if (waWindow && !waWindow.closed) waWindow.close();
+        setRequestStatus("err", "No se pudo enviar: " + friendlySaveError(err));
+      } else {
+        setRequestStatus("ok", "¡Solicitud enviada! Te contactaremos con un presupuesto.");
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Traduce los errores de guardado a un mensaje comprensible. Un "permission-denied" de
+  // Firestore casi siempre significa que algún campo supera los límites de las reglas.
+  function friendlySaveError(err) {
+    const code = (err && err.code) || "";
+    const msg = (err && err.message) || "";
+    if (code === "permission-denied" || /permission|insufficient/i.test(msg)) {
+      return "Revisa que los datos no sean demasiado largos (nombre, dirección, notas...) e inténtalo de nuevo. Si sigue fallando, escríbenos por WhatsApp.";
+    }
+    return msg || "Error desconocido. Inténtalo de nuevo en unos minutos.";
   }
 
   function buildWhatsAppMessage(order) {
@@ -945,8 +1146,17 @@
       .join("\n");
   }
 
-  function setRequestStatus(type, msg) {
-    $("request-status").innerHTML = msg ? `<div class="status-msg ${type}">${escapeHtml(msg)}</div>` : "";
+  // link (opcional): { href, text } — botón visible bajo el mensaje (p. ej. el de WhatsApp).
+  function setRequestStatus(type, msg, link) {
+    if (!msg) {
+      $("request-status").innerHTML = "";
+      return;
+    }
+    const role = type === "err" ? ' role="alert"' : "";
+    const linkHtml = link
+      ? `<a class="btn btn-whatsapp" href="${escapeHtml(link.href)}" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:10px;text-decoration:none">${escapeHtml(link.text)}</a>`
+      : "";
+    $("request-status").innerHTML = `<div class="status-msg ${type}"${role}>${escapeHtml(msg)}</div>${linkHtml}`;
   }
 
   function escapeHtml(str) {
@@ -958,4 +1168,9 @@
       "'": "&#39;",
     }[c]));
   }
+
+  // Los scripts se cargan con `defer`: al ejecutarse este, el DOM ya está listo pero
+  // DOMContentLoaded puede no haber saltado aún, así que se cubren ambos casos.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
 })();

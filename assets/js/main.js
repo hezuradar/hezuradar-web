@@ -10,9 +10,19 @@
     subcategory: null,
     term: "",
     sort: "recent",
+    // Hasta que llega data/products.json no se filtra: el grid precalculado de
+    // index.html se queda tal cual (si no, la búsqueda vaciaría el catálogo y
+    // mostraría "No hay productos" mientras carga).
+    loaded: false,
   };
 
+  // Elemento que tenía el foco al abrir el modal, para devolvérselo al cerrarlo.
+  let modalOpener = null;
+
   const els = {};
+
+  // Aviso oculto para lectores de pantalla en los enlaces que abren otra pestaña.
+  const NEW_TAB_HTML = '<span class="visually-hidden"> (se abre en una pestaña nueva)</span>';
 
   document.addEventListener("DOMContentLoaded", init);
 
@@ -32,11 +42,15 @@
     }
     try {
       const [products, store] = await Promise.all([
-        fetchJSON("data/products.json"),
+        fetchJSON(catalogUrl("data/products.json")),
         fetchJSON("data/store.json"),
       ]);
       state.products = products;
       state.store = store;
+      state.loaded = true;
+      // Lo que se haya escrito en el buscador (o lo que restaure el navegador al
+      // volver atrás) mientras cargaba el catálogo se aplica ahora.
+      state.term = normalizeText(els.search.value.trim());
       window.HA = window.HA || {};
       window.HA.products = products;
       window.HA.store = store;
@@ -76,13 +90,30 @@
       if (e.key === "Escape" && document.getElementById("modal-backdrop")) closeModal();
     });
     els.search.addEventListener("input", (e) => {
-      state.term = e.target.value.trim().toLowerCase();
-      render();
+      state.term = normalizeText(e.target.value.trim());
+      if (state.loaded) render();
     });
     els.sort.addEventListener("change", (e) => {
       state.sort = e.target.value;
-      render();
+      if (state.loaded) render();
     });
+  }
+
+  // Minúsculas y sin tildes, para que buscar "pua" o "ambar" encuentre "púas" o "ámbar".
+  function normalizeText(str) {
+    return String(str || "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase();
+  }
+
+  // data/products.json con la versión del catálogo que dejó escrita el generador
+  // (meta "ha-catalog-version"): así se puede usar la caché normal del navegador
+  // y, al cambiar el catálogo, la URL cambia. Sin esa meta se revalida siempre.
+  function catalogUrl(path) {
+    const meta = document.querySelector('meta[name="ha-catalog-version"]');
+    const version = meta && meta.content;
+    return version ? path + "?v=" + encodeURIComponent(version) : path;
   }
 
   function hydrateStore(store) {
@@ -96,8 +127,8 @@
       els.contactList.innerHTML = `
         <li><b>Ubicación</b>Legazpi, Gipuzkoa (España)</li>
         <li><b>Email</b><a href="mailto:${escapeAttr(store.email)}">${escapeHtml(store.email)}</a></li>
-        <li><b>WhatsApp</b><a href="${escapeAttr(waLink(store.whatsapp))}" target="_blank" rel="noopener">${escapeHtml(formatPhone(store.whatsapp))}</a></li>
-        <li><b>Instagram</b><a href="${escapeAttr(store.instagram)}" target="_blank" rel="noopener">@hezuradar</a></li>
+        <li><b>WhatsApp</b><a href="${escapeAttr(waLink(store.whatsapp))}" target="_blank" rel="noopener">${escapeHtml(formatPhone(store.whatsapp))}${NEW_TAB_HTML}</a></li>
+        <li><b>Instagram</b><a href="${escapeAttr(store.instagram)}" target="_blank" rel="noopener">@hezuradar${NEW_TAB_HTML}</a></li>
       `;
     }
   }
@@ -134,7 +165,8 @@
   }
 
   async function fetchJSON(path) {
-    const res = await fetch(path, { cache: "no-cache" });
+    // Con versión en la URL vale la caché normal; sin ella, se revalida siempre.
+    const res = await fetch(path, path.indexOf("?v=") === -1 ? { cache: "no-cache" } : undefined);
     if (!res.ok) throw new Error("No se pudo cargar " + path);
     return res.json();
   }
@@ -150,7 +182,14 @@
 
   function buildCategoryChips() {
     const tree = categoryTree();
+    // Al repintar los chips se conserva el foco en el que se acaba de pulsar
+    // (si no, quien navega con teclado vuelve al principio de la página).
+    const focusedCat = els.chips.contains(document.activeElement) ? document.activeElement.dataset.cat : null;
     els.chips.innerHTML = CT.buildChipsHtml(state.products, state.category);
+    if (focusedCat) {
+      const again = Array.from(els.chips.querySelectorAll(".chip")).find((b) => b.dataset.cat === focusedCat);
+      if (again) again.focus();
+    }
     els.chips.querySelectorAll(".chip").forEach((btn) => {
       btn.addEventListener("click", () => {
         state.category = btn.dataset.cat;
@@ -170,10 +209,11 @@
       return;
     }
     const list = Array.from(subs).sort();
+    const focusedSub = els.subchips.contains(document.activeElement) ? document.activeElement.dataset.sub : null;
     els.subchips.innerHTML = list
       .map(
         (s) =>
-          `<button class="subchip${s === state.subcategory ? " active" : ""}" data-sub="${escapeAttr(s)}">${escapeHtml(s)}</button>`
+          `<button type="button" class="subchip${s === state.subcategory ? " active" : ""}" aria-pressed="${s === state.subcategory}" data-sub="${escapeAttr(s)}">${escapeHtml(s)}</button>`
       )
       .join("");
     els.subchips.querySelectorAll(".subchip").forEach((btn) => {
@@ -183,6 +223,10 @@
         render();
       });
     });
+    if (focusedSub) {
+      const again = Array.from(els.subchips.querySelectorAll(".subchip")).find((b) => b.dataset.sub === focusedSub);
+      if (again) again.focus();
+    }
   }
 
   function getFiltered() {
@@ -196,16 +240,17 @@
     if (state.term) {
       list = list.filter(
         (p) =>
-          p.title.toLowerCase().includes(state.term) ||
-          (p.description || "").toLowerCase().includes(state.term)
+          normalizeText(p.title).includes(state.term) ||
+          normalizeText(p.description).includes(state.term)
       );
     }
+    // Se ordena por el precio que paga el cliente (con el descuento aplicado).
     switch (state.sort) {
       case "price-asc":
-        list.sort((a, b) => a.price - b.price);
+        list.sort((a, b) => CT.effectivePrice(a) - CT.effectivePrice(b));
         break;
       case "price-desc":
-        list.sort((a, b) => b.price - a.price);
+        list.sort((a, b) => CT.effectivePrice(b) - CT.effectivePrice(a));
         break;
       case "name-asc":
         list.sort((a, b) => a.title.localeCompare(b.title));
@@ -278,7 +323,12 @@
   function openModal(id) {
     const p = state.products.find((x) => x.id === id);
     if (!p) return;
-    if (window.HA_ANALYTICS) window.HA_ANALYTICS.trackProductView(p.id, p.title);
+    try {
+      if (window.HA_ANALYTICS) window.HA_ANALYTICS.trackProductView(p.id, p.title);
+    } catch (e) {
+      // Las estadísticas nunca deben impedir abrir la ficha.
+    }
+    modalOpener = document.activeElement;
     const images = p.images && p.images.length ? p.images : [""];
     const outOfStock = CT.isOutOfStock(p);
     const hasDiscount = Number(p.discountPercent) > 0;
@@ -294,7 +344,7 @@
                   ? `<div class="modal-thumbs">${images
                       .map(
                         (im, i) =>
-                          `<img src="${escapeAttr(CT.thumbPath(im))}" data-full="${escapeAttr(im)}" data-i="${i}" alt="" class="${i === 0 ? "active" : ""}">`
+                          `<button type="button" class="thumb-btn${i === 0 ? " active" : ""}" data-full="${escapeAttr(im)}" aria-label="Ver foto ${i + 1} de ${images.length}" aria-pressed="${i === 0}"><img src="${escapeAttr(CT.thumbPath(im))}" alt="" class="${i === 0 ? "active" : ""}"></button>`
                       )
                       .join("")}</div>`
                   : ""
@@ -319,7 +369,7 @@
               </div>
               <div class="modal-actions">
                 <button class="btn btn-primary" id="modal-add-cart" ${outOfStock ? "disabled" : ""}>${outOfStock ? "Sin stock" : "Añadir a la cesta"}</button>
-                <a class="btn btn-outline" target="_blank" rel="noopener" href="${escapeAttr(productWaLink(p))}">Consultar por WhatsApp</a>
+                <a class="btn btn-outline" target="_blank" rel="noopener" href="${escapeAttr(productWaLink(p))}">Consultar por WhatsApp${NEW_TAB_HTML}</a>
               </div>
             </div>
           </div>
@@ -330,11 +380,11 @@
     document.getElementById("modal-backdrop").addEventListener("click", (e) => {
       if (e.target.id === "modal-backdrop") closeModal();
     });
-    els.modalRoot.querySelectorAll(".modal-thumbs img").forEach((th) => {
+    const thumbs = els.modalRoot.querySelectorAll(".modal-thumbs .thumb-btn");
+    thumbs.forEach((th) => {
       th.addEventListener("click", () => {
-        document.getElementById("modal-main-img").src = th.dataset.full || th.src;
-        els.modalRoot.querySelectorAll(".modal-thumbs img").forEach((t) => t.classList.remove("active"));
-        th.classList.add("active");
+        document.getElementById("modal-main-img").src = th.dataset.full;
+        thumbs.forEach((t) => setThumbActive(t, t === th));
       });
     });
     const qtyInput = document.getElementById("modal-qty");
@@ -346,21 +396,59 @@
     });
     document.getElementById("modal-add-cart").addEventListener("click", () => {
       const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
+      // Primero se cierra el modal y después se abre la cesta: al revés,
+      // closeModal() devolvería el scroll al body con la cesta ya abierta y le
+      // quitaría el foco. El foco lo gestiona la cesta, no se devuelve a la tarjeta.
+      closeModal({ restoreFocus: false });
       if (window.HA && window.HA.cart) window.HA.cart.add(p.id, qty);
-      closeModal();
     });
+    document.getElementById("modal-backdrop").addEventListener("keydown", trapFocus);
     document.body.style.overflow = "hidden";
     document.getElementById("modal-close").focus({ preventScroll: true });
   }
 
-  function closeModal() {
+  function setThumbActive(btn, active) {
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", String(active));
+    const img = btn.querySelector("img");
+    if (img) img.classList.toggle("active", active);
+  }
+
+  // Mantiene el foco dentro del modal mientras está abierto: Tab desde el último
+  // control vuelve al primero y Mayús+Tab desde el primero va al último.
+  function trapFocus(e) {
+    if (e.key !== "Tab") return;
+    const modal = els.modalRoot.querySelector(".modal");
+    if (!modal) return;
+    const focusables = Array.from(
+      modal.querySelectorAll('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')
+    ).filter((el) => el.offsetParent !== null || el === document.activeElement);
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
+  function closeModal(options) {
     const backdrop = document.getElementById("modal-backdrop");
-    if (!backdrop) return;
+    if (!backdrop || backdrop.classList.contains("closing")) return;
     backdrop.classList.add("closing");
     document.body.style.overflow = "";
+    const opener = modalOpener;
+    modalOpener = null;
     setTimeout(() => {
       if (backdrop.parentNode === els.modalRoot) els.modalRoot.innerHTML = "";
     }, 160);
+    // Se devuelve el foco al botón o la foto que abrió el modal (si sigue en la página).
+    if ((!options || options.restoreFocus !== false) && opener && opener.isConnected && typeof opener.focus === "function") {
+      opener.focus({ preventScroll: true });
+    }
   }
 
   function escapeHtml(str) {

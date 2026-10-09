@@ -1,7 +1,8 @@
 // Registro de visitas y vistas de producto, muy ligero, sobre Firestore: alimenta el
 // cuadro de mando de "Estadísticas" en el panel de administración. No usa ningún
 // servicio de terceros (nada que pagar ni configurar fuera de Firebase, que ya se usa
-// para los pedidos).
+// para los pedidos). Va por la API REST de Firestore con una sola petición, para no
+// tener que cargar el SDK de Firebase (~370 KB) en cada visita.
 (function () {
   "use strict";
 
@@ -21,66 +22,60 @@
     return PAGE_KEYS[file] || "otra";
   }
 
-  function getApp() {
-    if (!window.HA_FIREBASE_ENABLED) return null;
-    if (!window.firebase) return null;
-    try {
-      if (!firebase.apps.length) firebase.initializeApp(window.HA_FIREBASE_CONFIG);
-      return firebase.app();
-    } catch (e) {
-      return null;
-    }
-  }
-
   function todayKey() {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   }
 
-  // Las claves de un mapa de Firestore no pueden llevar ".", "/", "[", "]" ni "~".
+  // Las claves de un mapa de Firestore no pueden llevar ".", "/", "[", "]" ni "~"; las
+  // comillas invertidas y la barra invertida se quitan porque delimitan la ruta del campo.
   function safeKey(str) {
-    return String(str || "").replace(/[.\/\[\]~*]/g, "_").slice(0, 120) || "_";
+    return String(str || "").replace(/[.\/\[\]~*`\\]/g, "_").slice(0, 120) || "_";
   }
 
-  function bump(fields) {
-    const app = getApp();
-    if (!app) return;
+  // Equivale a set({...}, {merge:true}) con FieldValue.increment(1) del SDK: crea el
+  // documento del día si no existe y suma 1 a cada contador indicado.
+  function bump(counters, setFields) {
+    const cfg = window.HA_FIREBASE_CONFIG;
+    if (!window.HA_FIREBASE_ENABLED || !cfg || !window.fetch) return;
+    const docName = `projects/${cfg.projectId}/databases/(default)/documents/analytics_daily/${todayKey()}`;
+    const fields = {};
+    const mask = [];
+    Object.keys(setFields || {}).forEach((path) => {
+      const [map, key] = path.split(".");
+      fields[map] = fields[map] || { mapValue: { fields: {} } };
+      fields[map].mapValue.fields[key] = { stringValue: String(setFields[path]).slice(0, 200) };
+      mask.push(`${map}.\`${key}\``);
+    });
+    const transforms = counters.map((path) => {
+      const [map, key] = path.split(".");
+      return { fieldPath: key ? `${map}.\`${key}\`` : map, increment: { integerValue: "1" } };
+    });
+    transforms.push({ fieldPath: "updatedAt", setToServerValue: "REQUEST_TIME" });
+    const body = {
+      writes: [{ update: { name: docName, fields }, updateMask: { fieldPaths: mask }, updateTransforms: transforms }],
+    };
     try {
-      const db = firebase.firestore();
-      db.collection("analytics_daily")
-        .doc(todayKey())
-        .set(
-          { ...fields, updatedAt: firebase.firestore.FieldValue.serverTimestamp() },
-          { merge: true }
-        )
-        .catch(() => {
-          // El registro de estadísticas nunca debe interrumpir la visita del cliente
-          // (p.ej. si todavía no se han añadido las reglas de Firestore para esta colección).
-        });
+      fetch(
+        `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents:commit?key=${cfg.apiKey}`,
+        { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
+      ).catch(() => {
+        // El registro de estadísticas nunca debe interrumpir la visita del cliente.
+      });
     } catch (e) {
       // Igual que arriba: se ignora en silencio.
     }
   }
 
   function trackPageview() {
-    const inc = firebase.firestore && firebase.firestore.FieldValue.increment(1);
-    if (!inc) return;
-    bump({
-      visits: inc,
-      pages: { [safeKey(currentPageKey())]: inc },
-    });
+    bump(["visits", "pages." + safeKey(currentPageKey())]);
   }
 
   function trackProductView(productId, title) {
     if (!productId) return;
-    const inc = firebase.firestore && firebase.firestore.FieldValue.increment(1);
-    if (!inc) return;
     const key = safeKey(productId);
-    bump({
-      productViews: { [key]: inc },
-      productTitles: { [key]: title || productId },
-    });
+    bump(["productViews." + key], { ["productTitles." + key]: title || productId });
   }
 
   window.HA_ANALYTICS = { trackProductView };

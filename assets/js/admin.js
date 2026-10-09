@@ -65,7 +65,12 @@
     $("gh-repo").value = lsGet(LS.repo) || "hezuradar-web";
     $("gh-branch").value = lsGet(LS.branch) || "main";
 
-    $("gh-save").addEventListener("click", saveGhConfig);
+    // Los campos de conexión van en un <form> (el del token es de tipo contraseña): se
+    // guarda con el botón o con Intro, sin recargar la página.
+    $("gh-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveGhConfig();
+    });
     $("p-save").addEventListener("click", saveProduct);
     $("p-cancel").addEventListener("click", resetForm);
     $("p-images").addEventListener("change", onFilesSelected);
@@ -116,7 +121,10 @@
     const auth = firebase.auth();
     // La sesión se conserva en el dispositivo (hasta SESSION_MAX_MS) para no pedir la
     // contraseña en cada visita, y el navegador del móvil puede autorrellenarla.
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch((e) => {
+      // Sin almacenamiento local (p.ej. modo privado) la sesión dura lo que la pestaña.
+      console.warn("No se pudo guardar la sesión en este dispositivo:", e);
+    });
     auth.onAuthStateChanged(onAuthChange);
   }
 
@@ -401,7 +409,8 @@
     if (!cfg.owner || !cfg.repo || !cfg.token) {
       throw new Error("Configura primero usuario, repositorio y token de GitHub.");
     }
-    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/${path}`;
+    const base = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}`;
+    const url = path ? `${base}/${path}` : base;
     const res = await fetch(url, {
       ...opts,
       cache: "no-store",
@@ -413,18 +422,46 @@
     });
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`GitHub API ${res.status}: ${body.slice(0, 300)}`);
+      const err = new Error(`GitHub API ${res.status}: ${body.slice(0, 300)}`);
+      err.status = res.status;
+      throw err;
     }
     return res.status === 204 ? null : res.json();
   }
 
+  // null solo si GitHub responde 404 a ese archivo. Ojo: GitHub también responde 404 cuando
+  // el token no tiene acceso al repositorio (o la rama no existe), así que antes de dar por
+  // hecho que un archivo importante no existe hay que llamar a assertRepoAccessible().
+  // Un 401/403 (token caducado, sin permisos, límite de peticiones) se lanza como error.
   async function getFile(path) {
     const cfg = ghConfig();
     try {
-      const data = await ghApi(`contents/${encodeURIComponent(path).replace(/%2F/g, "/")}?ref=${cfg.branch}`);
+      const data = await ghApi(`contents/${encodeURIComponent(path).replace(/%2F/g, "/")}?ref=${encodeURIComponent(cfg.branch)}`);
       return { sha: data.sha, content: b64DecodeUnicode(data.content) };
     } catch (e) {
-      if (String(e.message).includes("404")) return null;
+      if (e.status === 404) return null;
+      throw e;
+    }
+  }
+
+  // Comprueba que el token ve el repositorio y la rama configurados.
+  async function assertRepoAccessible() {
+    const cfg = ghConfig();
+    try {
+      await ghApi("");
+    } catch (e) {
+      if (e.status === 404 || e.status === 401 || e.status === 403) {
+        throw new Error(
+          `GitHub no deja acceder al repositorio ${cfg.owner}/${cfg.repo} con este token (error ${e.status}). ` +
+            "Revisa el propietario, el nombre del repositorio y que el token tenga permiso de contenido sobre él."
+        );
+      }
+      throw e;
+    }
+    try {
+      await ghApi(`branches/${encodeURIComponent(cfg.branch)}`);
+    } catch (e) {
+      if (e.status === 404) throw new Error(`La rama "${cfg.branch}" no existe en ${cfg.owner}/${cfg.repo}.`);
       throw e;
     }
   }
@@ -483,6 +520,8 @@
         products = JSON.parse(file.content);
         productsSha = file.sha;
       } else {
+        // Un 404 puede ser falta de acceso al repositorio: no se muestra un catálogo vacío.
+        await assertRepoAccessible();
         products = [];
         productsSha = null;
       }
@@ -502,22 +541,28 @@
   async function loadProductsFromLiveSite() {
     try {
       const res = await fetch(PRODUCTS_PATH + "?v=" + Date.now(), { cache: "no-store" });
-      if (res.ok) {
-        products = await res.json();
-        renderTable();
-        fillDatalists();
-        maybeSuggestSku();
-      }
-    } catch (e) {}
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      products = await res.json();
+      renderTable();
+      fillDatalists();
+      maybeSuggestSku();
+    } catch (e) {
+      console.warn("No se pudo leer el catálogo publicado:", e);
+      $("product-table-body").innerHTML =
+        `<tr><td colspan="6" class="empty-state">No se pudo cargar el catálogo publicado (${escapeHtml(e.message)}). Recarga la página para reintentarlo.</td></tr>`;
+    }
   }
 
   async function putProductsFile(mutate, message) {
     let file = await getFile(PRODUCTS_PATH);
+    // Sin el archivo se publicaría un catálogo que solo tiene este producto: antes se
+    // comprueba que el 404 es de verdad "no existe" y no falta de acceso al repositorio.
+    if (!file) await assertRepoAccessible();
     let next = mutate(file ? JSON.parse(file.content) : []);
     try {
       await putFile(PRODUCTS_PATH, b64EncodeUnicode(JSON.stringify(next, null, 2)), message, file ? file.sha : null);
     } catch (e) {
-      if (!String(e.message).includes("409")) throw e;
+      if (e.status !== 409) throw e;
       // El catálogo cambió justo mientras se publicaba: se reintenta una vez con los datos más recientes.
       file = await getFile(PRODUCTS_PATH);
       next = mutate(file ? JSON.parse(file.content) : []);
@@ -770,7 +815,8 @@
   async function saveProduct() {
     try {
       const title = $("p-title").value.trim();
-      const price = parseDecimal($("p-price").value);
+      // Redondeado a céntimos: "10,499" se guarda como 10.5.
+      const price = Math.round(parseDecimal($("p-price").value) * 100) / 100;
       if (!title) throw new Error("El título es obligatorio.");
       if (isNaN(price) || price < 0) throw new Error("El precio no es válido. Usa solo números, con coma o punto para los decimales (p.ej. 10,50).");
 
@@ -784,10 +830,13 @@
       $("p-save").disabled = true;
       setStatus("p-status", "info", "Publicando...");
 
-      const id = editingId || crypto.randomUUID();
+      const id = editingId || newProductId();
       const existing = editingId ? products.find((x) => x.id === editingId) : null;
       let images = [...currentImages];
       let mainImageDims = null;
+      // Fallos que no detienen la publicación pero que conviene contar al final.
+      const thumbFailures = [];
+      const cleanupFailures = [];
 
       if (pendingFiles.length) {
         setStatus("p-status", "info", `Subiendo ${pendingFiles.length} imagen(es)...`);
@@ -808,7 +857,8 @@
             const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(path);
             if (thumbPath) await putFile(thumbPath, thumbBase64, `Sube miniatura de producto: ${title}`, null);
           } catch (e) {
-            /* sin miniatura, se usará la imagen completa */
+            // Sin miniatura se usará la imagen completa; se avisa al final.
+            thumbFailures.push(`${file.name || path} (${e.message})`);
           }
         }
       }
@@ -854,20 +904,9 @@
       }, `${editingId ? "Edita" : "Añade"} producto: ${title}`);
 
       const removedImages = (existing?.images || []).filter((src) => !images.includes(src));
+      // Si una imagen ya no existe, getFile devuelve null y no cuenta como fallo.
       for (const imgPath of removedImages) {
-        try {
-          const imgFile = await getFile(imgPath);
-          if (imgFile) await deleteFile(imgPath, `Borra imagen quitada de: ${title}`, imgFile.sha);
-        } catch (e) {
-          /* ignore missing images */
-        }
-        try {
-          const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(imgPath);
-          const thumbFile = thumbPath && (await getFile(thumbPath));
-          if (thumbFile) await deleteFile(thumbPath, `Borra miniatura quitada de: ${title}`, thumbFile.sha);
-        } catch (e) {
-          /* ignore missing thumbnails */
-        }
+        await deleteImageWithThumb(imgPath, `quitada de: ${title}`, cleanupFailures);
       }
 
       let seoWarning = "";
@@ -881,10 +920,15 @@
         seoWarning = " Aviso: el catálogo se publicó bien, pero no se pudo actualizar la página SEO del producto o el sitemap (" + e.message + "). Vuelve a guardar el producto para reintentarlo.";
       }
 
+      const extraWarning =
+        seoWarning +
+        (thumbFailures.length ? ` Aviso: no se pudo subir la miniatura de ${thumbFailures.join(", ")}; la ficha usará la imagen completa hasta el próximo guardado.` : "") +
+        imageCleanupWarning(cleanupFailures);
+
       setStatus(
         "p-status",
-        seoWarning ? "err" : "ok",
-        "Publicado correctamente. La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta." + seoWarning
+        extraWarning ? "err" : "ok",
+        "Publicado correctamente. La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta." + extraWarning
       );
       resetForm();
       await loadProducts();
@@ -895,6 +939,41 @@
     }
   }
 
+  // Borra del repositorio una imagen de producto y su miniatura. No interrumpe la
+  // publicación si falla: apunta el fallo en `failures` para avisar al final.
+  async function deleteImageWithThumb(imgPath, what, failures) {
+    try {
+      const imgFile = await getFile(imgPath);
+      if (imgFile) await deleteFile(imgPath, `Borra imagen ${what}`, imgFile.sha);
+    } catch (e) {
+      failures.push(`${imgPath} (${e.message})`);
+    }
+    const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(imgPath);
+    if (!thumbPath) return;
+    try {
+      const thumbFile = await getFile(thumbPath);
+      if (thumbFile) await deleteFile(thumbPath, `Borra miniatura ${what}`, thumbFile.sha);
+    } catch (e) {
+      failures.push(`${thumbPath} (${e.message})`);
+    }
+  }
+
+  function imageCleanupWarning(failures) {
+    if (!failures.length) return "";
+    return ` Aviso: no se pudieron borrar ${failures.length} imagen(es) del repositorio, que quedan sin usar: ${failures.join("; ")}.`;
+  }
+
+  // Id de producto nuevo. crypto.randomUUID() no existe antes de iOS 15.4 (ni fuera de
+  // HTTPS): en ese caso se monta un UUID v4 con crypto.getRandomValues.
+  function newProductId() {
+    if (window.crypto && typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+  }
+
   async function deleteProduct(id) {
     const p = products.find((x) => x.id === id);
     if (!p) return;
@@ -903,20 +982,9 @@
       setStatus("p-status", "info", "Borrando...");
       const updatedProducts = await putProductsFile((current) => current.filter((x) => x.id !== id), `Borra producto: ${p.title}`);
 
+      const cleanupFailures = [];
       for (const imgPath of p.images || []) {
-        try {
-          const imgFile = await getFile(imgPath);
-          if (imgFile) await deleteFile(imgPath, `Borra imagen de: ${p.title}`, imgFile.sha);
-        } catch (e) {
-          /* ignore missing images */
-        }
-        try {
-          const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(imgPath);
-          const thumbFile = thumbPath && (await getFile(thumbPath));
-          if (thumbFile) await deleteFile(thumbPath, `Borra miniatura de: ${p.title}`, thumbFile.sha);
-        } catch (e) {
-          /* ignore missing thumbnails */
-        }
+        await deleteImageWithThumb(imgPath, `de: ${p.title}`, cleanupFailures);
       }
 
       let seoWarning = "";
@@ -929,7 +997,8 @@
         seoWarning = " Aviso: no se pudo borrar la página SEO del producto o actualizar el sitemap (" + e.message + ").";
       }
 
-      setStatus("p-status", seoWarning ? "err" : "ok", "Producto borrado y publicado." + seoWarning);
+      const extraWarning = seoWarning + imageCleanupWarning(cleanupFailures);
+      setStatus("p-status", extraWarning ? "err" : "ok", "Producto borrado y publicado." + extraWarning);
       await loadProducts();
     } catch (e) {
       setStatus("p-status", "err", e.message);
@@ -980,11 +1049,14 @@
     return tiers.map((t) => `${t.minQty}=${String(t.price).replace(".", ",")}`).join("; ");
   }
 
+  // "10,50" y "10.50" -> 10.5. Si hay coma y punto, el punto es de miles: "1.234,56" -> 1234.56.
   function parseDecimal(raw) {
-    const s = String(raw ?? "")
+    let s = String(raw ?? "")
       .trim()
-      .replace(/[€\s]/g, "")
-      .replace(",", ".");
-    return s === "" ? NaN : parseFloat(s);
+      .replace(/[€\s]/g, "");
+    if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "");
+    s = s.replace(",", ".");
+    // Number() en vez de parseFloat para rechazar restos como "10,5,3" o "12abc".
+    return s === "" ? NaN : Number(s);
   }
 })();

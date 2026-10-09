@@ -4,6 +4,12 @@
   const $ = (id) => document.getElementById(id);
   const DESIGN_KINDS = { "placa-personalizada": true, "pua-personalizada": true };
   const isDesignOrder = (o) => !!DESIGN_KINDS[o && o.kind];
+  // La regla la define admin-orders.js (se carga antes); la copia local es solo por si faltase.
+  const countsAsRevenue = (o) =>
+    window.HA_ORDER_COUNTS_AS_REVENUE
+      ? window.HA_ORDER_COUNTS_AS_REVENUE(o)
+      : !!o && o.status !== "cancelado" &&
+        (!isDesignOrder(o) || (["confirmado", "enviado", "entregado"].includes(o.status) && (Number(o.subtotal) || 0) > 0));
   const PAGE_LABELS = { inicio: "Inicio", placa: "Personaliza tu placa", pua: "Personaliza tus púas", producto: "Fichas de producto", guia: "Guía hueso vs cuerno", otra: "Otras páginas" };
   const STATUS_ORDER = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"];
   const STATUS_LABELS = { pendiente: "Pendiente", confirmado: "Confirmado", enviado: "Enviado", entregado: "Entregado", cancelado: "Cancelado" };
@@ -89,13 +95,36 @@
         .limit(366)
         .get();
       analyticsDays = snap.docs.map((d) => ({ date: d.id, ...d.data() })).reverse();
-      $("stats-visits-notice").style.display = snap.empty ? "block" : "none";
+      setVisitsNotice(snap.empty ? "empty" : "");
     } catch (e) {
       console.error("No se pudieron cargar las estadísticas de visitas:", e);
-      $("stats-visits-notice").style.display = "block";
+      setVisitsNotice("error", e);
     }
     visitsLoaded = true;
     renderAll();
+  }
+
+  // Distingue "no hay visitas registradas" (el texto original de admin.html) de "no se han
+  // podido leer" (permisos o red), que piden soluciones distintas.
+  let visitsNoticeEmptyHtml = null;
+  function setVisitsNotice(kind, err) {
+    const el = $("stats-visits-notice");
+    if (visitsNoticeEmptyHtml === null) visitsNoticeEmptyHtml = el.innerHTML;
+    if (!kind) {
+      el.style.display = "none";
+      return;
+    }
+    if (kind === "error") {
+      const denied = err && err.code === "permission-denied";
+      el.textContent = denied
+        ? "No se pudieron leer las visitas: tu cuenta no tiene permiso para leer la colección analytics_daily (revisa las reglas de Firestore)."
+        : "No se pudieron leer las visitas (error de red o de Firestore" + (err && err.code ? ": " + err.code : "") + "). Recarga la página para reintentarlo.";
+      el.classList.add("is-error");
+    } else {
+      el.innerHTML = visitsNoticeEmptyHtml;
+      el.classList.remove("is-error");
+    }
+    el.style.display = "block";
   }
 
   function onOrdersReady(orders) {
@@ -147,7 +176,9 @@
     const orders = ordersIn(startKey, endKey);
     const sales = orders.filter((o) => !isDesignOrder(o));
     const design = orders.filter(isDesignOrder);
-    const billed = sales.filter((o) => o.status !== "cancelado");
+    // Misma regla de facturación que la pestaña Pedidos (admin-orders.js): las solicitudes
+    // de diseño cuentan cuando están confirmadas o después y tienen precio.
+    const billed = orders.filter(countsAsRevenue);
     const revenue = billed.reduce((s, o) => s + orderTotal(o), 0);
     const visits = analyticsDays
       .filter((d) => inKeyRange(d.date, startKey, endKey))

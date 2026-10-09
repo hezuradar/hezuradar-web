@@ -8,11 +8,32 @@
   document.addEventListener("DOMContentLoaded", () => {
     bindGallery();
     bindQtyAndAdd();
+    trackView();
     loadData();
   });
 
+  // Vista de la ficha para las estadísticas del panel (el título sale del <h1>,
+  // así no hay que esperar a data/products.json).
+  function trackView() {
+    try {
+      const h1 = document.querySelector(".product-info-page h1");
+      if (window.HA_ANALYTICS) window.HA_ANALYTICS.trackProductView(productId, h1 ? h1.textContent.trim() : "");
+    } catch (e) {
+      // Las estadísticas nunca deben interrumpir la visita.
+    }
+  }
+
+  // data/products.json con la versión del catálogo que dejó escrita el generador
+  // (meta "ha-catalog-version"): con ella vale la caché normal del navegador y,
+  // al cambiar el catálogo, cambia la URL. Sin esa meta se revalida siempre.
+  function catalogUrl(path) {
+    const meta = document.querySelector('meta[name="ha-catalog-version"]');
+    const version = meta && meta.content;
+    return version ? path + "?v=" + encodeURIComponent(version) : path;
+  }
+
   async function fetchJSON(path) {
-    const res = await fetch(path, { cache: "no-cache" });
+    const res = await fetch(path, path.indexOf("?v=") === -1 ? { cache: "no-cache" } : undefined);
     if (!res.ok) throw new Error("No se pudo cargar " + path);
     return res.json();
   }
@@ -20,7 +41,7 @@
   async function loadData() {
     try {
       const [products, store] = await Promise.all([
-        fetchJSON("/data/products.json"),
+        fetchJSON(catalogUrl("/data/products.json")),
         fetchJSON("/data/store.json"),
       ]);
       window.HA = window.HA || {};
@@ -68,12 +89,18 @@
 
   function bindGallery() {
     const main = document.getElementById("product-main-img");
-    document.querySelectorAll("#product-thumbs img").forEach((th) => {
+    const thumbs = document.querySelectorAll("#product-thumbs .thumb-btn");
+    thumbs.forEach((th) => {
       th.addEventListener("click", () => {
-        if (!main) return;
-        main.src = th.dataset.full || th.src;
-        document.querySelectorAll("#product-thumbs img").forEach((t) => t.classList.remove("active"));
-        th.classList.add("active");
+        if (!main || !th.dataset.full) return;
+        main.src = th.dataset.full;
+        thumbs.forEach((t) => {
+          const active = t === th;
+          t.classList.toggle("active", active);
+          t.setAttribute("aria-pressed", String(active));
+          const img = t.querySelector("img");
+          if (img) img.classList.toggle("active", active);
+        });
       });
     });
   }

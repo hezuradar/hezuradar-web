@@ -164,8 +164,9 @@ Sección aparte de la tienda (enlazada desde el menú como "Personaliza tu placa
 puede subir el logo de su diseño en **PDF o DXF**, elegirlo sobre una placa de 32×32&nbsp;mm en uno
 de 5 materiales (con la textura real de cada uno) y ajustarlo con el ratón/dedo: moverlo, agrandarlo,
 encogerlo o girarlo. El DXF se interpreta con un parser propio (`assets/js/dxf-mini.js`, soporta
-LINE/CIRCLE/ARC/LWPOLYLINE/POLYLINE) y el PDF con [pdf.js](https://mozilla.github.io/pdf.js/) de
-Mozilla; el DWG (formato cerrado de AutoCAD) no se puede leer en el navegador, así que si el cliente
+LINE/CIRCLE/ARC/ELLIPSE/SPLINE y LWPOLYLINE/POLYLINE con arcos (bulge), lee las unidades de
+`$INSUNITS` y avisa de lo que ignora, como textos o bloques) y el PDF con
+[pdf.js](https://mozilla.github.io/pdf.js/) de Mozilla, que solo se descarga si el cliente sube un PDF; el DWG (formato cerrado de AutoCAD) no se puede leer en el navegador, así que si el cliente
 solo tiene un DWG se le pide que lo exporte a DXF (gratis, desde cualquier programa de CAD).
 
 Al enviar la solicitud se guarda en la misma base de datos Firebase que los pedidos normales (con

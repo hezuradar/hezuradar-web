@@ -40,14 +40,20 @@ const DESIGN_KINDS = {
 // script → RECAPTCHA_SECRET (nunca en este archivo, que se publica en GitHub).
 const FIREBASE_API_KEY = "AIzaSyDHdD-PcTQtaJhbGPegd7aW6ZWiI_EPFuQ"; // clave pública, la misma de assets/js/firebase-config.js
 const ADMIN_EMAILS = ["hezuradar@gmail.com", "iotegi@gmail.com"];
-const SITE_HOSTNAME = "hezuradar.com";
+const SITE_HOSTNAMES = ["hezuradar.com", "www.hezuradar.com"];
 const CONFIRM_WINDOW_MINUTES = 30;
+
+// Topes diarios de lo que se puede disparar sin sesión de administrador (exportaciones
+// a Drive desde los diseñadores y confirmaciones al cliente desde la cesta). Gmail
+// personal permite ~100 correos al día: así un bucle de pedidos falsos no puede
+// agotarlos ni llenar Drive, y siempre queda margen para los avisos reales.
+const DAILY_LIMITS = { export: 25, confirm: 40, confirmPerRecipient: 3 };
 
 function doPost(e) {
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || "{}");
     const orderId = String(body.orderId || "");
-    if (!/^[A-Za-z0-9]{10,40}$/.test(orderId)) throw new Error("ID de pedido no válido.");
+    if (!/^[A-Za-z0-9]{10,40}$/.test(orderId)) throw publicErr_("ID de pedido no válido.");
     if (body.action === "confirmCustomer") return json_({ ok: true, ...confirmCustomer_(orderId, String(body.captchaToken || "")) });
     if (body.action === "resendCustomer") return json_({ ok: true, ...resendCustomer_(orderId, String(body.idToken || "")) });
     // El cliente (al cerrar el pedido) y el admin ("Enviar a cortar") pueden
@@ -66,15 +72,45 @@ function doPost(e) {
       const o = getOrder_(orderId);
       if (o.driveExportedAt) return json_({ ok: true, exported: false, reason: "ya exportado" });
       checkRecent_(o);
-      exportOrder_(orderId, o);
-      return json_({ ok: true, exported: true });
+      takeDailyQuota_("export");
+      const result = exportOrder_(orderId, o);
+      return json_({ ok: true, exported: true, warning: result.warning });
     } finally {
       lock.releaseLock();
     }
   } catch (err) {
     console.error(err);
-    return json_({ ok: false, error: String((err && err.message) || err) });
+    return json_({ ok: false, error: publicError_(err) });
   }
+}
+
+// Los errores internos (respuestas de Firestore, rutas del proyecto) se quedan en el
+// registro del script; al navegador solo le llega un mensaje genérico.
+function publicError_(err) {
+  const msg = String((err && err.message) || err);
+  return err && err.isPublic ? msg : "No se ha podido completar la operación. Inténtalo más tarde.";
+}
+
+function publicErr_(msg) {
+  const e = new Error(msg);
+  e.isPublic = true;
+  return e;
+}
+
+// Cuenta por día (hora de Madrid) en las propiedades del script; se llama con el
+// bloqueo del script cogido, así que no hay carreras entre peticiones.
+function takeDailyQuota_(kind, limit) {
+  const props = PropertiesService.getScriptProperties();
+  const day = Utilities.formatDate(new Date(), "Europe/Madrid", "yyyy-MM-dd");
+  const key = "quota_" + kind + "_" + day;
+  const used = Number(props.getProperty(key) || 0);
+  const max = limit || DAILY_LIMITS[kind];
+  if (used >= max) throw publicErr_("Se ha alcanzado el límite diario de esta acción. Escríbenos por WhatsApp.");
+  props.setProperty(key, String(used + 1));
+  // Limpieza de contadores de días anteriores.
+  props.getKeys().forEach((k) => {
+    if (k.indexOf("quota_") === 0 && k.slice(-10) < day) props.deleteProperty(k);
+  });
 }
 
 function doGet() {
@@ -109,13 +145,19 @@ function designsLabel_(designs) {
 function exportOrder_(orderId, order) {
   const o = order || getOrder_(orderId);
   const designs = orderDesigns_(o);
-  if (!designs.length) throw new Error("Solo se exportan pedidos de placa o púa personalizada.");
+  if (!designs.length) throw publicErr_("Solo se exportan pedidos de placa o púa personalizada.");
   const c = o.customer || {};
   const code = safeName_(o.orderCode || orderId);
 
-  const root = DriveApp.getFolderById(ROOT_FOLDER_ID);
-  const clientFolder = getOrCreateFolder_(root, safeName_(c.name) || "Sin nombre");
-  const orderFolder = getOrCreateFolder_(clientFolder, code);
+  // Si el pedido ya se exportó, se reutiliza su carpeta. Las nuevas llevan el principio
+  // del ID de Firestore (aleatorio): nombre y código los escribe el cliente, y con solo
+  // eso otro pedido podría caer en la carpeta de un cliente real y sustituir sus archivos.
+  const orderFolder =
+    folderFromUrl_(o.driveFolderUrl) ||
+    getOrCreateFolder_(
+      getOrCreateFolder_(DriveApp.getFolderById(ROOT_FOLDER_ID), safeName_(c.name) || "Sin nombre"),
+      code + " · " + orderId.slice(0, 8)
+    );
 
   // Con varios diseños, cada archivo lleva delante el código de su pedido de origen.
   const files = [];
@@ -147,9 +189,31 @@ function exportOrder_(orderId, order) {
   // driveExportedAt se lee antes de marcarlo: así solo avisa la primera exportación,
   // aunque el cliente y el admin la lancen a la vez (el bloqueo de doPost las ordena).
   const isNew = !o.driveExportedAt;
-  markExported_(orderId, folderUrl);
-  if (isNew) notifyNewOrder_(o, code, folderUrl, designs, [pdf, ...designJpgs]);
-  return { folderUrl, files, fileMissing };
+  const saved = markExported_(orderId, folderUrl);
+  let warning = saved ? "" : "No se pudo guardar el enlace de la carpeta en el pedido.";
+  if (isNew) {
+    try {
+      notifyNewOrder_(o, code, folderUrl, designs, [pdf, ...designJpgs]);
+      patchOrder_(orderId, { notifiedAt: new Date().toISOString() });
+    } catch (err) {
+      // Los archivos ya están en Drive: el fallo del correo queda anotado en el pedido
+      // (notifyError) para que el panel lo muestre, en vez de perderse en el registro.
+      console.error("No se pudo enviar el aviso por email: " + err);
+      patchOrder_(orderId, { notifyError: String((err && err.message) || err).slice(0, 300) });
+      warning = (warning ? warning + " " : "") + "No se pudo enviar el aviso por email.";
+    }
+  }
+  return { folderUrl, files, fileMissing, warning };
+}
+
+function folderFromUrl_(url) {
+  const m = /\/folders\/([A-Za-z0-9_-]+)/.exec(String(url || ""));
+  if (!m) return null;
+  try {
+    return DriveApp.getFolderById(m[1]);
+  } catch (e) {
+    return null;
+  }
 }
 
 /* ---------------- Aviso por email ---------------- */
@@ -167,18 +231,13 @@ function notifyNewOrder_(o, code, folderUrl, designs, attachments) {
     ${notes ? `<p><b>Nota del cliente:</b><br>${esc_(notes).replace(/\n/g, "<br>")}</p>` : ""}
     <p><a href="${folderUrl}">📁 Abrir la carpeta del pedido en Drive</a></p>
   </div>`;
-  try {
-    MailApp.sendEmail({
-      to: NOTIFY_EMAIL,
-      subject: `Nuevo pedido ${code} · ${designsLabel_(designs)} · ${c.name || "sin nombre"}`,
-      htmlBody: html,
-      attachments,
-      replyTo: c.email || undefined,
-    });
-  } catch (err) {
-    // Los archivos ya están en Drive: un fallo del correo no debe dar el pedido por fallido.
-    console.error("No se pudo enviar el aviso por email: " + err);
-  }
+  MailApp.sendEmail({
+    to: NOTIFY_EMAIL,
+    subject: `Nuevo pedido ${code} · ${designsLabel_(designs)} · ${c.name || "sin nombre"}`,
+    htmlBody: html,
+    attachments,
+    replyTo: c.email || undefined,
+  });
 }
 
 /* ---------------- Confirmación al cliente ---------------- */
@@ -191,7 +250,16 @@ function confirmCustomer_(orderId, captchaToken) {
     const o = getOrder_(orderId);
     if (o.customerEmailSentAt) return { sent: false, reason: "ya enviado" };
     checkRecent_(o);
-    sendCustomerEmail_(o);
+    try {
+      takeDailyQuota_("confirm");
+      const to = String((o.customer && o.customer.email) || "").trim().toLowerCase();
+      takeDailyQuota_("to_" + Utilities.base64EncodeWebSafe(to).slice(0, 60), DAILY_LIMITS.confirmPerRecipient);
+      sendCustomerEmail_(o);
+    } catch (err) {
+      // Se anota en el pedido para que el panel avise de que el cliente no recibió nada.
+      patchOrder_(orderId, { customerEmailError: String((err && err.message) || err).slice(0, 300) });
+      throw err;
+    }
     markCustomerEmailed_(orderId);
     return { sent: true };
   } finally {
@@ -203,7 +271,7 @@ function confirmCustomer_(orderId, captchaToken) {
 function checkRecent_(o) {
   const created = new Date(o.createdAtServer || 0).getTime();
   if (!created || Date.now() - created > CONFIRM_WINDOW_MINUTES * 60 * 1000) {
-    throw new Error("El pedido es demasiado antiguo para esta acción automática.");
+    throw publicErr_("El pedido es demasiado antiguo para esta acción automática.");
   }
 }
 
@@ -218,19 +286,19 @@ function resendCustomer_(orderId, idToken) {
 function verifyCaptcha_(token) {
   const secret = PropertiesService.getScriptProperties().getProperty("RECAPTCHA_SECRET");
   if (!secret) throw new Error("Falta RECAPTCHA_SECRET en las propiedades del script.");
-  if (!token) throw new Error("Falta la verificación reCAPTCHA.");
+  if (!token) throw publicErr_("Falta la verificación reCAPTCHA.");
   const res = UrlFetchApp.fetch("https://www.google.com/recaptcha/api/siteverify", {
     method: "post",
     payload: { secret: secret, response: token },
     muteHttpExceptions: true,
   });
   const data = JSON.parse(res.getContentText() || "{}");
-  if (!data.success || data.hostname !== SITE_HOSTNAME) throw new Error("La verificación reCAPTCHA no es válida.");
+  if (!data.success || SITE_HOSTNAMES.indexOf(data.hostname) === -1) throw publicErr_("La verificación reCAPTCHA no es válida o ha caducado.");
 }
 
 // Comprueba el ID token de Firebase con Identity Toolkit y que el correo sea de un admin.
 function verifyAdmin_(idToken) {
-  if (!idToken) throw new Error("Falta la sesión de administrador.");
+  if (!idToken) throw publicErr_("Falta la sesión de administrador.");
   const res = UrlFetchApp.fetch("https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FIREBASE_API_KEY, {
     method: "post",
     contentType: "application/json",
@@ -239,7 +307,7 @@ function verifyAdmin_(idToken) {
   });
   const user = ((JSON.parse(res.getContentText() || "{}").users) || [])[0];
   if (res.getResponseCode() !== 200 || !user || ADMIN_EMAILS.indexOf(String(user.email || "").toLowerCase()) === -1) {
-    throw new Error("Sesión de administrador no válida.");
+    throw publicErr_("Sesión de administrador no válida.");
   }
 }
 
@@ -247,7 +315,7 @@ function sendCustomerEmail_(o) {
   const c = o.customer || {};
   const email = String(c.email || "").trim();
   if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) || email.length > 200) {
-    throw new Error("El pedido no tiene un email de cliente válido.");
+    throw publicErr_("El pedido no tiene un email de cliente válido.");
   }
   MailApp.sendEmail({
     to: email,
@@ -258,15 +326,35 @@ function sendCustomerEmail_(o) {
   });
 }
 
+// Al marcar el envío se borra el error de un intento anterior (campo en la máscara sin valor).
 function markCustomerEmailed_(orderId) {
-  const res = UrlFetchApp.fetch(firestoreUrl_(orderId) + "?updateMask.fieldPaths=customerEmailSentAt", {
-    method: "patch",
-    contentType: "application/json",
-    headers: firestoreHeaders_(),
-    muteHttpExceptions: true,
-    payload: JSON.stringify({ fields: { customerEmailSentAt: { stringValue: new Date().toISOString() } } }),
-  });
-  if (res.getResponseCode() !== 200) console.warn("No se pudo guardar customerEmailSentAt: " + res.getContentText());
+  return patchOrder_(orderId, { customerEmailSentAt: new Date().toISOString() }, ["customerEmailError"]);
+}
+
+// Actualiza campos de texto del pedido (y borra los de `clear`), con un reintento.
+// Devuelve false si no se pudo, para avisar sin dar por fallida la operación.
+function patchOrder_(orderId, values, clear) {
+  const paths = Object.keys(values).concat(clear || []);
+  const url = firestoreUrl_(orderId) + "?" + paths.map((p) => "updateMask.fieldPaths=" + p).join("&");
+  const fields = {};
+  Object.keys(values).forEach((k) => (fields[k] = { stringValue: String(values[k]) }));
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = UrlFetchApp.fetch(url, {
+        method: "patch",
+        contentType: "application/json",
+        headers: firestoreHeaders_(),
+        muteHttpExceptions: true,
+        payload: JSON.stringify({ fields }),
+      });
+      if (res.getResponseCode() === 200) return true;
+      console.warn("No se pudo actualizar el pedido (" + paths.join(", ") + "): " + res.getContentText());
+    } catch (err) {
+      console.warn("No se pudo actualizar el pedido (" + paths.join(", ") + "): " + err);
+    }
+    Utilities.sleep(800);
+  }
+  return false;
 }
 
 const PAYMENT_LABELS = { paypal: "PayPal", bizum: "Bizum", otros: "Otros" };
@@ -276,9 +364,26 @@ function eur_(n) {
 }
 
 // Mismo diseño que tenía la plantilla de EmailJS, pero montado aquí con datos escapados.
+// Cualquiera puede crear un pedido con el email de otra persona: los textos libres que
+// escribe el cliente (nombre, dirección) se recortan y pierden los enlaces, y las notas
+// no se incluyen, para que este correo no sirva para mandar phishing desde la tienda.
+function plain_(str, max) {
+  return String(str == null ? "" : str)
+    .replace(/(https?:\/\/|www\.)\S*/gi, "[enlace eliminado]")
+    .replace(/\b[\w-]+\.(com|net|org|es|eu|io|ly|me|info|xyz|ru|cn)\b\S*/gi, "[enlace eliminado]")
+    .slice(0, max || 120);
+}
+
 function customerEmailHtml_(o) {
-  const c = o.customer || {};
-  const s = o.shipping || {};
+  const c0 = o.customer || {};
+  const s0 = o.shipping || {};
+  const c = { name: plain_(c0.name, 80), phone: plain_(c0.phone, 40) };
+  const s = {
+    address: plain_(s0.address, 160),
+    postalCode: plain_(s0.postalCode, 20),
+    city: plain_(s0.city, 80),
+    province: plain_(s0.province, 80),
+  };
   const items = Array.isArray(o.items) ? o.items : [];
   const subtotal = Number(o.subtotal) || 0;
   const shipping = Number(o.shippingCost) || 0;
@@ -287,7 +392,7 @@ function customerEmailHtml_(o) {
   const rows = items
     .map(
       (it) => `<tr>
-        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">${esc_(it.title)}
+        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">${esc_(plain_(it.title, 120))}
           <div style="color:#6c7d89;font-size:12px">${esc_(Number(it.qty) || 0)} × ${esc_(eur_(it.price))}</div></td>
         <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px;text-align:right;white-space:nowrap">${esc_(eur_((Number(it.price) || 0) * (Number(it.qty) || 0)))}</td>
       </tr>`
@@ -316,7 +421,6 @@ function customerEmailHtml_(o) {
       <div style="margin-top:22px;padding-top:18px;border-top:1px solid #e1e8ed">
         <p style="margin:0 0 4px;color:#1c2b36;font-size:14px;font-weight:bold">Dirección de envío</p>
         <div style="${td}">${esc_(c.name || "")}<br>${esc_(s.address || "")}<br>${esc_(s.postalCode || "")} ${esc_(s.city || "")}${s.province ? " (" + esc_(s.province) + ")" : ""}<br>Tel: ${esc_(c.phone || "")}</div>
-        ${s.notes ? `<p style="${td}"><b>Notas:</b> ${esc_(s.notes)}</p>` : ""}
       </div>
       <p style="margin:22px 0 0;color:#6c7d89;font-size:12px;line-height:1.5">Si tienes cualquier duda sobre tu pedido, responde a este correo o escríbenos por WhatsApp. Condiciones de venta y devoluciones: https://hezuradar.com/condiciones.html</p>
     </div>
@@ -388,30 +492,29 @@ function firestoreHeaders_() {
   };
 }
 
+// Con reintentos ante fallos pasajeros de red o de Firestore (no ante un 404).
 function getOrder_(orderId) {
-  const res = UrlFetchApp.fetch(firestoreUrl_(orderId), { headers: firestoreHeaders_(), muteHttpExceptions: true });
-  if (res.getResponseCode() === 404) throw new Error("No existe ese pedido.");
-  if (res.getResponseCode() !== 200) throw new Error("Firestore respondió " + res.getResponseCode() + ": " + res.getContentText());
-  return decodeFields_(JSON.parse(res.getContentText()).fields || {});
+  let lastErr;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = UrlFetchApp.fetch(firestoreUrl_(orderId), { headers: firestoreHeaders_(), muteHttpExceptions: true });
+      const status = res.getResponseCode();
+      if (status === 404) throw publicErr_("No existe ese pedido.");
+      if (status === 200) return decodeFields_(JSON.parse(res.getContentText()).fields || {});
+      lastErr = new Error("Firestore respondió " + status + ": " + res.getContentText());
+    } catch (err) {
+      if (err.isPublic) throw err;
+      lastErr = err;
+    }
+    Utilities.sleep(700 * (attempt + 1));
+  }
+  throw lastErr;
 }
 
+// No es crítico (los archivos ya están en Drive), pero si no se guarda, la siguiente
+// llamada volvería a exportar y avisar: se devuelve false para avisar al panel.
 function markExported_(orderId, folderUrl) {
-  const url =
-    firestoreUrl_(orderId) + "?updateMask.fieldPaths=driveFolderUrl&updateMask.fieldPaths=driveExportedAt";
-  const res = UrlFetchApp.fetch(url, {
-    method: "patch",
-    contentType: "application/json",
-    headers: firestoreHeaders_(),
-    muteHttpExceptions: true,
-    payload: JSON.stringify({
-      fields: {
-        driveFolderUrl: { stringValue: folderUrl },
-        driveExportedAt: { stringValue: new Date().toISOString() },
-      },
-    }),
-  });
-  // No es crítico: los archivos ya están en Drive aunque no se guarde el enlace.
-  if (res.getResponseCode() !== 200) console.warn("No se pudo guardar driveFolderUrl: " + res.getContentText());
+  return patchOrder_(orderId, { driveFolderUrl: folderUrl, driveExportedAt: new Date().toISOString() });
 }
 
 function decodeFields_(fields) {

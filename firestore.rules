@@ -17,6 +17,22 @@ service cloud.firestore {
       return !(key in m) || isStr(m[key], max);
     }
 
+    function optNum(m, key, max) {
+      return !(key in m) || (m[key] is number && m[key] >= 0 && m[key] <= max);
+    }
+
+    // Línea de pedido de la cesta (cart.js) o de los diseñadores (disenador.js). Las reglas
+    // no pueden recorrer listas, así que se comprueban la primera y la última línea.
+    function validItem(it) {
+      return it is map
+        && it.keys().hasOnly(['id', 'title', 'price', 'originalPrice', 'discountPercent', 'qty', 'image'])
+        && isStr(it.id, 120) && isStr(it.title, 200)
+        && it.qty is int && it.qty >= 1 && it.qty <= 5000
+        && it.price is number && it.price >= 0 && it.price <= 10000
+        && optNum(it, 'originalPrice', 10000) && optNum(it, 'discountPercent', 100)
+        && optStr(it, 'image', 300);
+    }
+
     // Pedido creado desde la cesta (cart.js) o desde los diseñadores (disenador.js).
     function validPublicOrder() {
       let d = request.resource.data;
@@ -31,6 +47,7 @@ service cloud.firestore {
         && d.createdAtServer == request.time
         && optStr(d, 'createdAt', 40)
         && d.items is list && d.items.size() > 0 && d.items.size() <= 50
+        && validItem(d.items[0]) && validItem(d.items[d.items.size() - 1])
         && d.subtotal is number && d.subtotal >= 0 && d.subtotal < 100000
         && (!('shippingCost' in d) || (d.shippingCost is number && d.shippingCost >= 0 && d.shippingCost < 100))
         && (!('total' in d) || (d.total is number && d.total >= 0 && d.total < 100000))

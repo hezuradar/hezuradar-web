@@ -11,14 +11,38 @@
   // que Apps Script no sabe responder. Solo viaja el ID del documento de Firestore:
   // el script lee el pedido por su cuenta. Desde el panel va con el ID token del
   // administrador: sin él, el script solo exporta pedidos recién creados y una vez.
+  // Llama al Apps Script y devuelve su JSON. Si responde otra cosa (página de error de
+  // Google, cuota agotada, despliegue roto) se lanza un error legible en vez de
+  // "Unexpected token <".
+  async function callScript(payload, timeoutMs) {
+    const ctrl = window.AbortController ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs || 60000) : null;
+    try {
+      const res = await fetch(DRIVE_EXPORT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload),
+        signal: ctrl ? ctrl.signal : undefined,
+      });
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        throw new Error(`El servicio de Google respondió algo inesperado (HTTP ${res.status}). Inténtalo más tarde.`);
+      }
+      return data;
+    } catch (e) {
+      if (e.name === "AbortError") throw new Error("El servicio de Google no responde. Inténtalo más tarde.");
+      throw e;
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
   async function exportOrder(orderId, idToken) {
     if (!DRIVE_EXPORT_URL) throw new Error("La exportación a Drive no está configurada (assets/js/drive-export.js).");
-    const res = await fetch(DRIVE_EXPORT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ orderId, idToken }),
-    });
-    const data = await res.json();
+    const data = await callScript({ orderId, idToken }, 120000);
     if (!data.ok) throw new Error(data.error || "Error desconocido al exportar a Drive.");
     return data;
   }
@@ -41,27 +65,25 @@
   // Mientras esté vacía, la cesta no muestra la casilla ni envía el email al cliente.
   const RECAPTCHA_SITE_KEY = "6LdwiNstAAAAAPVkEtoSjmsDIVi06429LjiS3ySC";
 
-  // Email de confirmación al cliente justo después de guardar el pedido. keepalive
-  // deja terminar la petición aunque el cliente cierre la pestaña al abrirse WhatsApp.
+  // Email de confirmación al cliente justo después de guardar el pedido. Devuelve una
+  // promesa con true/false para que la cesta diga la verdad sobre si salió. Si falla, el
+  // Apps Script deja el error en el pedido (customerEmailError) y el panel lo muestra.
   function confirmCustomerEmail(orderId, captchaToken) {
-    if (!DRIVE_EXPORT_URL || !orderId || !captchaToken) return;
-    fetch(DRIVE_EXPORT_URL, {
-      method: "POST",
-      mode: "no-cors",
-      keepalive: true,
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "confirmCustomer", orderId, captchaToken }),
-    }).catch((e) => console.warn("No se pudo enviar la confirmación al cliente:", e));
+    if (!DRIVE_EXPORT_URL || !orderId || !captchaToken) return Promise.resolve(false);
+    return callScript({ action: "confirmCustomer", orderId, captchaToken }, 45000)
+      .then((data) => {
+        if (!data.ok) console.warn("No se pudo enviar la confirmación al cliente:", data.error);
+        return !!data.ok;
+      })
+      .catch((e) => {
+        console.warn("No se pudo enviar la confirmación al cliente:", e);
+        return false;
+      });
   }
 
   // Botón "Reenviar email" del panel: el script comprueba el ID token del administrador.
   async function resendCustomerEmail(orderId, idToken) {
-    const res = await fetch(DRIVE_EXPORT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "resendCustomer", orderId, idToken }),
-    });
-    const data = await res.json();
+    const data = await callScript({ action: "resendCustomer", orderId, idToken }, 60000);
     if (!data.ok) throw new Error(data.error || "Error desconocido al reenviar el email.");
     return data;
   }

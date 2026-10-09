@@ -92,8 +92,10 @@
     return categoryList(products)
       .map(function (c) {
         return (
-          '<button class="chip' +
+          '<button type="button" class="chip' +
           (c === active ? " active" : "") +
+          '" aria-pressed="' +
+          (c === active ? "true" : "false") +
           '" data-cat="' +
           escapeAttr(c) +
           '">' +
@@ -103,6 +105,12 @@
       })
       .join("");
   }
+
+  // Tamaño real de las miniaturas (-thumb, 500 × 375 px). Solo sirve para que el
+  // navegador conozca la proporción antes de cargarlas: el CSS de .card-img fija
+  // el hueco cuadrado y la imagen se ajusta dentro con object-fit.
+  var THUMB_WIDTH = 500;
+  var THUMB_HEIGHT = 375;
 
   function buildCardHtml(p) {
     var img = (p.images && p.images[0]) || "";
@@ -124,7 +132,7 @@
       escapeAttr(thumbPath(img)) +
       '" alt="' +
       escapeAttr(p.title) +
-      '" loading="lazy">\n        </div>\n        <div class="card-body">\n          <h3 class="card-title">' +
+      '" width="' + THUMB_WIDTH + '" height="' + THUMB_HEIGHT + '" loading="lazy" decoding="async">\n        </div>\n        <div class="card-body">\n          <h3 class="card-title">' +
       (p.slug
         ? '<a href="productos/' + escapeAttr(p.slug) + '.html">' + escapeHtml(p.title) + "</a>"
         : escapeHtml(p.title)) +
@@ -132,12 +140,15 @@
       (hasDiscount
         ? '<span class="price-old">' + formatPrice(p.price) + "</span> " + formatPrice(effectivePrice(p))
         : formatPrice(p.price)) +
-      '</div>\n          <div class="card-actions">\n            <button class="btn btn-outline" data-open="' +
+      '</div>\n          <div class="card-actions">\n            <button type="button" class="btn btn-outline" data-open="' +
       escapeAttr(p.id) +
-      '">Más info</button>\n            ' +
+      // El nombre accesible empieza por el texto visible ("Más info", "Añadir") y
+      // añade el producto, para distinguir los botones repetidos de cada tarjeta.
+      '" aria-label="Más información de ' + escapeAttr(p.title) + '">Más info</button>\n            ' +
       (outOfStock
-        ? '<button class="btn btn-outline" disabled>Sin stock</button>'
-        : '<button class="btn btn-primary" data-add="' + escapeAttr(p.id) + '">Añadir</button>') +
+        ? '<button type="button" class="btn btn-outline" disabled>Sin stock</button>'
+        : '<button type="button" class="btn btn-primary" data-add="' + escapeAttr(p.id) +
+          '" aria-label="Añadir ' + escapeAttr(p.title) + ' a la cesta">Añadir</button>') +
       "\n          </div>\n        </div>\n      </article>\n    "
     );
   }
@@ -148,6 +159,27 @@
 
   function resultsCountText(count) {
     return count + " producto" + (count === 1 ? "" : "s");
+  }
+
+  // Versión del catálogo: hash corto (FNV-1a de 32 bits) del contenido de
+  // data/products.json. Se escribe en las páginas generadas (meta
+  // "ha-catalog-version") y main.js / product-page.js piden
+  // data/products.json?v=<versión>: así el navegador usa su caché normal y, en
+  // cuanto cambia el catálogo y se regeneran las páginas, pide el archivo nuevo.
+  // Se calcula sobre JSON.stringify del array (no sobre el texto del archivo) para
+  // que dé lo mismo en Node y en admin.js, que formatean el archivo distinto.
+  function catalogVersion(products) {
+    var str = JSON.stringify(products || []);
+    var h = 0x811c9dc5;
+    for (var i = 0; i < str.length; i++) {
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    return ("0000000" + h.toString(16)).slice(-8);
+  }
+
+  function catalogVersionMetaHtml(products) {
+    return '<meta name="ha-catalog-version" content="' + catalogVersion(products) + '">';
   }
 
   function replaceBetweenMarkers(html, startMarker, endMarker, inner) {
@@ -167,6 +199,7 @@
     html = replaceBetweenMarkers(html, "<!--HA:CHIPS_START-->", "<!--HA:CHIPS_END-->", buildChipsHtml(products, "Todo"));
     html = replaceBetweenMarkers(html, "<!--HA:COUNT_START-->", "<!--HA:COUNT_END-->", resultsCountText(products.length));
     html = replaceBetweenMarkers(html, "<!--HA:GRID_START-->", "<!--HA:GRID_END-->", buildGridHtml(products));
+    html = html.replace(/<meta name="ha-catalog-version" content="[^"]*">/, catalogVersionMetaHtml(products));
     return html;
   }
 
@@ -186,6 +219,8 @@
     buildGridHtml: buildGridHtml,
     resultsCountText: resultsCountText,
     injectHomepageMarkup: injectHomepageMarkup,
+    catalogVersion: catalogVersion,
+    catalogVersionMetaHtml: catalogVersionMetaHtml,
   };
 
   if (typeof module !== "undefined" && module.exports) {

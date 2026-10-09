@@ -22,14 +22,66 @@ const PRODUCTS_DIR = path.join(ROOT, "productos");
 const SITEMAP_PATH = path.join(ROOT, "sitemap.xml");
 const INDEX_PATH = path.join(ROOT, "index.html");
 
-// Fecha real del último commit que tocó el archivo, para <lastmod> en el sitemap.
+const TODAY = new Date().toISOString().slice(0, 10);
+
+// Fecha (YYYY-MM-DD) del último commit que tocó el archivo, para <lastmod> en el
+// sitemap y el dateModified de las guías. Si el archivo tiene cambios sin subir,
+// se usa la fecha de hoy: el sitemap se regenera antes de hacer ese commit.
 function gitLastModified(relPath) {
   try {
-    const out = execSync('git log -1 --format=%cI -- "' + relPath + '"', { cwd: ROOT }).toString().trim();
+    const pending = execSync('git status --porcelain -- "' + relPath + '"', { cwd: ROOT }).toString().trim();
+    if (pending) return TODAY;
+    const out = execSync('git log -1 --format=%cs -- "' + relPath + '"', { cwd: ROOT }).toString().trim();
     return out || null;
   } catch (e) {
     return null;
   }
+}
+
+// Alinea el "dateModified" del JSON-LD de las guías con su <lastmod> del sitemap.
+function syncGuideDates() {
+  fs.readdirSync(ROOT)
+    .filter((f) => /^guia-.+\.html$/.test(f))
+    .forEach((f) => {
+      const full = path.join(ROOT, f);
+      const html = fs.readFileSync(full, "utf8");
+      const date = gitLastModified(f);
+      if (!date) return;
+      const next = html.replace(/("dateModified":\s*")\d{4}-\d{2}-\d{2}(")/, "$1" + date + "$2");
+      if (next !== html) {
+        fs.writeFileSync(full, next, "utf8");
+        console.log("dateModified de " + f + " → " + date);
+      }
+    });
+}
+
+// Versiones "?v=" de cada CSS/JS tal como están en las páginas de la raíz (las
+// mantiene al día el hook que las sube al editar cada archivo). Las páginas
+// generadas usan las mismas, para no quedarse con versiones fijas antiguas de la
+// plantilla (que solo se usan tal cual cuando admin.js publica una ficha suelta).
+// Manda la versión de index.html; para los archivos que no carga la portada, la
+// más reciente de las demás páginas de la raíz.
+function currentAssetVersions() {
+  const re = /\/?assets\/(?:js|css)\/(?:vendor\/)?([\w.-]+\.(?:js|css))\?v=([0-9a-zA-Z]+)/g;
+  const collect = (files) => {
+    const found = {};
+    files.forEach((f) => {
+      const html = fs.readFileSync(path.join(ROOT, f), "utf8");
+      let m;
+      while ((m = re.exec(html))) {
+        if (!found[m[1]] || m[2] > found[m[1]]) found[m[1]] = m[2];
+      }
+    });
+    return found;
+  };
+  const others = collect(fs.readdirSync(ROOT).filter((f) => f.endsWith(".html") && f !== "index.html"));
+  return Object.assign(others, collect(["index.html"]));
+}
+
+function syncAssetVersions(html, versions) {
+  return html.replace(/(\/assets\/(?:js|css)\/(?:vendor\/)?([\w.-]+\.(?:js|css))\?v=)([0-9a-zA-Z]+)/g, (all, prefix, file) =>
+    versions[file] ? prefix + versions[file] : all
+  );
 }
 
 function escapeHtml(str) {
@@ -58,11 +110,12 @@ function aboutHtml(store) {
 // Mismo marcado que la lista de contacto de assets/js/main.js.
 function contactHtml(store) {
   const wa = "https://api.whatsapp.com/send?phone=" + String(store.whatsapp || "").replace("+", "") + "&text=" + encodeURIComponent("Hola, estoy interesado en vuestros productos.");
+  const newTab = '<span class="visually-hidden"> (se abre en una pestaña nueva)</span>';
   return (
     "\n        <li><b>Ubicación</b>Legazpi, Gipuzkoa (España)</li>" +
     '\n        <li><b>Email</b><a href="mailto:' + escapeHtml(store.email) + '">' + escapeHtml(store.email) + "</a></li>" +
-    '\n        <li><b>WhatsApp</b><a href="' + escapeHtml(wa) + '" target="_blank" rel="noopener">' + escapeHtml(store.whatsapp) + "</a></li>" +
-    '\n        <li><b>Instagram</b><a href="' + escapeHtml(store.instagram) + '" target="_blank" rel="noopener">@hezuradar</a></li>\n      '
+    '\n        <li><b>WhatsApp</b><a href="' + escapeHtml(wa) + '" target="_blank" rel="noopener">' + escapeHtml(store.whatsapp) + newTab + "</a></li>" +
+    '\n        <li><b>Instagram</b><a href="' + escapeHtml(store.instagram) + '" target="_blank" rel="noopener">@hezuradar' + newTab + "</a></li>\n      "
   );
 }
 
@@ -72,7 +125,8 @@ function main() {
 
   const usedSlugs = new Set();
   let changed = false;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = TODAY;
+  const versions = currentAssetVersions();
 
   products.forEach((p) => {
     if (!p.slug) {
@@ -113,7 +167,7 @@ function main() {
 
   const keepFiles = new Set();
   products.forEach((p) => {
-    const html = TEMPLATE.buildProductHtml(p, store, products);
+    const html = syncAssetVersions(TEMPLATE.buildProductHtml(p, store, products), versions);
     const fileName = p.slug + ".html";
     fs.writeFileSync(path.join(PRODUCTS_DIR, fileName), html, "utf8");
     keepFiles.add(fileName);
@@ -130,9 +184,11 @@ function main() {
 
   // Páginas de categoría (/cejuelas.html, ...), con los productos de cada tipo.
   TEMPLATE.CATEGORY_PAGES.forEach((cat) => {
-    fs.writeFileSync(path.join(ROOT, cat.file), TEMPLATE.buildCategoryHtml(cat, store, products), "utf8");
+    fs.writeFileSync(path.join(ROOT, cat.file), syncAssetVersions(TEMPLATE.buildCategoryHtml(cat, store, products), versions), "utf8");
   });
   console.log("Generadas " + TEMPLATE.CATEGORY_PAGES.length + " páginas de categoría.");
+
+  syncGuideDates();
 
   const entries = TEMPLATE.sitemapEntries(products, gitLastModified);
   fs.writeFileSync(SITEMAP_PATH, TEMPLATE.buildSitemapXml(entries), "utf8");
