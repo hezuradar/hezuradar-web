@@ -70,6 +70,14 @@
   let shopWhatsapp = ""; // teléfono de la tienda (data/store.json), precargado al abrir la página
   let drawQueued = false;
   let pdfjsPromise = null;
+  // Solicitud en curso: mismo código e ID de documento en todos los reintentos, para que un
+  // reintento tras un "timeout" (cuyo guardado puede llegar igual) no la duplique. Se olvida
+  // al enviarla bien o cuando el cliente cambia el diseño, el material o la cantidad.
+  let pendingRequest = null; // { requestCode, docId, maybeSaved }
+  let requestSent = false; // tras un envío correcto el botón queda bloqueado hasta otro cambio
+  let changeSeq = 0; // sube con cada cambio de diseño/material/cantidad (detecta cambios durante un envío)
+  const SEND_BTN_LABEL = "Enviar solicitud";
+  const SEND_BTN_SENT_LABEL = "Solicitud enviada";
 
   // Se arranca al final del archivo (ver abajo), cuando ya están definidas todas las constantes.
   function init() {
@@ -177,7 +185,7 @@
   function renderMaterialSwatches() {
     $("material-swatches").innerHTML = MATERIALS.map(
       (m) => `
-      <button type="button" class="material-swatch${m.id === state.materialId ? " selected" : ""}" data-material="${m.id}" aria-pressed="${m.id === state.materialId}" title="${m.label}">
+      <button type="button" class="material-swatch${m.id === state.materialId ? " selected" : ""}" data-material="${m.id}" aria-pressed="${m.id === state.materialId}">
         <img src="${m.img}" alt="">
         <span>${m.label}</span>
       </button>`
@@ -300,6 +308,7 @@
     });
 
     $("send-request-btn").addEventListener("click", sendRequest);
+    bindChangeTracking();
 
     if ($("d-qty")) {
       $("d-qty").addEventListener("input", updateQtyTotal);
@@ -312,6 +321,67 @@
         }
       });
     }
+  }
+
+  // Cualquier cambio del cliente vuelve a habilitar "Enviar solicitud" tras un envío
+  // correcto. Si cambia el diseño, el material o la cantidad, además se empieza una
+  // solicitud nueva (otro código); si solo corrige sus datos, se reintenta la misma.
+  function bindChangeTracking() {
+    const panel = $("send-request-btn").closest(".designer-panel") || document.body;
+    const isCustomerField = (el) => !!el && el.id !== "d-qty" && (/^d-/.test(el.id || "") || el.name === "d-payment");
+    const onEdit = (e) => {
+      clearInvalid(e.target);
+      if (isCustomerField(e.target)) unlockSendButton();
+      else designChanged();
+    };
+    panel.addEventListener("input", onEdit);
+    panel.addEventListener("change", onEdit);
+    panel.addEventListener("click", (e) => {
+      const btn = e.target.closest && e.target.closest("button");
+      if (btn && btn.id !== "send-request-btn") designChanged();
+    });
+    const canvas = $("plate-canvas");
+    canvas.addEventListener("pointerdown", () => {
+      if (state.logoCanvas) designChanged();
+    });
+    canvas.addEventListener("keydown", (e) => {
+      if (state.logoCanvas && /^Arrow/.test(e.key)) designChanged();
+    });
+  }
+
+  function designChanged() {
+    pendingRequest = null;
+    changeSeq++;
+    unlockSendButton();
+  }
+
+  function unlockSendButton() {
+    if (!requestSent) return;
+    requestSent = false;
+    const btn = $("send-request-btn");
+    btn.disabled = false;
+    btn.textContent = SEND_BTN_LABEL;
+  }
+
+  // Quita la marca de error de un campo (en la forma de pago, de todo el grupo de botones).
+  function clearInvalid(el) {
+    if (!el || !el.removeAttribute) return;
+    const targets = el.name === "d-payment" ? document.querySelectorAll('input[name="d-payment"]') : [el];
+    targets.forEach((t) => {
+      if (t.getAttribute("aria-invalid") !== "true") return;
+      t.removeAttribute("aria-invalid");
+      t.removeAttribute("aria-describedby");
+    });
+  }
+
+  // Marca los campos con error (ligados al mensaje de #request-status) y enfoca el primero.
+  function markInvalid(els) {
+    document.querySelectorAll('.designer-panel [aria-invalid="true"]').forEach(clearInvalid);
+    els.forEach((el) => {
+      el.setAttribute("aria-invalid", "true");
+      el.setAttribute("aria-describedby", "request-status");
+    });
+    if (els[0]) els[0].focus();
   }
 
   function movePiece(dx, dy, factor) {
@@ -429,10 +499,13 @@
   }
 
   function withTimeout(promise, ms, label) {
+    let timer;
     return Promise.race([
       promise,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(label)), ms)),
-    ]);
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(label)), ms);
+      }),
+    ]).finally(() => clearTimeout(timer));
   }
 
   async function renderPdfFile(file) {
@@ -489,9 +562,15 @@
   }
 
   function skippedWarning(parsed) {
-    const types = Object.keys(parsed.skipped);
-    const n = parsed.skippedCount;
-    return `Se ${n === 1 ? "ha omitido 1 elemento" : `han omitido ${n} elementos`} de tipo ${types.join(", ")} (no se pueden dibujar aquí); si falta algo, súbelo en PDF o envíanoslo en SVG.`;
+    // "entidades dañadas" no es un tipo de DXF: se nombra aparte para que la frase se entienda.
+    const DAMAGED = "entidades dañadas";
+    const types = Object.keys(parsed.skipped).filter((t) => t !== DAMAGED);
+    const damaged = parsed.skipped[DAMAGED] || 0;
+    const n = parsed.skippedCount - damaged;
+    const parts = [];
+    if (n > 0) parts.push(`${n === 1 ? "1 elemento" : `${n} elementos`} de tipo ${types.join(", ")} que no se pueden dibujar aquí`);
+    if (damaged > 0) parts.push(`${damaged === 1 ? "1 elemento dañado" : `${damaged} elementos dañados`} del archivo`);
+    return `Se ${n + damaged === 1 ? "ha" : "han"} omitido ${parts.join(" y ")}; si falta algo, súbelo en PDF o envíanoslo en SVG.`;
   }
 
   // pdf.js siempre pinta un fondo opaco (blanco) al renderizar una página, aunque el canvas
@@ -992,6 +1071,14 @@
   }
 
   const PAYMENT_LABELS = { paypal: "PayPal", bizum: "Bizum", otros: "Otros" };
+  // Campos obligatorios de "Tus datos", con el nombre que se usa en el mensaje de error.
+  const REQUIRED_FIELDS = [
+    ["d-name", "nombre"],
+    ["d-phone", "teléfono"],
+    ["d-address", "dirección"],
+    ["d-postal", "código postal"],
+    ["d-city", "ciudad"],
+  ];
 
   async function sendRequest() {
     const name = $("d-name").value.trim();
@@ -1007,22 +1094,31 @@
     const qtyInput = $("d-qty");
     const qty = qtyInput ? parseInt(qtyInput.value, 10) || 0 : MIN_QTY;
 
-    if (!name || !phone || !address || !postalCode || !city) {
-      setRequestStatus("err", "Rellena los campos obligatorios (*).");
-      return;
-    }
+    // Se nombran todos los campos que faltan (no solo "rellena los obligatorios") y se
+    // marcan con aria-invalid, con el foco en el primero.
+    const missing = REQUIRED_FIELDS.filter(([id]) => !$(id).value.trim());
+    const missingLabels = missing.map(([, label]) => label);
+    const invalidEls = missing.map(([id]) => $(id));
     if (paymentInputs.length && !paymentMethod) {
-      setRequestStatus("err", "Elige una forma de pago.");
+      missingLabels.push("forma de pago");
+      invalidEls.push(...paymentInputs);
+    }
+    if (invalidEls.length) {
+      setRequestStatus("err", `Falta: ${missingLabels.join(", ")}.`);
+      markInvalid(invalidEls);
       return;
     }
     if (qtyInput && qty < MIN_QTY) {
-      setRequestStatus("err", `El pedido mínimo es de ${MIN_QTY} unidades.`);
+      setRequestStatus("err", `Falta la cantidad: el pedido mínimo es de ${MIN_QTY} unidades.`);
+      markInvalid([qtyInput]);
       return;
     }
     if (qtyInput && qty > MAX_QTY) {
       setRequestStatus("err", `Para más de ${MAX_QTY} unidades, escríbenos directamente y te preparamos un presupuesto a medida.`);
+      markInvalid([qtyInput]);
       return;
     }
+    markInvalid([]);
     if (!state.logoCanvas) {
       setRequestStatus("err", "Sube primero tu diseño (PDF o DXF).");
       return;
@@ -1037,11 +1133,20 @@
     // cart.js). Si el guardado falla, se cierra.
     const waWindow = getShopPhone() ? window.open("", "_blank") : null;
     let saved = false;
+    const seqAtStart = changeSeq;
+    if (!pendingRequest) {
+      pendingRequest = {
+        requestCode: genRequestCode(),
+        docId: window.HA_DB && window.HA_DB.newOrderId ? window.HA_DB.newOrderId() : null,
+        maybeSaved: false,
+      };
+    }
+    const req = pendingRequest;
 
     try {
       const material = materialById(state.materialId);
       const snapshot = $("plate-canvas").toDataURL("image/jpeg", 0.85);
-      const requestCode = genRequestCode();
+      const requestCode = req.requestCode;
 
       // Solo adjuntamos el archivo original si, sumado a la miniatura, cabe con margen
       // en el límite de 1 MiB por documento de Firestore. Se calcula aquí, con el tamaño
@@ -1071,8 +1176,25 @@
       };
 
       if (!window.HA_DB || !window.HA_DB.saveOrder) throw new Error("La base de datos no está disponible ahora mismo.");
-      const orderId = await window.HA_DB.saveOrder(order);
+      let orderId;
+      try {
+        orderId = await window.HA_DB.saveOrder(order, { id: req.docId });
+      } catch (saveErr) {
+        // Un intento anterior se quedó sin respuesta y ahora las reglas rechazan el mismo
+        // documento: es que aquel guardado sí llegó (solo el admin puede modificarlo).
+        const denied = /permission|insufficient/i.test(`${(saveErr && saveErr.code) || ""} ${(saveErr && saveErr.message) || ""}`);
+        if (!(req.maybeSaved && denied && req.docId)) {
+          // Tras un "timeout" la escritura sigue en cola y puede llegar igual.
+          if (saveErr && saveErr.code === "timeout") req.maybeSaved = true;
+          throw saveErr;
+        }
+        orderId = req.docId;
+      }
       saved = true;
+      if (pendingRequest === req) pendingRequest = null;
+      // El botón queda bloqueado ("Solicitud enviada") hasta que el cliente cambie algo,
+      // salvo que ya lo haya cambiado mientras se enviaba.
+      if (changeSeq === seqAtStart) requestSent = true;
 
       // Copia el diseño, el archivo original y la nota del pedido a la carpeta
       // compartida de Drive (cliente/pedido), sin esperar ni avisar al cliente.
@@ -1100,12 +1222,18 @@
       console.error(saved ? "Error tras guardar la solicitud:" : "No se pudo guardar la solicitud:", err);
       if (!saved) {
         if (waWindow && !waWindow.closed) waWindow.close();
-        setRequestStatus("err", "No se pudo enviar: " + friendlySaveError(err));
+        setRequestStatus(
+          "err",
+          err && err.code === "timeout"
+            ? "La conexión no ha respondido a tiempo. Puede que la solicitud haya llegado; si vuelves a pulsar «Enviar solicitud» no se duplicará."
+            : "No se pudo enviar: " + friendlySaveError(err)
+        );
       } else {
         setRequestStatus("ok", "¡Solicitud enviada! Te contactaremos con un presupuesto.");
       }
     } finally {
-      btn.disabled = false;
+      btn.disabled = requestSent;
+      btn.textContent = requestSent ? SEND_BTN_SENT_LABEL : SEND_BTN_LABEL;
     }
   }
 
@@ -1154,7 +1282,7 @@
     }
     const role = type === "err" ? ' role="alert"' : "";
     const linkHtml = link
-      ? `<a class="btn btn-whatsapp" href="${escapeHtml(link.href)}" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:10px;text-decoration:none">${escapeHtml(link.text)}</a>`
+      ? `<a class="btn btn-whatsapp" href="${escapeHtml(link.href)}" target="_blank" rel="noopener" style="display:block;width:100%;margin-top:10px;text-decoration:none">${escapeHtml(link.text)}<span class="visually-hidden"> (se abre en una pestaña nueva)</span></a>`
       : "";
     $("request-status").innerHTML = `<div class="status-msg ${type}"${role}>${escapeHtml(msg)}</div>${linkHtml}`;
   }

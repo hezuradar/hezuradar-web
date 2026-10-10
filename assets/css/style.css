@@ -88,7 +88,7 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
   content:"";position:absolute;inset:0;z-index:1;
   background:linear-gradient(180deg,rgba(10,25,40,.25),rgba(10,25,40,.65));
 }
-.hero-copy{position:absolute;left:0;right:0;bottom:0;padding:28px 0;color:#fff;z-index:3}
+.hero-copy{position:absolute;left:0;right:0;bottom:0;padding:28px 20px;color:#fff;z-index:3}
 .hero-copy h1{color:#fff;font-size:2rem;margin-bottom:.15em;text-shadow:0 2px 10px rgba(0,0,0,.4)}
 .hero-copy p{margin:0;max-width:520px;color:#eef4fa;font-size:.98rem;text-shadow:0 1px 6px rgba(0,0,0,.4)}
 
@@ -1026,3 +1026,42 @@ html{scroll-padding-top:140px}
   .pill-btn{min-height:36px;display:inline-flex;align-items:center}
   .chip{min-height:36px}
 }
+
+/* ---------- Segunda auditoría (2026-10-10) ---------- */
+
+/* Enlaces dentro de texto: subrayados siempre, no solo al pasar el ratón (WCAG 1.4.1). */
+main p a:not(.btn):not(.card):not(.pill-btn),
+main li a:not(.btn):not(.card):not(.pill-btn),
+.help-text a,.status-msg a,.nf-links a{
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:.18em;
+}
+.guide-article a:not(.btn),.category-intro a,.about-card li a{color:var(--color-primary-dark)}
+
+/* Foco visible sobre fondos oscuros (pie, botón flotante de WhatsApp). */
+.site-footer :focus-visible{outline-color:#fff}
+.wa-float:focus-visible{outline:3px solid var(--color-ink);outline-offset:2px;box-shadow:0 0 0 2px #fff}
+main:focus{outline:none}
+
+/* La barra de filtros fija de la portada no debe tapar lo que recibe el foco. */
+body:has(.toolbar){scroll-padding-top:220px}
+@media (max-width:760px){body:has(.toolbar){scroll-padding-top:90px}}
+
+/* Enlaces del pie más fáciles de tocar en móvil (WCAG 2.5.8). */
+.site-footer a{display:inline-block;padding:4px 0}
+.footer-cats{row-gap:0}
+
+/* Admin: botón de quitar foto de al menos 24px y contador de la pestaña activa con contraste. */
+.thumb-remove{width:24px;height:24px}
+.status-tab.active .status-tab-count{background:#fff;color:var(--color-primary-dark)}
+
+/* Admin: cabeceras de tabla ordenables (botón dentro del th) y detalle del error de exportación. */
+.sortable-th .th-sort-btn{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;user-select:none;text-align:inherit}
+.sortable-th .th-sort-btn:focus-visible{outline:3px solid var(--color-primary-dark);outline-offset:2px;border-radius:4px}
+.order-export-error{font-weight:400;opacity:.85}
+
+/* Tablas de medidas desplazables (enfocables con teclado) y aviso de catálogo sin cargar. */
+.table-scroll:focus-visible{outline:3px solid var(--color-primary-dark);outline-offset:2px}
+#catalog-error{margin:0 0 16px}
+
+::placeholder{color:var(--color-muted);opacity:1}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}

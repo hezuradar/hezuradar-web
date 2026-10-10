@@ -329,6 +329,24 @@
     return entities;
   }
 
+  const DAMAGED_LABEL = "entidades dañadas";
+
+  function allFinite(vals) {
+    return vals.every((v) => typeof v === "number" && isFinite(v));
+  }
+
+  function isFinitePoint(p) {
+    return Array.isArray(p) && allFinite([p[0], p[1]]);
+  }
+
+  function isDrawable(e) {
+    if (e.type === "LINE") return allFinite([e.x1, e.y1, e.x2, e.y2]);
+    if (e.type === "CIRCLE") return allFinite([e.cx, e.cy, e.r]);
+    if (e.type === "ARC") return allFinite([e.cx, e.cy, e.r, e.startAngle, e.endAngle]);
+    if (e.type === "LWPOLYLINE") return Array.isArray(e.points) && e.points.filter(isFinitePoint).length >= 2;
+    return true;
+  }
+
   // Devuelve las entidades dibujables y además información útil para el diseñador:
   // - unitsToMm: factor para pasar las unidades del dibujo a mm (según $INSUNITS).
   // - skipped: { TIPO: n } con las entidades que no se saben dibujar (TEXT, HATCH, INSERT...).
@@ -339,7 +357,17 @@
     const records = splitIntoRecords(pairs);
     const entityRecords = extractEntitiesSection(records);
     const report = { skipped: {}, approximated: 0 };
-    const entities = buildEntities(entityRecords, report);
+    // Las entidades con coordenadas no numéricas o polilíneas de menos de 2 puntos no se
+    // pueden dibujar: se descartan aquí y se cuentan, para que el diseñador avise de que falta algo.
+    // A las polilíneas que sí sirven se les quitan los puntos no numéricos (si no, el
+    // cálculo de los límites del dibujo daría NaN).
+    const entities = buildEntities(entityRecords, report)
+      .filter((e) => {
+        if (isDrawable(e)) return true;
+        report.skipped[DAMAGED_LABEL] = (report.skipped[DAMAGED_LABEL] || 0) + 1;
+        return false;
+      })
+      .map((e) => (e.type === "LWPOLYLINE" ? { ...e, points: e.points.filter(isFinitePoint) } : e));
     return {
       entities,
       insUnits,

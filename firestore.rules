@@ -4,9 +4,14 @@ service cloud.firestore {
 
     // Cuentas que pueden ver y gestionar pedidos y estadísticas desde admin.html.
     // Si entras al panel con otro correo, añádelo aquí antes de publicar las reglas.
+    // Se reconoce por el UID de la cuenta (que nadie puede suplantar) o por el correo solo si
+    // está verificado: con el correo a secas, quien pudiera registrar una de esas direcciones
+    // (si algún día se reabre el alta de usuarios) entraría como administrador.
     function isAdmin() {
       return request.auth != null
-        && request.auth.token.email in ['hezuradar@gmail.com', 'iotegi@gmail.com'];
+        && (request.auth.uid in ['r6e866zfOcVwU1U62F6bXPa76XB3']
+            || (request.auth.token.email in ['hezuradar@gmail.com', 'iotegi@gmail.com']
+                && request.auth.token.email_verified == true));
     }
 
     function isStr(v, max) {
@@ -48,6 +53,8 @@ service cloud.firestore {
         && optStr(d, 'createdAt', 40)
         && d.items is list && d.items.size() > 0 && d.items.size() <= 50
         && validItem(d.items[0]) && validItem(d.items[d.items.size() - 1])
+        && (d.items.size() < 3 || validItem(d.items[1]))
+        && (d.items.size() < 4 || validItem(d.items[2]))
         && d.subtotal is number && d.subtotal >= 0 && d.subtotal < 100000
         && (!('shippingCost' in d) || (d.shippingCost is number && d.shippingCost >= 0 && d.shippingCost < 100))
         && (!('total' in d) || (d.total is number && d.total >= 0 && d.total < 100000))
@@ -109,9 +116,21 @@ service cloud.firestore {
         && (!('updatedAt' in diff.affectedKeys()) || d.updatedAt == request.time);
     }
 
+    // El documento del día lo nombra el navegador con su fecha local: se admite el día de
+    // hoy en UTC y los adyacentes (husos horarios), no cualquier fecha inventada.
+    function dayKey(t) {
+      return string(t.year()) + '-' + (t.month() < 10 ? '0' : '') + string(t.month())
+        + '-' + (t.day() < 10 ? '0' : '') + string(t.day());
+    }
+
+    function isNearToday(date) {
+      return date in [dayKey(request.time - duration.value(1, 'd')), dayKey(request.time),
+                      dayKey(request.time + duration.value(1, 'd'))];
+    }
+
     match /analytics_daily/{date} {
       allow read, delete: if isAdmin();
-      allow create, update: if date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && validAnalyticsWrite();
+      allow create, update: if date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && isNearToday(date) && validAnalyticsWrite();
     }
   }
 }

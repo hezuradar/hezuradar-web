@@ -103,8 +103,21 @@
   // así ninguna meta description se queda en 50-70 caracteres.
   var META_TAIL = "Material natural para luthería, preparado a mano en Legazpi. Envío a toda España.";
 
+  // Longitud máxima de la meta description (Google muestra unos 155-160 caracteres).
+  var META_MAX = 158;
+
+  // Completa una descripción corta con la frase de cierre entera o su primera
+  // mitad, nunca cortada a medias. Si no cabe ninguna, la deja como está.
+  function appendTail(text) {
+    var sep = /[.!?]$/.test(text) ? " " : ". ";
+    var tails = [META_TAIL, META_TAIL.split(". ")[0] + "."];
+    for (var t = 0; t < tails.length; t++) {
+      if ((text + sep + tails[t]).length <= META_MAX) return text + sep + tails[t];
+    }
+    return text;
+  }
+
   function metaDescription(product) {
-    var title = String(product.title || "").trim();
     // Las viñetas ("- Mejor tono: ...") se leen como frases seguidas.
     var plain = String(product.description || "")
       .split("\n")
@@ -115,29 +128,12 @@
       .trim();
     if (!plain) return fullDescription(product);
 
-    // Fichas con la misma descripción base (p. ej. las cejuelas talladas):
-    // si el texto empieza igual que el título hasta su "para ...", se usa el
-    // título completo para que cada ficha tenga una descripción distinta.
-    if (title && plain.toLowerCase().indexOf(title.toLowerCase()) !== 0) {
-      var tw = title.split(" ");
-      var dw = plain.split(" ");
-      var head = tw.indexOf("para");
-      var k = 0;
-      while (k < tw.length && k < dw.length && tw[k].toLowerCase() === dw[k].toLowerCase()) k++;
-      var rest = dw.slice(k).join(" ");
-      var titleTail = tw.slice(head).join(" ").toLowerCase();
-      if (head > 1 && k === head && rest.toLowerCase().indexOf(titleTail) === -1) plain = title + " " + rest;
-    }
-
-    if (plain.length < 110) {
-      var sep = /[.!?]$/.test(plain) ? " " : ". ";
-      // Se añade la frase entera o su primera mitad, nunca cortada a medias.
-      var tails = [META_TAIL, META_TAIL.split(". ")[0] + "."];
-      for (var t = 0; t < tails.length; t++) {
-        if ((plain + sep + tails[t]).length <= 160) { plain += sep + tails[t]; break; }
-      }
-    }
-    if (plain.length <= 160) return plain;
+    // La descripción se usa tal cual, sin anteponerle el título: cada ficha ya
+    // tiene texto propio y su primera frase nombra el producto, así que juntar
+    // título + frase repetía el material o la medida ("para Fender de 43 mm
+    // para Stratocaster..."). La unicidad la comprueba el generador.
+    if (plain.length < 110) plain = appendTail(plain);
+    if (plain.length <= META_MAX) return plain;
     return trimToSentence(plain);
   }
 
@@ -160,7 +156,7 @@
   // fuera de paréntesis, cerrado con punto; y si no hay ninguno, hasta la última
   // palabra completa antes de 155, también con punto.
   function trimToSentence(text) {
-    var head = text.slice(0, 159);
+    var head = text.slice(0, META_MAX + 1);
     var sentence = "";
     var clause = "";
     var m;
@@ -171,9 +167,19 @@
       var before = head.slice(0, m.index);
       var open = (before.match(/[(«]/g) || []).length;
       var close = (before.match(/[)»]/g) || []).length;
-      if (open === close && m.index + 1 <= 158) clause = stripDangling(before) + ".";
+      if (open === close && m.index + 1 <= META_MAX) clause = stripDangling(before) + ".";
     }
-    if (sentence && (sentence.length >= 110 || sentence.length >= clause.length - 25)) return sentence;
+    // "sentence" ya llega con todas las frases completas que caben en META_MAX.
+    if (sentence.length >= 110) return sentence;
+    // Frase corta y la siguiente no cabe entera: primero se prueba a seguir
+    // hasta un corte de oración de la frase siguiente (texto propio de la
+    // ficha); si no llega, la frase completa más la frase de cierre genérica.
+    if (clause.length >= 110) return clause;
+    if (sentence) {
+      var withTail = appendTail(sentence);
+      if (withTail.length >= 110) return withTail;
+    }
+    if (sentence && sentence.length >= clause.length - 25) return sentence;
     if (clause.length >= 90) return clause;
     if (sentence.length >= 70) return sentence;
     var cut = text.slice(0, 155);
@@ -411,7 +417,7 @@
     var outOfStock = isOutOfStock(product);
     var hasDiscount = Number(product.discountPercent) > 0;
     var priceHtml = hasDiscount
-      ? '<span class="price-old">' + formatPrice(product.price) + "</span> " + formatPrice(effectivePrice(product))
+      ? '<span class="price-old"><span class="visually-hidden">Precio anterior: </span>' + formatPrice(product.price) + '</span> <span class="visually-hidden">Precio actual: </span>' + formatPrice(effectivePrice(product))
       : formatPrice(product.price);
     var catLabel = product.subcategory ? product.category + " · " + product.subcategory : product.category;
     var whatsapp = store && store.whatsapp;
@@ -457,7 +463,7 @@
       '<link rel="canonical" href="' + canonicalUrl + '">\n' +
       '<meta property="og:type" content="product">\n' +
       '<meta property="og:site_name" content="HezurAdar">\n' +
-      '<meta property="og:title" content="' + escapeAttr(product.title) + " — HezurAdar" + '">\n' +
+      '<meta property="og:title" content="' + escapeAttr(pageTitle(product)) + '">\n' +
       '<meta property="og:description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
       '<meta property="og:url" content="' + canonicalUrl + '">\n' +
       '<meta property="og:image" content="' + absMainImage + '">\n' +
@@ -469,7 +475,7 @@
       '<meta property="product:price:amount" content="' + effectivePrice(product).toFixed(2) + '">\n' +
       '<meta property="product:price:currency" content="EUR">\n' +
       '<meta name="twitter:card" content="summary_large_image">\n' +
-      '<meta name="twitter:title" content="' + escapeAttr(product.title) + " — HezurAdar" + '">\n' +
+      '<meta name="twitter:title" content="' + escapeAttr(pageTitle(product)) + '">\n' +
       '<meta name="twitter:description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
       '<meta name="twitter:image" content="' + absMainImage + '">\n' +
       '<link rel="icon" href="/favicon.ico" sizes="any">\n' +
@@ -479,7 +485,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261008a">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261010b">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -499,7 +505,7 @@
       '        <a class="icon-btn" href="' + escapeAttr(instagram) + '" target="_blank" rel="noopener" aria-label="Instagram' + NEW_TAB_LABEL + '">\n' +
       '          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1"/></svg>\n' +
       "        </a>\n" +
-      '        <button class="icon-btn cart-icon-btn" id="cart-btn" aria-label="Cesta">\n' +
+      '        <button class="icon-btn cart-icon-btn" id="cart-btn" aria-label="Cesta" aria-haspopup="dialog">\n' +
       '          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>\n' +
       '          <span class="cart-badge" id="cart-badge" aria-hidden="true">0</span>\n' +
       "        </button>\n" +
@@ -507,10 +513,10 @@
       "    </nav>\n" +
       "  </div>\n" +
       "</header>\n\n" +
-      '<main id="main" class="container product-page">\n' +
-      '  <nav class="breadcrumb" aria-label="Migas de pan"><a href="/">Tienda</a> › ' +
+      '<main id="main" class="container product-page" tabindex="-1">\n' +
+      '  <nav class="breadcrumb" aria-label="Migas de pan"><a href="/">Tienda</a> <span aria-hidden="true">›</span> ' +
       (catPage ? '<a href="/' + catPage.file + '">' + escapeHtml(catPage.name) + "</a>" : escapeHtml(catLabel)) +
-      ' › <span aria-current="page">' + escapeHtml(product.title) + "</span>" +
+      ' <span aria-hidden="true">›</span> <span aria-current="page">' + escapeHtml(product.title) + "</span>" +
       "</nav>\n" +
       '  <div class="product-detail">\n' +
       '    <div class="product-gallery-page">\n' +
@@ -558,10 +564,10 @@
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
       '<script src="/assets/js/emailjs-notify.js?v=20261002e" defer></script>\n' +
-      '<script src="/assets/js/catalog-template.js?v=20261009a" defer></script>\n' +
-      '<script src="/assets/js/drive-export.js?v=20261006a" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261009a" defer></script>\n' +
-      '<script src="/assets/js/product-page.js?v=20261009a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
+      '<script src="/assets/js/catalog-template.js?v=20261010a" defer></script>\n' +
+      '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261010i" defer></script>\n' +
+      '<script src="/assets/js/product-page.js?v=20261010a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
     );
@@ -848,7 +854,7 @@
       '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
       '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261008a">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261010b">\n' +
       '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
@@ -867,13 +873,15 @@
       "    </nav>\n" +
       "  </div>\n" +
       "</header>\n\n" +
-      '<main id="main" class="container product-page category-page">\n' +
-      '  <nav class="breadcrumb" aria-label="Migas de pan"><a href="/">Tienda</a> › <span aria-current="page">' + escapeHtml(cat.name) + "</span></nav>\n" +
+      '<main id="main" class="container product-page category-page" tabindex="-1">\n' +
+      '  <nav class="breadcrumb" aria-label="Migas de pan"><a href="/">Tienda</a> <span aria-hidden="true">›</span> <span aria-current="page">' + escapeHtml(cat.name) + "</span></nav>\n" +
       '  <div class="category-intro">\n' +
       "    <h1>" + escapeHtml(cat.h1) + "</h1>\n" +
       "    " + cat.intro + "\n" +
       '    <p class="category-count">' + items.length + " producto" + (items.length === 1 ? "" : "s") + "</p>\n" +
       "  </div>\n" +
+      // Encabezado oculto para no saltar del h1 a los h3 de las tarjetas.
+      '  <h2 class="visually-hidden">Productos</h2>\n' +
       '  <div class="grid">' + items.map(linkCardHtml).join("") + "</div>\n" +
       '  <section class="category-guide">\n' +
       "    " + cat.guide + "\n" +

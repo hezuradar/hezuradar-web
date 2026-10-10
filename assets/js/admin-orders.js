@@ -30,6 +30,8 @@
   let editingDocId = null;
   let itemRows = [];
   let expandedCustomerKey = null;
+  // docId -> enlace de la carpeta de Drive, cuando el navegador bloqueó la ventana de «Enviar a cortar».
+  const cutNotices = new Map();
   let editingCustomerKey = null;
   let customerSort = { field: "lastOrderAt", dir: "desc" };
   const CUSTOMER_SORT_DEFAULT_DIR = {
@@ -65,8 +67,10 @@
     document.querySelectorAll(".status-tab").forEach((btn) => {
       btn.addEventListener("click", () => {
         statusFilter = btn.dataset.status;
-        document.querySelectorAll(".status-tab").forEach((b) => b.classList.remove("active"));
-        btn.classList.add("active");
+        document.querySelectorAll(".status-tab").forEach((b) => {
+          b.classList.toggle("active", b === btn);
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+        });
         renderOrders();
       });
     });
@@ -123,9 +127,11 @@
   function initTabs() {
     document.querySelectorAll(".admin-tab").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll(".admin-tab").forEach((b) => b.classList.remove("active"));
+        document.querySelectorAll(".admin-tab").forEach((b) => {
+          b.classList.toggle("active", b === btn);
+          b.setAttribute("aria-pressed", b === btn ? "true" : "false");
+        });
         document.querySelectorAll(".admin-tab-panel").forEach((p) => (p.style.display = "none"));
-        btn.classList.add("active");
         document.getElementById(btn.dataset.tab).style.display = "block";
       });
     });
@@ -172,6 +178,8 @@
       .collection("orders")
       .onSnapshot(
         (snap) => {
+          // Borra un posible aviso de error/reconexión anterior.
+          setAuthStatus("", "");
           orders = snap.docs
             .map((d) => normalizeOrder({ docId: d.id, ...d.data({ serverTimestamps: "estimate" }) }))
             .sort((a, b) => orderTimeMs(b) - orderTimeMs(a));
@@ -185,7 +193,22 @@
           window.dispatchEvent(new CustomEvent("ha-orders-updated", { detail: { orders } }));
         },
         (err) => {
-          setAuthStatus("err", "Error leyendo pedidos: " + err.message);
+          // Tras un error Firestore cierra la escucha: se ofrece un botón para volver a suscribirse.
+          unsubscribe = null;
+          setAuthStatus("err", "Error leyendo pedidos: " + (err && err.message ? err.message : String(err)));
+          const box = $("orders-auth-status").querySelector(".status-msg");
+          if (box) {
+            const retry = document.createElement("button");
+            retry.type = "button";
+            retry.className = "small-btn";
+            retry.style.marginLeft = "8px";
+            retry.textContent = "Reintentar";
+            retry.addEventListener("click", () => {
+              setAuthStatus("info", "Reconectando con los pedidos...");
+              subscribeOrders();
+            });
+            box.appendChild(retry);
+          }
         }
       );
   }
@@ -216,7 +239,7 @@
     }
     if (o.createdAt != null && typeof o.createdAt !== "string") o.createdAt = str(o.createdAt);
     // Los escribe el Apps Script del email al cliente (fecha ISO / texto del error).
-    ["customerEmailSentAt", "customerEmailError", "notifyError", "notifiedAt"].forEach((k) => {
+    ["customerEmailSentAt", "customerEmailError", "notifyError", "notifiedAt", "exportError"].forEach((k) => {
       if (o[k] != null && typeof o[k] !== "string") o[k] = str(o[k]);
     });
     return o;
@@ -448,9 +471,12 @@
 
   function updateCustomerSortArrows() {
     document.querySelectorAll("#customers-thead-row [data-field]").forEach((th) => {
+      const isActive = th.dataset.field === customerSort.field;
+      // aria-sort para lectores de pantalla; la flecha es solo visual (aria-hidden en el HTML).
+      th.setAttribute("aria-sort", isActive ? (customerSort.dir === "asc" ? "ascending" : "descending") : "none");
       const arrow = th.querySelector(".sort-arrow");
       if (!arrow) return;
-      arrow.textContent = th.dataset.field === customerSort.field ? (customerSort.dir === "asc" ? " ▲" : " ▼") : "";
+      arrow.textContent = isActive ? (customerSort.dir === "asc" ? " ▲" : " ▼") : "";
     });
   }
 
@@ -564,10 +590,10 @@
         <td>${formatPrice(c.totalSpent)}</td>
         <td>${formatDate(c.lastOrderAt)}</td>
         <td class="row-actions">
-          <button class="small-btn" id="cust-view-${key}" type="button">📦 Pedidos</button>
-          ${mergeable >= 2 ? `<button class="small-btn" id="cust-merge-${key}" type="button" title="Junta sus pedidos pendientes en uno solo, con un único envío">🔗 Agrupar pendientes (${mergeable})</button>` : ""}
-          <button class="small-btn" id="cust-edit-${key}" type="button">✏️ Editar</button>
-          <button class="small-btn danger" id="cust-del-${key}" type="button">🗑️ Borrar</button>
+          <button class="small-btn" id="cust-view-${key}" type="button" aria-label="Pedidos de ${escapeAttr(c.name || "cliente")}"><span aria-hidden="true">📦</span> Pedidos</button>
+          ${mergeable >= 2 ? `<button class="small-btn" id="cust-merge-${key}" type="button" title="Junta sus pedidos pendientes en uno solo, con un único envío" aria-label="Agrupar ${mergeable} pedidos pendientes de ${escapeAttr(c.name || "cliente")}"><span aria-hidden="true">🔗</span> Agrupar pendientes (${mergeable})</button>` : ""}
+          <button class="small-btn" id="cust-edit-${key}" type="button" aria-label="Editar cliente ${escapeAttr(c.name || "")}"><span aria-hidden="true">✏️</span> Editar</button>
+          <button class="small-btn danger" id="cust-del-${key}" type="button" aria-label="Borrar cliente ${escapeAttr(c.name || "")}"><span aria-hidden="true">🗑️</span> Borrar</button>
         </td>
       </tr>`;
 
@@ -882,6 +908,8 @@
       .join("");
     const priced = itemsSum > 0;
     const mismatches = design ? [] : catalogPriceMismatches(o);
+    // Código del pedido (escapado) para los aria-label de los botones repetidos en cada tarjeta.
+    const codeAttr = escapeAttr(o.orderCode || o.docId);
 
     return `
       <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
@@ -893,23 +921,24 @@
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
-            <select id="status-${escapeAttr(o.docId)}" class="order-status-select">
+            <select id="status-${escapeAttr(o.docId)}" class="order-status-select" aria-label="Estado del pedido ${codeAttr}">
               ${["pendiente", "confirmado", "enviado", "entregado", "cancelado"]
                 .map((s2) => `<option value="${s2}" ${status === s2 ? "selected" : ""}>${capitalize(s2)}</option>`)
                 .join("")}
             </select>
             ${designButtons}
-            ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Sube el diseño, el archivo del cliente y la nota del pedido a la carpeta compartida de Drive">✂️ Enviar a cortar</button>` : ""}
-            ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(o.driveFolderUrl)}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive">📁 Drive</a>` : ""}
-            <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío">🏷️ Etiqueta</button>
-            <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF">📄 Albarán</button>
-            ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el presupuesto/albarán por WhatsApp al cliente">📲 ${design ? "Presupuesto" : "Albarán"} WhatsApp</button>` : ""}
-            ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente">✉️ Reenviar email</button>` : ""}
-            ${o.trackingNumber ? `<a class="small-btn" href="${escapeAttr(CORREOS_TRACKING_URL + encodeURIComponent(o.trackingNumber))}" target="_blank" rel="noopener" title="Ver seguimiento del envío en Correos">🚚 Seguimiento</a>` : ""}
-            <button class="small-btn" id="edit-${escapeAttr(o.docId)}" type="button">✏️ Editar</button>
-            <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button">🗑️ Borrar</button>
+            ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Sube el diseño, el archivo del cliente y la nota del pedido a la carpeta compartida de Drive" aria-label="Enviar a cortar el pedido ${codeAttr}"><span aria-hidden="true">✂️</span> Enviar a cortar</button>` : ""}
+            ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(o.driveFolderUrl)}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive" aria-label="Carpeta de Drive del pedido ${codeAttr} (se abre en otra pestaña)"><span aria-hidden="true">📁</span> Drive</a>` : ""}
+            <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío" aria-label="Imprimir etiqueta del pedido ${codeAttr}"><span aria-hidden="true">🏷️</span> Etiqueta</button>
+            <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF" aria-label="Descargar albarán del pedido ${codeAttr}"><span aria-hidden="true">📄</span> Albarán</button>
+            ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el presupuesto/albarán por WhatsApp al cliente" aria-label="Enviar ${design ? "presupuesto" : "albarán"} del pedido ${codeAttr} por WhatsApp"><span aria-hidden="true">📲</span> ${design ? "Presupuesto" : "Albarán"} WhatsApp</button>` : ""}
+            ${c.email ? `<button class="small-btn" id="resend-email-${escapeAttr(o.docId)}" type="button" title="Reenviar el email de confirmación al cliente" aria-label="Reenviar email del pedido ${codeAttr}"><span aria-hidden="true">✉️</span> Reenviar email</button>` : ""}
+            ${o.trackingNumber ? `<a class="small-btn" href="${escapeAttr(CORREOS_TRACKING_URL + encodeURIComponent(o.trackingNumber))}" target="_blank" rel="noopener" title="Ver seguimiento del envío en Correos" aria-label="Seguimiento del pedido ${codeAttr} en Correos (se abre en otra pestaña)"><span aria-hidden="true">🚚</span> Seguimiento</a>` : ""}
+            <button class="small-btn" id="edit-${escapeAttr(o.docId)}" type="button" aria-label="Editar pedido ${codeAttr}"><span aria-hidden="true">✏️</span> Editar</button>
+            <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button" aria-label="Borrar pedido ${codeAttr}"><span aria-hidden="true">🗑️</span> Borrar</button>
           </div>
         </div>
+        ${cutNotices.has(o.docId) ? `<div class="status-msg ok" role="status">Subido a Drive. El navegador bloqueó la ventana: <a href="${escapeAttr(cutNotices.get(o.docId))}" target="_blank" rel="noopener">abrir la carpeta del pedido</a>.</div>` : ""}
         <div class="order-card-body">
           <div class="order-items-block">
             ${designBlocks}
@@ -948,8 +977,30 @@
     const notify = o.notifyError
       ? `<div class="order-customer-line order-email-status err">⚠️ El aviso por email de este pedido falló: ${escapeHtml(o.notifyError)}</div>`
       : "";
-    if (!c.email) return notify;
-    return notify + customerEmailLineHtml(o);
+    const exportWarn = designExportWarningHtml(o);
+    if (!c.email) return exportWarn + notify;
+    return exportWarn + notify + customerEmailLineHtml(o);
+  }
+
+  // Margen que se da al Apps Script para exportar/enviar antes de avisar de que algo falló.
+  const PENDING_GRACE_MS = 3 * 60 * 1000;
+  // Antes de esta fecha no se registraba el envío del email: no se marca el histórico.
+  const EMAIL_TRACKING_SINCE_MS = Date.parse("2026-10-09T00:00:00");
+
+  function orderAgeMs(o) {
+    const t = orderTimeMs(o);
+    return t ? Date.now() - t : 0;
+  }
+
+  // Pedido de diseño que el Apps Script no llegó a exportar a Drive (ni avisó por email).
+  function designExportWarningHtml(o) {
+    const designs = orderDesigns(o);
+    if (!designs.length || o.driveFolderUrl) return "";
+    // En pedidos con varios diseños la carpeta puede estar solo en cada diseño.
+    if (designs.some((ds) => ds && ds.driveFolderUrl)) return "";
+    if (orderAgeMs(o) <= PENDING_GRACE_MS) return "";
+    const detail = o.exportError ? ` <span class="order-export-error">(${escapeHtml(o.exportError)})</span>` : "";
+    return `<div class="order-customer-line order-email-status err">⚠️ No se ha exportado a Drive ni se ha avisado por email: usa «Enviar a cortar»${detail}</div>`;
   }
 
   function customerEmailLineHtml(o) {
@@ -958,6 +1009,11 @@
     }
     if (o.customerEmailError) {
       return `<div class="order-customer-line order-email-status err">⚠️ Email NO enviado: ${escapeHtml(o.customerEmailError)}</div>`;
+    }
+    const createdMs = Date.parse(o.createdAt || "");
+    const tracked = !isNaN(createdMs) && createdMs >= EMAIL_TRACKING_SINCE_MS;
+    if (tracked && orderAgeMs(o) > PENDING_GRACE_MS) {
+      return `<div class="order-customer-line order-email-status err">⚠️ Email de confirmación sin enviar</div>`;
     }
     return "";
   }
@@ -1161,6 +1217,7 @@ ${bodyHtml}
     // La ventana se abre ya, dentro del clic, para que el navegador no la bloquee
     // al abrirla después de la espera.
     const win = window.open("", "_blank");
+    cutNotices.delete(docId);
     if (btn) {
       btn.disabled = true;
       btn.textContent = "⏳ Subiendo a Drive...";
@@ -1168,7 +1225,14 @@ ${bodyHtml}
     try {
       const idToken = await firebase.auth().currentUser.getIdToken();
       const res = await window.HA_DRIVE.exportOrder(docId, idToken);
-      if (win) win.location.href = res.folderUrl;
+      const folderUrl = /^https:\/\/drive\.google\.com\//.test(String(res.folderUrl || "")) ? String(res.folderUrl) : "";
+      if (win && folderUrl) win.location.href = folderUrl;
+      else if (win) win.close();
+      // Si el navegador bloqueó la ventana, el enlace queda en la tarjeta del pedido.
+      if (!win && folderUrl) {
+        cutNotices.set(docId, folderUrl);
+        renderOrders();
+      }
       if (res.fileMissing) {
         alert("Subido a Drive, pero falta el archivo original del cliente (era demasiado grande): pídeselo y añádelo a la carpeta.");
       }
@@ -1176,9 +1240,10 @@ ${bodyHtml}
       if (win) win.close();
       alert("No se pudo subir a Drive: " + e.message);
     } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "✂️ Enviar a cortar";
+      const btnNow = document.getElementById(`send-to-cut-${docId}`);
+      if (btnNow) {
+        btnNow.disabled = false;
+        btnNow.innerHTML = '<span aria-hidden="true">✂️</span> Enviar a cortar';
       }
     }
   }
@@ -1209,7 +1274,7 @@ ${bodyHtml}
     } finally {
       if (btn) {
         btn.disabled = false;
-        btn.textContent = "✉️ Reenviar email";
+        btn.innerHTML = '<span aria-hidden="true">✉️</span> Reenviar email';
       }
     }
   }

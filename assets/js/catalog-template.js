@@ -138,7 +138,7 @@
         : escapeHtml(p.title)) +
       '</h3>\n          <div class="card-price">' +
       (hasDiscount
-        ? '<span class="price-old">' + formatPrice(p.price) + "</span> " + formatPrice(effectivePrice(p))
+        ? '<span class="price-old"><span class="visually-hidden">Precio anterior: </span>' + formatPrice(p.price) + '</span> <span class="visually-hidden">Precio actual: </span>' + formatPrice(effectivePrice(p))
         : formatPrice(p.price)) +
       '</div>\n          <div class="card-actions">\n            <button type="button" class="btn btn-outline" data-open="' +
       escapeAttr(p.id) +

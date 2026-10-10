@@ -405,28 +405,43 @@
   }
 
   async function ghApi(path, opts) {
+    const GH_TIMEOUT_MS = 30000;
     const cfg = ghConfig();
     if (!cfg.owner || !cfg.repo || !cfg.token) {
       throw new Error("Configura primero usuario, repositorio y token de GitHub.");
     }
     const base = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}`;
     const url = path ? `${base}/${path}` : base;
-    const res = await fetch(url, {
-      ...opts,
-      cache: "no-store",
-      headers: {
-        Authorization: `Bearer ${cfg.token}`,
-        Accept: "application/vnd.github+json",
-        ...(opts && opts.headers ? opts.headers : {}),
-      },
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      const err = new Error(`GitHub API ${res.status}: ${body.slice(0, 300)}`);
-      err.status = res.status;
-      throw err;
+    // Sin respuesta en GH_TIMEOUT_MS se aborta, para que el panel no se quede "publicando" para siempre.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), GH_TIMEOUT_MS);
+    try {
+      const res = await fetch(url, {
+        ...opts,
+        cache: "no-store",
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${cfg.token}`,
+          Accept: "application/vnd.github+json",
+          ...(opts && opts.headers ? opts.headers : {}),
+        },
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        const err = new Error(`GitHub API ${res.status}: ${body.slice(0, 300)}`);
+        err.status = res.status;
+        throw err;
+      }
+      return res.status === 204 ? null : await res.json();
+    } catch (e) {
+      // El abort puede llegar durante la petición o mientras se lee el cuerpo de la respuesta.
+      if (e && e.name === "AbortError") {
+        throw new Error(`GitHub no ha respondido en ${GH_TIMEOUT_MS / 1000} segundos. Revisa la conexión y vuelve a intentarlo.`);
+      }
+      throw e;
+    } finally {
+      clearTimeout(timer);
     }
-    return res.status === 204 ? null : res.json();
   }
 
   // null solo si GitHub responde 404 a ese archivo. Ojo: GitHub también responde 404 cuando
@@ -506,15 +521,18 @@
 
   /* ---------------- PRODUCTS ---------------- */
 
-  async function loadProducts() {
+  // keepStatus: tras publicar o borrar, recarga la tabla sin tapar el mensaje final
+  // (que puede llevar avisos de fallos parciales que el admin tiene que leer).
+  async function loadProducts(options) {
+    const keepStatus = !!(options && options.keepStatus);
     const cfg = ghConfig();
     if (!cfg.owner || !cfg.repo || !cfg.token) {
-      setStatus("p-status", "info", "Configura la conexión con GitHub para cargar y publicar productos.");
+      if (!keepStatus) setStatus("p-status", "info", "Configura la conexión con GitHub para cargar y publicar productos.");
       await loadProductsFromLiveSite();
       return;
     }
     try {
-      setStatus("p-status", "info", "Cargando catálogo desde GitHub...");
+      if (!keepStatus) setStatus("p-status", "info", "Cargando catálogo desde GitHub...");
       const file = await getFile(PRODUCTS_PATH);
       if (file) {
         products = JSON.parse(file.content);
@@ -525,12 +543,14 @@
         products = [];
         productsSha = null;
       }
-      setStatus("p-status", "", "");
+      if (!keepStatus) setStatus("p-status", "", "");
       renderTable();
       fillDatalists();
       maybeSuggestSku();
     } catch (e) {
-      setStatus("p-status", "err", "Error cargando catálogo desde GitHub: " + e.message);
+      // Con keepStatus se conserva el resultado de la publicación y se añade el fallo al recargar.
+      const previous = keepStatus ? ($("p-status").textContent || "").trim() : "";
+      setStatus("p-status", "err", (previous ? previous + " " : "") + "Error cargando catálogo desde GitHub: " + e.message);
       // Aunque falle la conexión con GitHub, se intenta rellenar la tabla y los desplegables
       // de categoría/subcategoría con el catálogo público de la web ya publicada, para no
       // dejarlos vacíos mientras se soluciona la conexión.
@@ -691,8 +711,8 @@
         <td>${Number(p.price).toFixed(2)} €${p.discountPercent ? ` <span class="discount-tag">-${Number(p.discountPercent) || 0}%</span>` : ""}</td>
         <td>${p.stock == null ? "-" : Number(p.stock)}</td>
         <td class="row-actions">
-          <button class="small-btn" data-edit="${escapeAttr(p.id)}">Editar</button>
-          <button class="small-btn danger" data-del="${escapeAttr(p.id)}">Borrar</button>
+          <button type="button" class="small-btn" data-edit="${escapeAttr(p.id)}" aria-label="Editar ${escapeAttr(p.title)}">Editar</button>
+          <button type="button" class="small-btn danger" data-del="${escapeAttr(p.id)}" aria-label="Borrar ${escapeAttr(p.title)}">Borrar</button>
         </td>
       </tr>`
       )
@@ -750,14 +770,14 @@
       (src, i) => `
         <div class="thumb-item">
           <img src="${escapeAttr(src)}" alt="">
-          <button type="button" class="thumb-remove" data-existing-idx="${i}" title="Quitar imagen">&times;</button>
+          <button type="button" class="thumb-remove" data-existing-idx="${i}" title="Quitar imagen" aria-label="Quitar imagen">&times;</button>
         </div>`
     );
     const pendingThumbs = pendingFiles.map(
       (f, i) => `
         <div class="thumb-item">
           <img src="${URL.createObjectURL(f)}" alt="">
-          <button type="button" class="thumb-remove" data-pending-idx="${i}" title="Quitar imagen">&times;</button>
+          <button type="button" class="thumb-remove" data-pending-idx="${i}" title="Quitar imagen" aria-label="Quitar imagen">&times;</button>
         </div>`
     );
     $("thumb-preview").innerHTML = existingThumbs.join("") + pendingThumbs.join("");
@@ -931,7 +951,7 @@
         "Publicado correctamente. La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta." + extraWarning
       );
       resetForm();
-      await loadProducts();
+      await loadProducts({ keepStatus: true });
     } catch (e) {
       setStatus("p-status", "err", e.message);
     } finally {
@@ -999,7 +1019,7 @@
 
       const extraWarning = seoWarning + imageCleanupWarning(cleanupFailures);
       setStatus("p-status", extraWarning ? "err" : "ok", "Producto borrado y publicado." + extraWarning);
-      await loadProducts();
+      await loadProducts({ keepStatus: true });
     } catch (e) {
       setStatus("p-status", "err", e.message);
     }

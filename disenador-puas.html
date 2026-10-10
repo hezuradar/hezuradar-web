@@ -4,18 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://firestore.googleapis.com https://script.google.com https://script.googleusercontent.com; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self';">
-<title>Púas personalizadas con tu logo en hueso o cuerno — HezurAdar</title>
+<title>Púas personalizadas con tu logo — HezurAdar</title>
 <meta name="description" content="Sube tu logo (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso o cuerno natural. Púas personalizadas en Legazpi, con presupuesto sin compromiso.">
 <link rel="canonical" href="https://hezuradar.com/disenador-puas.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="HezurAdar">
-<meta property="og:title" content="Púas personalizadas con tu logo en hueso o cuerno — HezurAdar">
-<meta property="og:description" content="Sube tu logo (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso o cuerno natural. Púas personalizadas en Legazpi, con presupuesto sin compromiso. Pedido mínimo: 20 unidades.">
+<meta property="og:title" content="Púas personalizadas con tu logo — HezurAdar">
+<meta property="og:description" content="Sube tu logo (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso o cuerno natural. Púas personalizadas en Legazpi, con presupuesto sin compromiso.">
 <meta property="og:url" content="https://hezuradar.com/disenador-puas.html">
 <meta property="og:image" content="https://hezuradar.com/images/site/hero/photo-2.jpg">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="1200">
 <meta property="og:locale" content="es_ES">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Púas personalizadas con tu logo en hueso o cuerno — HezurAdar">
+<meta name="twitter:title" content="Púas personalizadas con tu logo — HezurAdar">
 <meta name="twitter:description" content="Sube tu logo (PDF o DXF) y ajústalo sobre una púa de 27×32 mm en hueso o cuerno natural. Púas personalizadas en Legazpi, con presupuesto sin compromiso.">
 <meta name="twitter:image" content="https://hezuradar.com/images/site/hero/photo-2.jpg">
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -25,8 +27,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20261009e">
-<script src="assets/js/device.js?v=20260915q"></script>
+<link rel="stylesheet" href="assets/css/style.css?v=20261010d">
+<script src="assets/js/device.js?v=20260915l"></script>
 </head>
 <body>
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -34,7 +36,7 @@
 <header class="site-header">
   <div class="container">
     <a class="brand" href="/">
-      <img src="images/site/logo.jpg" alt="Logo HezurAdar">
+      <img src="images/site/logo.jpg" alt="">
       HezurAdar
     </a>
     <nav class="header-nav" aria-label="Principal">
@@ -82,7 +84,8 @@
 
         <div class="plate-stage">
           <div class="plate-canvas-wrap shape-pick">
-            <canvas id="plate-canvas" width="405" height="480" role="img" tabindex="0" aria-label="Vista previa de la púa"></canvas>
+            <canvas id="plate-canvas" width="405" height="480" role="group" aria-roledescription="área de ajuste del diseño" aria-describedby="plate-kbd-hint" tabindex="0" aria-label="Vista previa de la púa"></canvas>
+            <p class="visually-hidden" id="plate-kbd-hint">Con el foco aquí, usa las flechas para mover el diseño; con Mayús se mueve más rápido.</p>
             <div class="plate-empty-hint" id="plate-empty-hint">Sube un diseño para verlo aquí sobre la púa</div>
             <div class="plate-ruler plate-ruler-bottom" id="ruler-bottom"></div>
             <div class="plate-ruler plate-ruler-side" id="ruler-side"></div>
@@ -189,8 +192,8 @@
         </fieldset>
 
         <p class="help-text checkout-legal">Es una solicitud de presupuesto, sin compromiso de compra. Tratamos tus datos
-        solo para preparar y gestionar tu pedido, según la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.
-        Las piezas personalizadas no admiten desistimiento (ver <a href="/condiciones.html" target="_blank" rel="noopener">condiciones</a>).</p>
+        solo para preparar y gestionar tu pedido, según la <a href="/privacidad.html" target="_blank" rel="noopener">política de privacidad<span class="visually-hidden"> (se abre en una pestaña nueva)</span></a>.
+        Las piezas personalizadas no admiten desistimiento (ver <a href="/condiciones.html" target="_blank" rel="noopener">condiciones<span class="visually-hidden"> (se abre en una pestaña nueva)</span></a>).</p>
         <button class="btn btn-primary" id="send-request-btn" type="button" style="width:100%">Enviar solicitud</button>
         <div id="request-status" aria-live="polite"></div>
       </div>
@@ -207,20 +210,20 @@
       <a href="/condiciones.html">Envíos y devoluciones</a>
       <a href="/privacidad.html">Privacidad</a>
       <a href="/aviso-legal.html">Aviso legal</a>
-      <a href="https://www.instagram.com/hezuradar/" target="_blank" rel="noopener">Instagram</a>
+      <a href="https://www.instagram.com/hezuradar/" target="_blank" rel="noopener">Instagram<span class="visually-hidden"> (se abre en una pestaña nueva)</span></a>
     </div>
     <nav class="footer-cats" aria-label="Categorías"><a href="/cejuelas.html">Cejuelas</a><a href="/selletas.html">Selletas</a><a href="/pines-guitarra-acustica.html">Pines</a><a href="/puas.html">Púas</a><a href="/madre-perla-abalone.html">Madre perla y abalone</a><a href="/bloques-placas.html">Bloques y placas</a></nav>
     <nav class="footer-cats footer-guides" aria-label="Guías"><a class="footer-guides-all" href="/guias.html">Guías:</a><a href="/guia-cejuela-hueso-vs-plastico.html">Hueso o plástico</a><a href="/guia-hueso-vs-cuerno.html">Hueso o cuerno</a><a href="/guia-medidas-cejuela-selleta.html">Medidas de cejuelas y selletas</a><a href="/guia-tallar-cejuela.html">Tallar una cejuela</a><a href="/guia-tallar-selleta.html">Tallar una selleta</a><a href="/guia-cambiar-pines-guitarra.html">Cambiar los pines</a></nav>
   </div>
 </footer>
 
-<script src="assets/js/year.js?v=20260915q" defer></script>
-<script src="assets/js/dxf-mini.js?v=20261009c" defer></script>
+<script src="assets/js/year.js?v=20260915l" defer></script>
+<script src="assets/js/dxf-mini.js?v=20261010d" defer></script>
 <script src="assets/js/firebase-config.js?v=20260915q" defer></script>
 <script src="assets/js/firebase-orders.js?v=20261009a" defer></script>
 <script src="assets/js/drive-export.js?v=20261009b" defer></script>
 <script src="assets/js/analytics.js?v=20261009a" defer></script>
 <script src="assets/js/disenador-puas-config.js?v=20261009a" defer></script>
-<script src="assets/js/disenador.js?v=20261009s" defer></script>
+<script src="assets/js/disenador.js?v=20261010j" defer></script>
 </body>
 </html>

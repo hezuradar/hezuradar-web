@@ -11,26 +11,29 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/style.css?v=20261009e">
+<link rel="stylesheet" href="assets/css/style.css?v=20261010d">
 <script src="assets/js/device.js?v=20260915l"></script>
 </head>
 <body class="admin-body">
+<a class="skip-link" href="#main">Saltar al contenido</a>
 
 <header class="site-header">
   <div class="container">
     <a class="brand" href="index.html">
-      <img src="images/site/logo.jpg" alt="Logo HezurAdar">
+      <img src="images/site/logo.jpg" alt="">
       HezurAdar · Admin
     </a>
-    <nav class="header-nav">
+    <nav class="header-nav" aria-label="Principal">
       <a class="pill-btn" href="index.html">Ver tienda</a>
       <button class="pill-btn" id="logout-btn" style="display:none">Salir</button>
     </nav>
   </div>
 </header>
 
+<main id="main" tabindex="-1">
+
 <div id="lock-screen" class="admin-lock">
-  <h2 id="lock-title">Panel privado</h2>
+  <h1 id="lock-title" style="font-size:1.5em">Panel privado</h1>
   <p id="lock-help" style="color:var(--color-muted);font-size:.88rem">Entra con tu cuenta de administrador.</p>
   <form id="login-form" novalidate>
     <input type="email" id="login-email" placeholder="Email" maxlength="200" autocomplete="username" inputmode="email" aria-label="Email" autofocus>
@@ -52,17 +55,17 @@
 
 <div id="admin-shell" class="admin-shell" style="display:none">
 
-  <div class="admin-tabs">
-    <button class="admin-tab active" data-tab="tab-products">Productos</button>
-    <button class="admin-tab" data-tab="tab-orders">Pedidos<span class="tab-badge" id="orders-pending-badge" style="display:none"></span></button>
-    <button class="admin-tab" data-tab="tab-customers">Clientes</button>
-    <button class="admin-tab" data-tab="tab-stats">Estadísticas</button>
+  <div class="admin-tabs" role="group" aria-label="Secciones del panel">
+    <button type="button" class="admin-tab active" data-tab="tab-products" aria-pressed="true">Productos</button>
+    <button type="button" class="admin-tab" data-tab="tab-orders" aria-pressed="false">Pedidos<span class="tab-badge" id="orders-pending-badge" style="display:none"></span></button>
+    <button type="button" class="admin-tab" data-tab="tab-customers" aria-pressed="false">Clientes</button>
+    <button type="button" class="admin-tab" data-tab="tab-stats" aria-pressed="false">Estadísticas</button>
   </div>
 
   <div id="tab-products" class="admin-tab-panel">
 
   <div class="card-panel">
-    <h3>Conexión con GitHub</h3>
+    <h2 style="font-size:1.17em">Conexión con GitHub</h2>
     <p class="help-text">
       Para publicar cambios en la web necesitas un <b>Personal Access Token</b> de GitHub con permiso
       <code>repo</code> (o <code>Contents: Read and write</code> si es un token fine-grained) sobre este repositorio.
@@ -103,7 +106,7 @@
   </div>
 
   <div class="card-panel">
-    <h3 id="form-title">Añadir producto</h3>
+    <h2 id="form-title" style="font-size:1.17em">Añadir producto</h2>
     <div class="field">
       <label for="p-title">Título</label>
       <input id="p-title" placeholder="p.ej. Cejuela de hueso blanco para Fender">
@@ -166,7 +169,7 @@
   </div>
 
   <div class="card-panel">
-    <h3>Productos publicados (<span id="p-count">0</span>)</h3>
+    <h2 style="font-size:1.17em">Productos publicados (<span id="p-count">0</span>)</h2>
     <input id="p-filter" aria-label="Filtrar productos por nombre" placeholder="Filtrar por nombre..." style="margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px solid var(--color-border);width:100%">
     <div style="overflow-x:auto">
       <table class="admin-table">
@@ -187,7 +190,7 @@
     <div id="orders-panel" style="display:none">
 
       <div class="card-panel">
-        <h3>Resumen de ventas</h3>
+        <h2 style="font-size:1.17em">Resumen de ventas</h2>
         <div class="field-row">
           <div class="field">
             <label for="revenue-from">Desde</label>
@@ -206,9 +209,9 @@
       </div>
 
       <div class="card-panel">
-        <h3 id="order-form-title">Nuevo pedido</h3>
+        <h2 id="order-form-title" style="font-size:1.17em">Nuevo pedido</h2>
 
-        <h4 class="form-section-title">📋 Estado del pedido</h4>
+        <h3 class="form-section-title">📋 Estado del pedido</h3>
         <div class="field-row">
           <div class="field">
             <label for="o-status">Estado</label>
@@ -241,7 +244,7 @@
           </div>
         </div>
 
-        <h4 class="form-section-title">🧑 Datos del cliente</h4>
+        <h3 class="form-section-title">🧑 Datos del cliente</h3>
         <div class="field">
           <label for="o-customer-select">Cliente existente (opcional)</label>
           <select id="o-customer-select">
@@ -270,7 +273,7 @@
           </div>
         </div>
 
-        <h4 class="form-section-title">📦 Dirección de envío</h4>
+        <h3 class="form-section-title"><span aria-hidden="true">📦</span> Dirección de envío</h3>
         <div class="field-row">
           <div class="field">
             <label for="o-address">Dirección</label>
@@ -292,7 +295,7 @@
           </div>
         </div>
 
-        <h4 class="form-section-title">🛒 Productos del pedido</h4>
+        <h3 class="form-section-title">🛒 Productos del pedido</h3>
         <div class="field">
           <div id="order-items-rows"></div>
           <button type="button" class="small-btn" id="order-add-item">+ Añadir línea</button>
@@ -320,18 +323,18 @@
 
       <div class="card-panel">
         <div class="orders-toolbar">
-          <h3 style="margin:0">Pedidos (<span id="orders-count">0</span>)</h3>
+          <h2 style="font-size:1.17em;margin:0">Pedidos (<span id="orders-count">0</span>)</h2>
           <div class="orders-toolbar-actions">
-            <button class="small-btn" id="print-confirmed-btn" type="button" title="Imprime en una sola página todas las etiquetas de envío de los pedidos confirmados">🏷️ Etiquetas de confirmados (<span id="confirmed-count">0</span>)</button>
+            <button class="small-btn" id="print-confirmed-btn" type="button" title="Imprime en una sola página todas las etiquetas de envío de los pedidos confirmados"><span aria-hidden="true">🏷️</span> Etiquetas de confirmados (<span id="confirmed-count">0</span>)</button>
           </div>
         </div>
         <div class="status-tabs" id="orders-status-tabs">
-          <button class="status-tab active" type="button" data-status="">Todos <span class="status-tab-count" id="count-all">0</span></button>
-          <button class="status-tab" type="button" data-status="pendiente">Pendiente <span class="status-tab-count" id="count-pendiente">0</span></button>
-          <button class="status-tab" type="button" data-status="confirmado">Confirmado <span class="status-tab-count" id="count-confirmado">0</span></button>
-          <button class="status-tab" type="button" data-status="enviado">Enviado <span class="status-tab-count" id="count-enviado">0</span></button>
-          <button class="status-tab" type="button" data-status="entregado">Entregado <span class="status-tab-count" id="count-entregado">0</span></button>
-          <button class="status-tab" type="button" data-status="cancelado">Cancelado <span class="status-tab-count" id="count-cancelado">0</span></button>
+          <button class="status-tab active" type="button" data-status="" aria-pressed="true">Todos <span class="status-tab-count" id="count-all">0</span></button>
+          <button class="status-tab" type="button" data-status="pendiente" aria-pressed="false">Pendiente <span class="status-tab-count" id="count-pendiente">0</span></button>
+          <button class="status-tab" type="button" data-status="confirmado" aria-pressed="false">Confirmado <span class="status-tab-count" id="count-confirmado">0</span></button>
+          <button class="status-tab" type="button" data-status="enviado" aria-pressed="false">Enviado <span class="status-tab-count" id="count-enviado">0</span></button>
+          <button class="status-tab" type="button" data-status="entregado" aria-pressed="false">Entregado <span class="status-tab-count" id="count-entregado">0</span></button>
+          <button class="status-tab" type="button" data-status="cancelado" aria-pressed="false">Cancelado <span class="status-tab-count" id="count-cancelado">0</span></button>
         </div>
         <div id="orders-list"></div>
       </div>
@@ -346,19 +349,19 @@
     <div id="customers-panel" style="display:none">
       <div class="card-panel">
         <div class="orders-toolbar">
-          <h3 style="margin:0">Clientes (<span id="customers-count">0</span>)</h3>
+          <h2 style="font-size:1.17em;margin:0">Clientes (<span id="customers-count">0</span>)</h2>
         </div>
         <input id="customer-filter" aria-label="Buscar clientes" placeholder="Buscar por nombre, teléfono o email..." style="margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px solid var(--color-border);width:100%">
         <div style="overflow-x:auto">
           <table class="admin-table">
             <thead>
               <tr id="customers-thead-row">
-                <th class="sortable-th" data-field="name" style="cursor:pointer;user-select:none">Cliente<span class="sort-arrow"></span></th>
-                <th class="sortable-th" data-field="phone" style="cursor:pointer;user-select:none">Contacto<span class="sort-arrow"></span></th>
-                <th class="sortable-th" data-field="address" style="cursor:pointer;user-select:none">Dirección<span class="sort-arrow"></span></th>
-                <th class="sortable-th" data-field="orderCount" style="cursor:pointer;user-select:none">Pedidos<span class="sort-arrow"></span></th>
-                <th class="sortable-th" data-field="totalSpent" style="cursor:pointer;user-select:none">Total gastado<span class="sort-arrow"></span></th>
-                <th class="sortable-th" data-field="lastOrderAt" style="cursor:pointer;user-select:none">Último pedido<span class="sort-arrow"></span></th>
+                <th class="sortable-th" data-field="name" aria-sort="none"><button type="button" class="th-sort-btn">Cliente<span class="sort-arrow" aria-hidden="true"></span></button></th>
+                <th class="sortable-th" data-field="phone" aria-sort="none"><button type="button" class="th-sort-btn">Contacto<span class="sort-arrow" aria-hidden="true"></span></button></th>
+                <th class="sortable-th" data-field="address" aria-sort="none"><button type="button" class="th-sort-btn">Dirección<span class="sort-arrow" aria-hidden="true"></span></button></th>
+                <th class="sortable-th" data-field="orderCount" aria-sort="none"><button type="button" class="th-sort-btn">Pedidos<span class="sort-arrow" aria-hidden="true"></span></button></th>
+                <th class="sortable-th" data-field="totalSpent" aria-sort="none"><button type="button" class="th-sort-btn">Total gastado<span class="sort-arrow" aria-hidden="true"></span></button></th>
+                <th class="sortable-th" data-field="lastOrderAt" aria-sort="none"><button type="button" class="th-sort-btn">Último pedido<span class="sort-arrow" aria-hidden="true"></span></button></th>
                 <th></th>
               </tr>
             </thead>
@@ -381,10 +384,10 @@
           <p class="stats-sub" id="stats-range-label"></p>
         </div>
         <div class="stats-range" role="group" aria-label="Periodo">
-          <button type="button" data-days="7">7 días</button>
-          <button type="button" data-days="30" class="active">30 días</button>
-          <button type="button" data-days="90">90 días</button>
-          <button type="button" data-days="0">Todo</button>
+          <button type="button" data-days="7" aria-pressed="false">7 días</button>
+          <button type="button" data-days="30" class="active" aria-pressed="true">30 días</button>
+          <button type="button" data-days="90" aria-pressed="false">90 días</button>
+          <button type="button" data-days="0" aria-pressed="false">Todo</button>
         </div>
       </div>
 
@@ -455,15 +458,15 @@
               <p class="stats-card-sub" id="top-sold-sub">Por unidades, pedidos no cancelados</p>
             </div>
             <div class="seg-toggle" role="group" aria-label="Ordenar por">
-              <button type="button" data-metric="units" class="active">Unidades</button>
-              <button type="button" data-metric="revenue">Facturación</button>
+              <button type="button" data-metric="units" class="active" aria-pressed="true">Unidades</button>
+              <button type="button" data-metric="revenue" aria-pressed="false">Facturación</button>
             </div>
           </div>
           <ol id="top-sold-list" class="rank-list"></ol>
         </div>
       </div>
 
-      <h3 class="stats-section-title">Tráfico de la web</h3>
+      <h2 class="stats-section-title" style="font-size:1.17em">Tráfico de la web</h2>
       <p class="help-text" id="stats-visits-notice" style="display:none">
         Todavía no se han registrado visitas. Si acabas de añadir esta sección, revisa que
         las reglas de Firestore permiten escribir en la colección <code>analytics_daily</code>
@@ -490,6 +493,8 @@
 
 </div>
 
+</main>
+
 <script src="/assets/js/vendor/firebase-app-compat-10.12.2.js"></script>
 <script src="/assets/js/vendor/firebase-auth-compat-10.12.2.js"></script>
 <script src="/assets/js/vendor/firebase-firestore-compat-10.12.2.js"></script>
@@ -497,11 +502,11 @@
 <script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js"></script>
 <script src="assets/js/emailjs-config.js?v=20261002e"></script>
 <script src="assets/js/emailjs-notify.js?v=20261002e"></script>
-<script src="assets/js/product-page-template.js?v=20261009t"></script>
-<script src="assets/js/catalog-template.js?v=20261009g"></script>
-<script src="assets/js/admin.js?v=20261009o"></script>
+<script src="assets/js/product-page-template.js?v=20261010a"></script>
+<script src="assets/js/catalog-template.js?v=20261010a"></script>
+<script src="assets/js/admin.js?v=20261010i"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
-<script src="assets/js/admin-orders.js?v=20261009v"></script>
+<script src="assets/js/admin-orders.js?v=20261010q"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261009d"></script>
 </body>

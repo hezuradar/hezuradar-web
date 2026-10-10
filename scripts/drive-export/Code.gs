@@ -40,6 +40,7 @@ const DESIGN_KINDS = {
 // script → RECAPTCHA_SECRET (nunca en este archivo, que se publica en GitHub).
 const FIREBASE_API_KEY = "AIzaSyDHdD-PcTQtaJhbGPegd7aW6ZWiI_EPFuQ"; // clave pública, la misma de assets/js/firebase-config.js
 const ADMIN_EMAILS = ["hezuradar@gmail.com", "iotegi@gmail.com"];
+const ADMIN_UIDS = ["r6e866zfOcVwU1U62F6bXPa76XB3"]; // cuenta hezuradar@gmail.com en Firebase Auth
 const SITE_HOSTNAMES = ["hezuradar.com", "www.hezuradar.com"];
 const CONFIRM_WINDOW_MINUTES = 30;
 
@@ -56,25 +57,37 @@ function doPost(e) {
     if (!/^[A-Za-z0-9]{10,40}$/.test(orderId)) throw publicErr_("ID de pedido no válido.");
     if (body.action === "confirmCustomer") return json_({ ok: true, ...confirmCustomer_(orderId, String(body.captchaToken || "")) });
     if (body.action === "resendCustomer") return json_({ ok: true, ...resendCustomer_(orderId, String(body.idToken || "")) });
+    // Con sesión de administrador ("Enviar a cortar") se puede reexportar siempre.
+    // Sin ella (la página del cliente) solo la primera vez y con el pedido recién
+    // creado, y sin devolver el enlace a la carpeta: así nadie puede usar un ID de
+    // pedido para regenerar archivos en Drive una y otra vez.
+    // Las comprobaciones van ANTES de coger el bloqueo: si no, peticiones con tokens o
+    // IDs basura podrían tenerlo ocupado y retrasar los pedidos reales.
+    const isAdminCall = !!body.idToken;
+    if (isAdminCall) verifyAdmin_(String(body.idToken));
+    else {
+      const pre = getOrder_(orderId);
+      if (pre.driveExportedAt) return json_({ ok: true, exported: false, reason: "ya exportado" });
+      checkRecent_(pre);
+    }
     // El cliente (al cerrar el pedido) y el admin ("Enviar a cortar") pueden
     // lanzarlo a la vez: el bloqueo evita crear carpetas duplicadas.
     const lock = LockService.getScriptLock();
-    lock.waitLock(30000);
+    lock.waitLock(15000);
     try {
-      // Con sesión de administrador ("Enviar a cortar") se puede reexportar siempre.
-      // Sin ella (la página del cliente) solo la primera vez y con el pedido recién
-      // creado, y sin devolver el enlace a la carpeta: así nadie puede usar un ID de
-      // pedido para regenerar archivos en Drive una y otra vez.
-      if (body.idToken) {
-        verifyAdmin_(String(body.idToken));
-        return json_({ ok: true, ...exportOrder_(orderId) });
-      }
+      if (isAdminCall) return json_({ ok: true, ...exportOrder_(orderId) });
       const o = getOrder_(orderId);
       if (o.driveExportedAt) return json_({ ok: true, exported: false, reason: "ya exportado" });
-      checkRecent_(o);
-      takeDailyQuota_("export");
-      const result = exportOrder_(orderId, o);
-      return json_({ ok: true, exported: true, warning: result.warning });
+      try {
+        takeDailyQuota_("export");
+        const result = exportOrder_(orderId, o);
+        return json_({ ok: true, exported: true, warning: result.warning });
+      } catch (err) {
+        // Sin esto, el pedido de diseño quedaría sin carpeta ni aviso y sin rastro: el panel
+        // muestra exportError para que el admin lo envíe a cortar a mano.
+        patchOrder_(orderId, { exportError: String((err && err.message) || err).slice(0, 300) });
+        throw err;
+      }
     } finally {
       lock.releaseLock();
     }
@@ -243,28 +256,32 @@ function notifyNewOrder_(o, code, folderUrl, designs, attachments) {
 /* ---------------- Confirmación al cliente ---------------- */
 
 function confirmCustomer_(orderId, captchaToken) {
-  verifyCaptcha_(captchaToken);
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
+  const pre = getOrder_(orderId);
+  if (pre.customerEmailSentAt) return { sent: false, reason: "ya enviado" };
+  // Cualquier fallo a partir de aquí (captcha caducado, pedido antiguo, cupo, bloqueo
+  // ocupado, Gmail) se anota en el pedido para que el panel avise de que el cliente no
+  // recibió nada y se pueda reenviar a mano.
   try {
-    const o = getOrder_(orderId);
-    if (o.customerEmailSentAt) return { sent: false, reason: "ya enviado" };
-    checkRecent_(o);
+    verifyCaptcha_(captchaToken);
+    checkRecent_(pre);
+    const lock = LockService.getScriptLock();
+    lock.waitLock(15000);
     try {
+      const o = getOrder_(orderId);
+      if (o.customerEmailSentAt) return { sent: false, reason: "ya enviado" };
       takeDailyQuota_("confirm");
       const to = String((o.customer && o.customer.email) || "").trim().toLowerCase();
       takeDailyQuota_("to_" + Utilities.base64EncodeWebSafe(to).slice(0, 60), DAILY_LIMITS.confirmPerRecipient);
       sendCustomerEmail_(o);
-    } catch (err) {
-      // Se anota en el pedido para que el panel avise de que el cliente no recibió nada.
-      patchOrder_(orderId, { customerEmailError: String((err && err.message) || err).slice(0, 300) });
-      throw err;
+    } finally {
+      lock.releaseLock();
     }
-    markCustomerEmailed_(orderId);
-    return { sent: true };
-  } finally {
-    lock.releaseLock();
+  } catch (err) {
+    patchOrder_(orderId, { customerEmailError: String((err && err.message) || err).slice(0, 300) });
+    throw err;
   }
+  const marked = markCustomerEmailed_(orderId);
+  return { sent: true, warning: marked ? undefined : "Email enviado, pero no se pudo anotar en el pedido." };
 }
 
 // Solo cuenta la hora del servidor (createdAtServer): createdAt lo escribe el navegador.
@@ -306,9 +323,13 @@ function verifyAdmin_(idToken) {
     muteHttpExceptions: true,
   });
   const user = ((JSON.parse(res.getContentText() || "{}").users) || [])[0];
-  if (res.getResponseCode() !== 200 || !user || ADMIN_EMAILS.indexOf(String(user.email || "").toLowerCase()) === -1) {
-    throw publicErr_("Sesión de administrador no válida.");
-  }
+  // Igual que isAdmin() de firestore.rules: el UID de la cuenta, o el correo si está verificado.
+  const ok =
+    res.getResponseCode() === 200 &&
+    user &&
+    (ADMIN_UIDS.indexOf(String(user.localId || "")) !== -1 ||
+      (ADMIN_EMAILS.indexOf(String(user.email || "").toLowerCase()) !== -1 && user.emailVerified === true));
+  if (!ok) throw publicErr_("Sesión de administrador no válida.");
 }
 
 function sendCustomerEmail_(o) {
@@ -319,7 +340,7 @@ function sendCustomerEmail_(o) {
   }
   MailApp.sendEmail({
     to: email,
-    subject: `Pedido ${o.orderCode || ""} recibido - HezurAdar`,
+    subject: `Pedido ${plain_(o.orderCode, 40)} recibido - HezurAdar`,
     htmlBody: customerEmailHtml_(o),
     name: "HezurAdar",
     replyTo: NOTIFY_EMAIL,
@@ -369,8 +390,9 @@ function eur_(n) {
 // no se incluyen, para que este correo no sirva para mandar phishing desde la tienda.
 function plain_(str, max) {
   return String(str == null ? "" : str)
-    .replace(/(https?:\/\/|www\.)\S*/gi, "[enlace eliminado]")
-    .replace(/\b[\w-]+\.(com|net|org|es|eu|io|ly|me|info|xyz|ru|cn)\b\S*/gi, "[enlace eliminado]")
+    .replace(/(h[xt]{2}ps?:?\/\/|www\.)\S*/gi, "[enlace eliminado]")
+    // Cualquier "algo.dominio" pegado (también camuflado como [.] o (dot)), sea cual sea el dominio.
+    .replace(/\b[\w-]{2,}(\.|\s*(\[\.\]|\(dot\)|\[dot\])\s*)[a-z]{2,}\b\S*/gi, "[enlace eliminado]")
     .slice(0, max || 120);
 }
 
@@ -406,7 +428,7 @@ function customerEmailHtml_(o) {
       <p style="margin:0 0 18px;color:#33424c;font-size:14px;line-height:1.5">Hemos recibido tu pedido. Nos pondremos en contacto contigo en breve para confirmar la disponibilidad, el envío y los datos de pago. Aquí tienes el resumen:</p>
       <div style="background:#f5f7f9;border-radius:10px;padding:14px 16px;margin-bottom:20px">
         <table style="width:100%;border-collapse:collapse;font-size:13px;color:#33424c">
-          <tr><td style="padding:2px 0"><b>Nº de pedido</b></td><td style="padding:2px 0;text-align:right">${esc_(o.orderCode || "")}</td></tr>
+          <tr><td style="padding:2px 0"><b>Nº de pedido</b></td><td style="padding:2px 0;text-align:right">${esc_(plain_(o.orderCode, 40))}</td></tr>
           <tr><td style="padding:2px 0"><b>Fecha</b></td><td style="padding:2px 0;text-align:right">${esc_(date_(o.createdAt))}</td></tr>
           <tr><td style="padding:2px 0"><b>Forma de pago</b></td><td style="padding:2px 0;text-align:right">${esc_(PAYMENT_LABELS[o.paymentMethod] || "-")}</td></tr>
         </table>
@@ -514,7 +536,8 @@ function getOrder_(orderId) {
 // No es crítico (los archivos ya están en Drive), pero si no se guarda, la siguiente
 // llamada volvería a exportar y avisar: se devuelve false para avisar al panel.
 function markExported_(orderId, folderUrl) {
-  return patchOrder_(orderId, { driveFolderUrl: folderUrl, driveExportedAt: new Date().toISOString() });
+  // Borra el exportError de un intento anterior fallido.
+  return patchOrder_(orderId, { driveFolderUrl: folderUrl, driveExportedAt: new Date().toISOString() }, ["exportError"]);
 }
 
 function decodeFields_(fields) {

@@ -22,6 +22,8 @@
   document.addEventListener("ha:ready", () => {
     pruneCart();
     updateBadge();
+    // Si la cesta se abrió antes de que llegara el catálogo, se veía vacía: se repinta.
+    if (document.getElementById("cart-backdrop") && view === "cart") renderDrawer();
   });
   // Otra pestaña (o volver con "atrás" tras un pedido) puede haber cambiado la cesta.
   window.addEventListener("storage", (e) => {
@@ -207,7 +209,8 @@
 
   // Lo que queda detrás del panel no se puede enfocar ni leer mientras está abierto.
   function setBackgroundInert(on) {
-    document.querySelectorAll("body > *:not(#cart-root):not(script)").forEach((el) => {
+    // El aviso para lectores de pantalla (#cart-announcer) tiene que seguir activo.
+    document.querySelectorAll("body > *:not(#cart-root):not(#cart-announcer):not(script)").forEach((el) => {
       if (on) el.setAttribute("inert", "");
       else el.removeAttribute("inert");
     });
@@ -229,7 +232,9 @@
     document.body.style.overflow = "";
     setBackgroundInert(false);
     document.removeEventListener("keydown", onDrawerKeydown);
-    if (lastFocus && document.contains(lastFocus) && lastFocus.focus) lastFocus.focus();
+    // Si lo que tenía el foco ya no existe (p.ej. el botón de la ficha rápida), al botón de la cesta.
+    const back = lastFocus && document.contains(lastFocus) ? lastFocus : document.getElementById("cart-btn");
+    if (back && back.focus) back.focus();
     lastFocus = null;
     if (!backdrop) {
       if (root) root.innerHTML = "";
@@ -247,7 +252,8 @@
     if (!drawer) return;
     if (e.key === "Escape") {
       e.preventDefault();
-      closeDrawer();
+      // Con el pedido en marcha no se cierra: al terminar se volvería a abrir solo.
+      if (!submitting) closeDrawer();
       return;
     }
     if (e.key !== "Tab") return;
@@ -446,7 +452,7 @@
           <span class="help-text">Para enviarte la confirmación por email, marca la casilla:</span>
           <div id="co-captcha"></div>
         </div>
-        <div id="checkout-status" role="status" aria-live="polite"></div>
+        <div id="checkout-status"></div>
         <div style="display:flex;gap:10px;margin-top:6px">
           <button type="button" class="btn btn-outline" id="back-to-cart">Volver a la cesta</button>
           <button type="submit" class="btn btn-primary" id="confirm-order" style="flex:1">Confirmar pedido con obligación de pago</button>
@@ -570,7 +576,9 @@
     wrap.hidden = false;
     const render = () => {
       const el = document.getElementById("co-captcha");
-      if (!el || el.childElementCount) return;
+      // Ya pintada en este formulario (el <p> es el aviso de error de carga, se sustituye).
+      if (!el || (el.childElementCount && !el.querySelector(":scope > p"))) return;
+      el.innerHTML = "";
       captchaWidgetId = window.grecaptcha.render(el, { sitekey: key });
     };
     if (window.grecaptcha && window.grecaptcha.render) return render();
@@ -580,6 +588,15 @@
     const sc = document.createElement("script");
     sc.src = "https://www.google.com/recaptcha/api.js?onload=haRecaptchaReady&render=explicit&hl=es";
     sc.async = true;
+    // Bloqueador o sin red: sin casilla no se puede pedir la confirmación, así que se explica.
+    sc.onerror = () => {
+      captchaLoading = false;
+      sc.remove();
+      const el = document.getElementById("co-captcha");
+      if (el && !el.childElementCount) {
+        el.innerHTML = `<p class="help-text" role="alert">No se ha podido cargar la verificación «No soy un robot». Recarga la página o deja el email vacío: te confirmaremos el pedido por WhatsApp.</p>`;
+      }
+    };
     document.head.appendChild(sc);
   }
   function captchaToken() {
@@ -777,7 +794,7 @@
     const link = linkUrl
       ? ` <a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener">Enviar el pedido por WhatsApp<span class="visually-hidden"> (se abre en una pestaña nueva)</span></a>`
       : "";
-    el.innerHTML = msg ? `<div class="status-msg ${type}"${type === "err" ? ' role="alert"' : ""}>${escapeHtml(msg)}${link}</div>` : "";
+    el.innerHTML = msg ? `<div class="status-msg ${type}" role="${type === "err" ? "alert" : "status"}">${escapeHtml(msg)}${link}</div>` : "";
   }
 
   function buildWhatsAppMessage(order) {

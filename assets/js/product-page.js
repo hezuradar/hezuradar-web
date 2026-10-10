@@ -55,8 +55,27 @@
       mainProduct = products.find((p) => p.id === productId) || null;
       syncStockUI();
     } catch (e) {
+      showCatalogError();
       console.error(e);
     }
+  }
+
+  // Sin catálogo no se puede comprobar stock ni precio: se avisa (role="alert")
+  // y se bloquea "Añadir a la cesta" hasta que se recargue la página.
+  function showCatalogError() {
+    const addBtn = document.getElementById("product-add-btn");
+    if (addBtn) addBtn.disabled = true;
+    if (document.getElementById("catalog-error")) return;
+    const msg = document.createElement("div");
+    msg.id = "catalog-error";
+    msg.className = "status-msg err";
+    msg.setAttribute("role", "alert");
+    msg.textContent = "No se ha podido cargar el catálogo. Recarga la página.";
+    const anchor = addBtn ? addBtn.closest(".product-actions-page") || addBtn : null;
+    const container = document.querySelector(".product-info-page");
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(msg, anchor);
+    else if (container) container.prepend(msg);
+    else document.body.prepend(msg);
   }
 
   function waLink(phone, text) {

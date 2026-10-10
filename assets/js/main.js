@@ -51,6 +51,9 @@
       // Lo que se haya escrito en el buscador (o lo que restaure el navegador al
       // volver atrás) mientras cargaba el catálogo se aplica ahora.
       state.term = normalizeText(els.search.value.trim());
+      // Igual con el orden: al volver atrás (bfcache) el navegador puede
+      // restaurar el valor del select sin disparar "change".
+      state.sort = els.sort.value || "recent";
       window.HA = window.HA || {};
       window.HA.products = products;
       window.HA.store = store;
@@ -63,12 +66,27 @@
       buildCategoryChips();
       render();
     } catch (err) {
-      if (!prerendered) {
-        els.grid.innerHTML =
-          '<div class="empty-state">No se ha podido cargar el catálogo. Comprueba que data/products.json existe.</div>';
-      }
+      // Si había HTML prerrenderizado se deja (sirve para ver el catálogo), pero
+      // se avisa y se bloquea "Añadir a la cesta" hasta que se recargue.
+      if (!prerendered) els.grid.innerHTML = "";
+      showCatalogError();
       console.error(err);
     }
+  }
+
+  // Aviso visible (y anunciado por lectores de pantalla) cuando no llega el catálogo.
+  function showCatalogError() {
+    if (!document.getElementById("catalog-error")) {
+      const msg = document.createElement("div");
+      msg.id = "catalog-error";
+      msg.className = "status-msg err";
+      msg.setAttribute("role", "alert");
+      msg.textContent = "No se ha podido cargar el catálogo. Recarga la página.";
+      els.grid.parentNode.insertBefore(msg, els.grid);
+    }
+    els.grid.querySelectorAll("[data-add]").forEach((btn) => {
+      btn.disabled = true;
+    });
   }
 
   function cacheEls() {
@@ -355,7 +373,7 @@
               <h2>${escapeHtml(p.title)}</h2>
               <div class="modal-price">${
                 hasDiscount
-                  ? `<span class="price-old">${CT.formatPrice(p.price)}</span> ${CT.formatPrice(CT.effectivePrice(p))}`
+                  ? `<span class="price-old"><span class="visually-hidden">Precio anterior: </span>${CT.formatPrice(p.price)}</span> <span class="visually-hidden">Precio actual: </span>${CT.formatPrice(CT.effectivePrice(p))}`
                   : CT.formatPrice(p.price)
               }</div>
               ${CT.priceTiersHtml ? CT.priceTiersHtml(p) : ""}
@@ -398,8 +416,10 @@
       const qty = Math.max(1, parseInt(qtyInput.value, 10) || 1);
       // Primero se cierra el modal y después se abre la cesta: al revés,
       // closeModal() devolvería el scroll al body con la cesta ya abierta y le
-      // quitaría el foco. El foco lo gestiona la cesta, no se devuelve a la tarjeta.
-      closeModal({ restoreFocus: false });
+      // quitaría el foco. closeModal() devuelve el foco a la tarjeta de forma
+      // síncrona (la animación de 160 ms solo retira el HTML), así la cesta
+      // guarda un elemento válido al que volver cuando se cierre.
+      closeModal();
       if (window.HA && window.HA.cart) window.HA.cart.add(p.id, qty);
     });
     document.getElementById("modal-backdrop").addEventListener("keydown", trapFocus);
