@@ -255,12 +255,10 @@
     if (state.subcategory) {
       list = list.filter((p) => p.subcategory === state.subcategory);
     }
+    // El buscador solo mira el título del producto: buscar también en la descripción
+    // sacaba productos que solo mencionaban la palabra de pasada.
     if (state.term) {
-      list = list.filter(
-        (p) =>
-          normalizeText(p.title).includes(state.term) ||
-          normalizeText(p.description).includes(state.term)
-      );
+      list = list.filter((p) => normalizeText(p.title).includes(state.term));
     }
     // Se ordena por el precio que paga el cliente (con el descuento aplicado).
     switch (state.sort) {
