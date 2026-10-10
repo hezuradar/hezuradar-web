@@ -89,12 +89,18 @@
   async function loadAnalyticsDaily() {
     try {
       const db = firebase.firestore();
+      // Filtro por fecha (el ID del documento es AAAA-MM-DD) en orden ascendente: ordenar por
+      // ID en descendente, o con limitToLast, exige un índice que Firestore no crea solo
+      // (la consulta fallaba con "The query requires an index").
+      const from = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
+      const pad = (n) => String(n).padStart(2, "0");
+      const fromKey = `${from.getFullYear()}-${pad(from.getMonth() + 1)}-${pad(from.getDate())}`;
       const snap = await db
         .collection("analytics_daily")
-        .orderBy(firebase.firestore.FieldPath.documentId(), "desc")
-        .limit(366)
+        .where(firebase.firestore.FieldPath.documentId(), ">=", fromKey)
+        .orderBy(firebase.firestore.FieldPath.documentId())
         .get();
-      analyticsDays = snap.docs.map((d) => ({ date: d.id, ...d.data() })).reverse();
+      analyticsDays = snap.docs.map((d) => ({ date: d.id, ...d.data() }));
       setVisitsNotice(snap.empty ? "empty" : "");
     } catch (e) {
       console.error("No se pudieron cargar las estadísticas de visitas:", e);
