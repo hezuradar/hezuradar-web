@@ -1364,5 +1364,25 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-10-08"
+  },
+  {
+    "id": "77213117-4f73-4a0f-994c-f5363fdece5e",
+    "title": "Madre perla negra para puente 80x12x2,5",
+    "description": "Madre perla de color negro para adorno de cordal \nMedidas 80x12x2,5mm",
+    "price": 15,
+    "sku": "RR0070",
+    "category": "Madre perla y abalone",
+    "subcategory": "Bloques y placas",
+    "stock": 27,
+    "discountPercent": null,
+    "images": [
+      "images/products/77213117-4f73-4a0f-994c-f5363fdece5e_1791981982113_0.jpg",
+      "images/products/77213117-4f73-4a0f-994c-f5363fdece5e_1791981987275_1.jpg",
+      "images/products/77213117-4f73-4a0f-994c-f5363fdece5e_1791981991564_2.jpg"
+    ],
+    "slug": "madre-perla-negra-para-puente-80x12x2-5-77213117",
+    "imageWidth": 1600,
+    "imageHeight": 1200,
+    "updatedAt": "2026-10-14"
   }
 ]
