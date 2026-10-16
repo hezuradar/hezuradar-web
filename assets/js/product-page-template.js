@@ -482,11 +482,8 @@
       '<link rel="icon" href="/images/site/favicon-32x32.png" sizes="32x32" type="image/png">\n' +
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
-      '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
-      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-      '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261010b">\n' +
-      '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
+      '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261016a">\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
       "<body>\n" +
@@ -851,11 +848,8 @@
       '<link rel="icon" href="/images/site/favicon-32x32.png" sizes="32x32" type="image/png">\n' +
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
-      '<link rel="preconnect" href="https://fonts.googleapis.com">\n' +
-      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n' +
-      '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=optional" rel="stylesheet">\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261010b">\n' +
-      '<script src="/assets/js/device.js?v=20260915l"></script>\n' +
+      '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261016a">\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
       "<body>\n" +
