@@ -559,7 +559,7 @@
       // las alinea scripts/generate-product-pages.js con las de index.html.
       '<script src="/assets/js/year.js?v=20260915l" defer></script>\n' +
       '<script src="/assets/js/firebase-config.js?v=20260915l" defer></script>\n' +
-      '<script src="/assets/js/firebase-orders.js?v=20261009a" defer></script>\n' +
+      '<script src="/assets/js/firebase-orders.js?v=20261016d" defer></script>\n' +
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +

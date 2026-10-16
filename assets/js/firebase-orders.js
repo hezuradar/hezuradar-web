@@ -78,11 +78,67 @@
     ]).finally(() => clearTimeout(timer));
   }
 
+  // Valor de Firestore en formato REST. Los enteros van como integerValue, igual que con el
+  // SDK: las reglas exigen `qty is int`.
+  function toRestValue(v) {
+    if (v === null || v === undefined) return { nullValue: null };
+    if (typeof v === "boolean") return { booleanValue: v };
+    if (typeof v === "number") return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+    if (typeof v === "string") return { stringValue: v };
+    if (Array.isArray(v)) return { arrayValue: { values: v.map(toRestValue) } };
+    return { mapValue: { fields: toRestFields(v) } };
+  }
+
+  function toRestFields(obj) {
+    const fields = {};
+    Object.keys(obj).forEach((k) => {
+      if (obj[k] !== undefined) fields[k] = toRestValue(obj[k]);
+    });
+    return fields;
+  }
+
+  // Mismo guardado que saveOrderSdk pero con una petición HTTPS normal (como analytics.js).
+  // Es el respaldo para cuando el SDK no carga o su canal en tiempo real no llega a
+  // Firestore (bloqueadores, antivirus, proxies de empresa...): el 16/10/2026 un pedido
+  // llegó por email y WhatsApp pero no al panel, con unas reglas que sí lo aceptaban.
+  async function saveOrderRest(order, id) {
+    const cfg = window.HA_FIREBASE_CONFIG;
+    if (!cfg || !window.fetch) throw new Error("La base de datos de pedidos no está disponible ahora mismo.");
+    const base = `projects/${cfg.projectId}/databases/(default)/documents`;
+    const body = {
+      writes: [
+        {
+          update: { name: `${base}/orders/${id}`, fields: toRestFields(order) },
+          updateTransforms: [{ fieldPath: "createdAtServer", setToServerValue: "REQUEST_TIME" }],
+          currentDocument: { exists: false },
+        },
+      ],
+    };
+    const res = await withTimeout(
+      fetch(`https://firestore.googleapis.com/v1/${base}:commit?key=${cfg.apiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      SAVE_TIMEOUT_MS,
+      "La base de datos de pedidos no responde. Revisa tu conexión."
+    );
+    if (res.ok) return id;
+    let status = "";
+    try {
+      status = ((await res.json()).error || {}).status || "";
+    } catch (e) {
+      // Respuesta sin JSON: basta con el código HTTP.
+    }
+    const err = new Error(`Firestore REST ${res.status} ${status}`.trim());
+    // Mismos códigos que el SDK, que es lo que mira cart.js.
+    err.code = res.status === 403 ? "permission-denied" : status === "ALREADY_EXISTS" || status === "FAILED_PRECONDITION" ? "already-exists" : "rest-" + res.status;
+    throw err;
+  }
+
   // Firestore no rechaza un guardado sin conexión: se queda esperando. Por eso hay un
   // límite de tiempo; el error lleva code "timeout" porque el pedido podría llegar igual.
-  async function saveOrder(order, opts) {
-    const id = (opts && opts.id) || newOrderId();
-    if (!window.HA_FIREBASE_ENABLED) throw new Error("La base de datos de pedidos no está configurada todavía.");
+  async function saveOrderSdk(order, id) {
     await withTimeout(loadSdk(), SAVE_TIMEOUT_MS, "No se pudo conectar con la base de datos de pedidos.");
     const app = getApp();
     if (!app) throw new Error("La base de datos de pedidos no está disponible ahora mismo.");
@@ -96,6 +152,30 @@
       "La base de datos de pedidos no responde. Revisa tu conexión."
     );
     return id;
+  }
+
+  // Primero el SDK; si falla por algo que no sean las reglas, se reintenta por REST con el
+  // mismo ID (currentDocument.exists=false impide duplicarlo).
+  async function saveOrder(order, opts) {
+    const id = (opts && opts.id) || newOrderId();
+    if (!window.HA_FIREBASE_ENABLED) throw new Error("La base de datos de pedidos no está configurada todavía.");
+    try {
+      return await saveOrderSdk(order, id);
+    } catch (sdkErr) {
+      if (sdkErr && sdkErr.code === "permission-denied") throw sdkErr;
+      console.error("Guardado con el SDK fallido, se reintenta por REST:", sdkErr);
+      try {
+        return await saveOrderRest(order, id);
+      } catch (restErr) {
+        // Ya existe: el guardado del SDK que se quedó sin respuesta sí llegó. Si el SDK agotó
+        // el tiempo, un rechazo de las reglas significa lo mismo (con datos inválidos el SDK
+        // habría recibido el rechazo enseguida, no un silencio).
+        if (restErr.code === "already-exists") return id;
+        if (sdkErr && sdkErr.code === "timeout" && restErr.code === "permission-denied") return id;
+        restErr.message = `${restErr.message} (SDK: ${(sdkErr && (sdkErr.code || sdkErr.message)) || "?"})`;
+        throw restErr;
+      }
+    }
   }
 
   window.HA_DB = { saveOrder, newOrderId, preload };
