@@ -795,34 +795,24 @@
     });
   }
 
-  // Reescala la imagen a maxWidth (via canvas) y la devuelve como JPEG en
-  // base64 junto con sus dimensiones finales. Se usa tanto para la miniatura
-  // como para la foto principal: una foto de móvil sin reducir (4000 px, 3 MB)
-  // hunde la velocidad de carga de la ficha y su posicionamiento.
-  function fileToThumbBase64(file, maxWidth, quality) {
+  // Optimización de las fotos de producto. Una foto de móvil sin reducir (4000 px, 3 MB) hunde la
+  // velocidad de carga de la ficha y su posicionamiento, así que cada foto se publica en dos
+  // tamaños, ambos en JPEG (las rutas .jpg las dan por hechas la plantilla, el sitemap y og:image):
+  //  - foto de la ficha: lado largo de 1100 px (la galería muestra ~560 px CSS, es decir 2x para
+  //    pantallas retina) y como mucho unos 180 KB, el mismo estándar de las fotos ya publicadas;
+  //  - miniatura del catálogo: lado largo de 500 px y como mucho unos 36 KB.
+  // La calidad no es fija: se busca la más alta que quepa en el peso, sin bajar del mínimo para
+  // que no se note la compresión. Una foto sencilla se queda en la calidad máxima.
+  const IMAGE_FULL = { maxSide: 1100, maxBytes: 180 * 1024, qualityMax: 0.86, qualityMin: 0.74 };
+  const IMAGE_THUMB = { maxSide: 500, maxBytes: 36 * 1024, qualityMax: 0.82, qualityMin: 0.7 };
+
+  function loadImageFile(file) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
       img.onload = () => {
-        const scale = Math.min(1, maxWidth / img.naturalWidth);
-        const w = Math.max(1, Math.round(img.naturalWidth * scale));
-        const h = Math.max(1, Math.round(img.naturalHeight * scale));
-        const canvas = document.createElement("canvas");
-        canvas.width = w;
-        canvas.height = h;
-        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
         URL.revokeObjectURL(url);
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) return reject(new Error("No se pudo generar la imagen reducida."));
-            const reader = new FileReader();
-            reader.onload = () => resolve({ base64: reader.result.split(",")[1], width: w, height: h });
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-          },
-          "image/jpeg",
-          quality || 0.78
-        );
+        resolve(img);
       };
       img.onerror = () => {
         URL.revokeObjectURL(url);
@@ -830,6 +820,86 @@
       };
       img.src = url;
     });
+  }
+
+  // Reduce a la medida final en pasos de la mitad como mucho: de un salto de 4000 a 500 px los
+  // navegadores sin muestreo de calidad dejan bordes dentados. El fondo se rellena de blanco
+  // porque un PNG con transparencia saldría negro en JPEG.
+  function drawScaled(img, maxSide) {
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * scale));
+    const h = Math.max(1, Math.round(img.naturalHeight * scale));
+    let src = img;
+    let sw = img.naturalWidth;
+    let sh = img.naturalHeight;
+    while (sw >= w * 2 && sh >= h * 2) {
+      const step = document.createElement("canvas");
+      step.width = Math.max(w, Math.round(sw / 2));
+      step.height = Math.max(h, Math.round(sh / 2));
+      const sctx = step.getContext("2d");
+      sctx.imageSmoothingQuality = "high";
+      sctx.drawImage(src, 0, 0, step.width, step.height);
+      src = step;
+      sw = step.width;
+      sh = step.height;
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(src, 0, 0, w, h);
+    return canvas;
+  }
+
+  function canvasToJpeg(canvas, quality) {
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No se pudo generar la imagen reducida."))), "image/jpeg", quality);
+    });
+  }
+
+  // La calidad más alta que quepa en maxBytes (búsqueda binaria). Si ni la mínima cabe, se
+  // publica con la mínima: es preferible un archivo algo mayor a una foto estropeada.
+  async function encodeWithinBudget(canvas, opts) {
+    const best = await canvasToJpeg(canvas, opts.qualityMax);
+    if (best.size <= opts.maxBytes) return best;
+    const floor = await canvasToJpeg(canvas, opts.qualityMin);
+    if (floor.size > opts.maxBytes) return floor;
+    let result = floor;
+    let lo = opts.qualityMin;
+    let hi = opts.qualityMax;
+    for (let i = 0; i < 4; i++) {
+      const mid = (lo + hi) / 2;
+      const blob = await canvasToJpeg(canvas, mid);
+      if (blob.size <= opts.maxBytes) {
+        result = blob;
+        lo = mid;
+      } else {
+        hi = mid;
+      }
+    }
+    return result;
+  }
+
+  function formatBytes(n) {
+    return n >= 1024 * 1024 ? (n / (1024 * 1024)).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(",")[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async function optimizeImage(img, opts) {
+    const canvas = drawScaled(img, opts.maxSide);
+    const blob = await encodeWithinBudget(canvas, opts);
+    return { base64: await blobToBase64(blob), width: canvas.width, height: canvas.height, bytes: blob.size };
   }
 
   async function saveProduct() {
@@ -857,25 +927,30 @@
       // Fallos que no detienen la publicación pero que conviene contar al final.
       const thumbFailures = [];
       const cleanupFailures = [];
+      const imageBytes = { before: 0, after: 0 };
 
       if (pendingFiles.length) {
         setStatus("p-status", "info", `Subiendo ${pendingFiles.length} imagen(es)...`);
         for (let i = 0; i < pendingFiles.length; i++) {
           const file = pendingFiles[i];
-          // La foto se publica reducida a 1600 px como máximo y en JPEG.
+          // La foto se decodifica una sola vez y se publica optimizada (ver IMAGE_FULL/IMAGE_THUMB).
           const path = `images/products/${id}_${Date.now()}_${i}.jpg`;
-          const full = await fileToThumbBase64(file, 1600, 0.85);
+          const img = await loadImageFile(file);
+          const full = await optimizeImage(img, IMAGE_FULL);
           await putFile(path, full.base64, `Sube imagen de producto: ${title}`, null);
           images.push(path);
           if (i === 0 && currentImages.length === 0) mainImageDims = { width: full.width, height: full.height };
+          imageBytes.before += file.size;
+          imageBytes.after += full.bytes;
 
-          // Miniatura (~500px) para el grid del catálogo y "productos relacionados":
+          // Miniatura para el grid del catálogo y "productos relacionados":
           // si falla, la ficha usará la imagen a tamaño completo hasta el próximo
           // guardado (no es un error que deba interrumpir la publicación).
           try {
-            const thumbBase64 = (await fileToThumbBase64(file, 500)).base64;
+            const thumb = await optimizeImage(img, IMAGE_THUMB);
             const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(path);
-            if (thumbPath) await putFile(thumbPath, thumbBase64, `Sube miniatura de producto: ${title}`, null);
+            if (thumbPath) await putFile(thumbPath, thumb.base64, `Sube miniatura de producto: ${title}`, null);
+            imageBytes.after += thumb.bytes;
           } catch (e) {
             // Sin miniatura se usará la imagen completa; se avisa al final.
             thumbFailures.push(`${file.name || path} (${e.message})`);
@@ -945,10 +1020,14 @@
         (thumbFailures.length ? ` Aviso: no se pudo subir la miniatura de ${thumbFailures.join(", ")}; la ficha usará la imagen completa hasta el próximo guardado.` : "") +
         imageCleanupWarning(cleanupFailures);
 
+      const imageInfo = imageBytes.before
+        ? ` Fotos optimizadas automáticamente: de ${formatBytes(imageBytes.before)} a ${formatBytes(imageBytes.after)} (con miniaturas).`
+        : "";
+
       setStatus(
         "p-status",
         extraWarning ? "err" : "ok",
-        "Publicado correctamente. La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta." + extraWarning
+        "Publicado correctamente." + imageInfo + " La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta." + extraWarning
       );
       resetForm();
       await loadProducts({ keepStatus: true });
