@@ -33,7 +33,7 @@
     const c = order.customer || {};
 
     const params = {
-      order_code: order.orderCode,
+      order_code: order.notRegistered ? `⚠ NO REGISTRADO EN EL PANEL · ${order.orderCode}` : order.orderCode,
       items_text: itemsText,
       subtotal: formatPrice(order.subtotal),
       shipping_cost: formatPrice(order.shippingCost || 0),
@@ -115,6 +115,14 @@
         <div style="color:#cfe0f0;font-size:12px;margin-top:2px">Nuevo pedido recibido</div>
       </div>
       <div style="padding:28px">
+        ${
+          order.notRegistered
+            ? `<div style="background:#fdecea;border:1px solid #e57373;border-radius:10px;padding:12px 14px;margin-bottom:18px;color:#8a1f17;font-size:13px">
+                <b>Este pedido no se ha guardado en el panel</b> (motivo: ${escapeHtml(order.notRegistered)}).
+                El navegador del cliente lo reintenta; si en unos minutos no aparece en Pedidos, añádelo a mano con estos datos.
+              </div>`
+            : ""
+        }
         <h2 style="margin:0 0 4px;color:#1c2b36;font-size:19px">Pedido ${escapeHtml(order.orderCode)}</h2>
         <p style="margin:0 0 18px;color:#6c7d89;font-size:13px">${escapeHtml(new Date(order.createdAt || Date.now()).toLocaleString("es-ES"))}</p>
 

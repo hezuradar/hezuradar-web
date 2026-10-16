@@ -18,6 +18,8 @@
     updateBadge();
     const btn = document.getElementById("cart-btn");
     if (btn) btn.addEventListener("click", () => openDrawer("cart"));
+    // Un pedido que no se pudo guardar en una visita anterior se reintenta al volver.
+    if (readUnsaved().length) setTimeout(flushUnsaved, 4000);
   });
   document.addEventListener("ha:ready", () => {
     pruneCart();
@@ -638,6 +640,66 @@
     ]).finally(() => clearTimeout(timer));
   }
 
+  // Pedidos que no llegaron a Firestore (sin conexión, tiempo agotado...): se guardan en el
+  // navegador del cliente y se reintentan con el mismo ID, para que no se pierdan del panel
+  // aunque el aviso por email y WhatsApp sí haya salido.
+  const LS_UNSAVED = "ha_unsaved_orders";
+  const RETRY_DELAYS_MS = [8000, 30000, 90000];
+  const MAX_UNSAVED_ATTEMPTS = 6;
+  let flushing = false;
+
+  function readUnsaved() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(LS_UNSAVED));
+      return Array.isArray(raw) ? raw.filter((e) => e && typeof e.docId === "string" && e.order) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeUnsaved(list) {
+    try {
+      if (list.length) localStorage.setItem(LS_UNSAVED, JSON.stringify(list));
+      else localStorage.removeItem(LS_UNSAVED);
+    } catch (e) {
+      // Sin almacenamiento solo quedan los reintentos mientras la página siga abierta.
+    }
+  }
+
+  function queueUnsaved(docId, order, maybeSaved) {
+    if (!docId) return;
+    const rest = readUnsaved().filter((e) => e.docId !== docId);
+    writeUnsaved(rest.concat({ docId, order, attempts: 0, maybeSaved: !!maybeSaved }));
+  }
+
+  async function flushUnsaved() {
+    if (flushing || !window.HA_DB || !window.HA_DB.saveOrder) return;
+    flushing = true;
+    try {
+      for (const entry of readUnsaved()) {
+        let keep = null;
+        try {
+          await window.HA_DB.saveOrder(entry.order, { id: entry.docId });
+        } catch (err) {
+          const timedOut = err && err.code === "timeout";
+          // Si un intento anterior se quedó sin respuesta y ahora las reglas rechazan el
+          // mismo documento, es que aquel sí llegó (solo el admin puede modificarlo).
+          const alreadyThere = entry.maybeSaved && /permission/i.test(String((err && (err.code || err.message)) || ""));
+          const attempts = (entry.attempts || 0) + 1;
+          if (!alreadyThere && attempts < MAX_UNSAVED_ATTEMPTS) {
+            keep = { ...entry, attempts, maybeSaved: entry.maybeSaved || timedOut };
+          } else if (!alreadyThere) {
+            console.error("Pedido " + entry.order.orderCode + " sin guardar tras varios intentos:", err);
+          }
+        }
+        const rest = readUnsaved().filter((e) => e.docId !== entry.docId);
+        writeUnsaved(keep ? rest.concat(keep) : rest);
+      }
+    } finally {
+      flushing = false;
+    }
+  }
+
   function whatsappUrl(order) {
     const phone = (window.HA && window.HA.store && window.HA.store.whatsapp) || "";
     if (!phone) return "";
@@ -747,6 +809,18 @@
         // documento: es que aquel guardado sí llegó (solo el admin puede modificarlo).
         if (pendingOrder.maybeSaved && /permission/i.test(String(err.code || err.message))) orderId = pendingOrder.docId;
         if (err.code === "timeout") pendingOrder.maybeSaved = true;
+        if (!orderId && mailed.status === "fulfilled") {
+          // El cliente verá el pedido como hecho (el aviso al negocio salió) pero no consta en
+          // el panel: se guarda una copia limpia (sin los campos que se añaden más abajo) para
+          // reintentarlo y se avisa al negocio con el motivo. Si el aviso también falló, no se
+          // da el pedido por hecho y el cliente reintenta con el mismo ID.
+          queueUnsaved(pendingOrder.docId, JSON.parse(JSON.stringify(order)), pendingOrder.maybeSaved);
+          RETRY_DELAYS_MS.forEach((ms) => setTimeout(flushUnsaved, ms));
+          order.notRegistered = String(err.code || err.message || "desconocido").slice(0, 120);
+          if (window.HA_EMAIL && window.HA_EMAIL.sendOrderEmail) {
+            window.HA_EMAIL.sendOrderEmail({ ...order }).catch((e) => console.error("No se pudo enviar el aviso de pedido sin registrar:", e));
+          }
+        }
       }
       if (mailed.status === "rejected") console.error("No se pudo enviar el email del pedido:", mailed.reason);
 
@@ -805,6 +879,7 @@
     const c = order.customer;
     return [
       `🛒 *Nuevo pedido ${order.orderCode}*`,
+      order.notRegistered ? "⚠️ No se pudo registrar en el panel: añadirlo a mano." : null,
       "",
       "Productos:",
       lines,

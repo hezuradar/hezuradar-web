@@ -563,10 +563,10 @@
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20261002e" defer></script>\n' +
+      '<script src="/assets/js/emailjs-notify.js?v=20261016b" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261010a" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261010i" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261016e" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261010a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
