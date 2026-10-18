@@ -1036,4 +1036,19 @@
       <image:loc>https://hezuradar.com/images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321824112_2.jpg</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://hezuradar.com/productos/selleta-de-cuerno-de-buey-ambar-72x3x9-b4083b55.html</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321969177_0.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321972602_1.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321975777_2.jpg</image:loc>
+    </image:image>
+  </url>
 </urlset>
