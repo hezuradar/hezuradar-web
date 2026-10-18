@@ -1416,13 +1416,11 @@
     "stock": 10,
     "discountPercent": null,
     "images": [
-      "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321969177_0.jpg",
       "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321972602_1.jpg",
-      "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321975777_2.jpg"
+      "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321975777_2.jpg",
+      "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792322801004_0.jpg"
     ],
     "slug": "selleta-de-cuerno-de-buey-ambar-72x3x9-b4083b55",
-    "imageWidth": 1100,
-    "imageHeight": 825,
     "updatedAt": "2026-10-18"
   },
   {
