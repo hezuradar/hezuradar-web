@@ -1042,13 +1042,13 @@
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
     <image:image>
-      <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321969177_0.jpg</image:loc>
-    </image:image>
-    <image:image>
       <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321972602_1.jpg</image:loc>
     </image:image>
     <image:image>
       <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321975777_2.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792322801004_0.jpg</image:loc>
     </image:image>
   </url>
   <url>
