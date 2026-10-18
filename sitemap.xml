@@ -1051,4 +1051,19 @@
       <image:loc>https://hezuradar.com/images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321975777_2.jpg</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://hezuradar.com/productos/cejuela-de-cuerno-de-buey-negro-72x3x9-1b7edbdb.html</loc>
+    <lastmod>2026-10-18</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322693895_0.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322697196_1.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322700060_2.jpg</image:loc>
+    </image:image>
+  </url>
 </urlset>
