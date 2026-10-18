@@ -1396,13 +1396,11 @@
     "stock": 10,
     "discountPercent": null,
     "images": [
-      "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321817526_0.jpg",
       "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321820731_1.jpg",
-      "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321824112_2.jpg"
+      "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321824112_2.jpg",
+      "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792322872438_0.jpg"
     ],
     "slug": "selleta-de-hueso-de-buey-72x3x9-720253bf",
-    "imageWidth": 1100,
-    "imageHeight": 825,
     "updatedAt": "2026-10-18"
   },
   {
