@@ -1424,5 +1424,25 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-10-18"
+  },
+  {
+    "id": "1b7edbdb-530d-45b6-b635-cd465dcca965",
+    "title": "Cejuela de cuerno de buey negro 72x3x9",
+    "description": "Cejuela de cuento de buey negro para guitarra acústica \n\n72x3x9",
+    "price": 10,
+    "sku": "RR0073",
+    "category": "Accesorios",
+    "subcategory": "Cejuelas talladas",
+    "stock": 10,
+    "discountPercent": null,
+    "images": [
+      "images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322693895_0.jpg",
+      "images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322697196_1.jpg",
+      "images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322700060_2.jpg"
+    ],
+    "slug": "cejuela-de-cuerno-de-buey-negro-72x3x9-1b7edbdb",
+    "imageWidth": 1100,
+    "imageHeight": 825,
+    "updatedAt": "2026-10-18"
   }
 ]
