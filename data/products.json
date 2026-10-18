@@ -1384,5 +1384,25 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-10-14"
+  },
+  {
+    "id": "720253bf-ceee-443b-b1cd-f18df8dde3bc",
+    "title": "Selleta de hueso de buey 72x3x9",
+    "description": "Selleta de hueso de buey para guitarra acústica 72x3x9",
+    "price": 10,
+    "sku": "RR0071",
+    "category": "Accesorios",
+    "subcategory": "Cejuelas talladas",
+    "stock": 10,
+    "discountPercent": null,
+    "images": [
+      "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321817526_0.jpg",
+      "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321820731_1.jpg",
+      "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321824112_2.jpg"
+    ],
+    "slug": "selleta-de-hueso-de-buey-72x3x9-720253bf",
+    "imageWidth": 1100,
+    "imageHeight": 825,
+    "updatedAt": "2026-10-18"
   }
 ]
