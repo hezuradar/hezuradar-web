@@ -232,6 +232,8 @@
         return [GUIDE_LINKS.medidas, GUIDE_LINKS.tallarCejuela];
       case "Selleta":
         return [GUIDE_LINKS.medidas, GUIDE_LINKS.tallarSelleta];
+      case "Selletas talladas":
+        return [GUIDE_LINKS.medidas, GUIDE_LINKS.materiales];
       case "Pines":
         return [GUIDE_LINKS.pines];
       default:
@@ -612,17 +614,18 @@
       title: "Selletas de hueso y cuerno para guitarra",
       h1: "Selletas de hueso, cuerno y madre perla",
       description:
-        "Hueso, cuerno de buey, oveja latxa y madre perla en bruto para tallar selletas y cordales: medidas estándar, extra gruesas y finas.",
+        "Selletas talladas de hueso y cuerno para acústica (72 × 3 × 9 mm) y piezas en bruto de hueso, cuerno, latxa y madre perla para tallar la tuya.",
       match: function (p) {
-        return p.subcategory === "Selleta";
+        return p.subcategory === "Selleta" || p.subcategory === "Selletas talladas";
       },
       intro:
         "<p>La selleta es el punto de apoyo de las cuerdas en el puente y, en muchas guitarras acústicas, transmite buena parte de la vibración a la tapa. " +
-        "Todas las piezas de esta sección vienen <strong>en bruto</strong>, con margen para tallarlas a la medida de tu instrumento, " +
-        "en hueso, cuerno de buey (ámbar, negro y Ankola), cuerno de oveja latxa, búfalo y madre perla.</p>",
+        "Aquí tienes dos opciones: <strong>selletas ya talladas</strong>, listas para ajustar a tu guitarra, y <strong>piezas en bruto</strong> " +
+        "con margen para tallarlas a la medida de tu instrumento, en hueso, cuerno de buey (ámbar, negro y Ankola), cuerno de oveja latxa, búfalo y madre perla.</p>",
       guide:
         "<h2>Qué formato elegir</h2>" +
         '<ul class="guide-list">' +
+        "<li><strong>Ya talladas:</strong> 72 × 3 × 9 mm, para guitarra acústica, con el escalón de compensación; pueden necesitar un ajuste final de altura.</li>" +
         "<li><strong>Selleta estándar:</strong> 105 × 4 × 10 mm u 85 × 4 × 10 mm.</li>" +
         "<li><strong>Extra gruesa:</strong> unos 6-7 mm de grosor, para puentes con una ranura más ancha.</li>" +
         "<li><strong>Fina:</strong> 105 × 2,5 × 11 mm.</li>" +

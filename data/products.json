@@ -1367,14 +1367,13 @@
   },
   {
     "id": "77213117-4f73-4a0f-994c-f5363fdece5e",
-    "title": "Madre perla negra para puente 80x12x2,5",
-    "description": "Madre perla de color negro para adorno de cordal \nMedidas 80x12x2,5mm",
+    "title": "Madre perla negra para puente 80 × 12 × 2,5 mm",
+    "description": "Tira de madre perla oscura de 80 × 12 × 2,5 mm, pensada como adorno para el puente o el cordal. En las fotos se ve un tono ahumado, entre marrón rosado y casi negro en los bordes, con reflejos nacarados rosas y cobrizos que cambian con la luz; cada tira tiene un veteado distinto.\n\nCon 2,5 mm de grosor se corta y se lija con facilidad para ajustarla a la zona que quieras decorar. Es una pieza decorativa, no una pieza de apoyo de la cuerda. Para incrustaciones más pequeñas, tienes las placas de madre perla Black y Gold de 38 × 25 mm.\n\nMedidas: 80 × 12 × 2,5 mm.",
     "price": 15,
     "sku": "RR0070",
     "category": "Madre perla y abalone",
     "subcategory": "Bloques y placas",
     "stock": 27,
-    "discountPercent": null,
     "images": [
       "images/products/77213117-4f73-4a0f-994c-f5363fdece5e_1791981982113_0.jpg",
       "images/products/77213117-4f73-4a0f-994c-f5363fdece5e_1791981987275_1.jpg",
@@ -1383,60 +1382,61 @@
     "slug": "madre-perla-negra-para-puente-80x12x2-5-77213117",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-14"
+    "updatedAt": "2026-10-18"
   },
   {
     "id": "720253bf-ceee-443b-b1cd-f18df8dde3bc",
-    "title": "Selleta de hueso de buey 72x3x9",
-    "description": "Selleta de hueso de buey para guitarra acústica 72x3x9",
+    "title": "Selleta tallada de hueso de buey 72 × 3 × 9 mm",
+    "description": "Selleta de hueso de buey ya tallada, de 72 × 3 × 9 mm, para guitarra acústica. Es de un blanco marfil liso y lleva la parte superior escalonada, con el rebaje de compensación habitual en las selletas de acústica.\n\nEl hueso transmite bien la vibración de las cuerdas a la tapa y da un sonido algo más brillante y definido que el cuerno. Con 9 mm de altura queda margen para rebajarla hasta la acción que prefieras, y al montarla puede necesitar un ajuste final. Misma medida disponible en cuerno de buey ámbar y en cuerno negro.\n\nMedidas: 72 × 3 × 9 mm.",
     "price": 10,
     "sku": "RR0071",
     "category": "Accesorios",
-    "subcategory": "Cejuelas talladas",
+    "subcategory": "Selletas talladas",
     "stock": 10,
-    "discountPercent": null,
     "images": [
       "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321820731_1.jpg",
       "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792321824112_2.jpg",
       "images/products/720253bf-ceee-443b-b1cd-f18df8dde3bc_1792322872438_0.jpg"
     ],
     "slug": "selleta-de-hueso-de-buey-72x3x9-720253bf",
-    "updatedAt": "2026-10-18"
+    "updatedAt": "2026-10-18",
+    "imageWidth": 1100,
+    "imageHeight": 825
   },
   {
     "id": "b4083b55-d15c-49f3-83d1-812ad087155d",
-    "title": "Selleta de cuerno de buey ámbar 72x3x9",
-    "description": "Selleta de cuerno de buey ámbar para guitarra acústica \n\n72x3x9",
+    "title": "Selleta tallada de cuerno de buey ámbar 72 × 3 × 9 mm",
+    "description": "Selleta de cuerno de buey ámbar ya tallada, de 72 × 3 × 9 mm, para guitarra acústica. El color va del ámbar miel a zonas más claras y translúcidas, con vetas naturales que hacen distinta cada pieza. La parte superior lleva el escalón de compensación habitual en acústica.\n\nFrente al hueso, el cuerno aporta un sonido algo más cálido y menos brillante en los agudos; la diferencia es de matiz, no de calidad. Con 9 mm de altura se puede rebajar a tu medida y puede necesitar un ajuste final al montarla. Misma medida disponible en hueso de buey y en cuerno negro.\n\nMedidas: 72 × 3 × 9 mm.",
     "price": 10,
     "sku": "RR0072",
     "category": "Accesorios",
-    "subcategory": "Cejuelas talladas",
+    "subcategory": "Selletas talladas",
     "stock": 10,
-    "discountPercent": null,
     "images": [
       "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321972602_1.jpg",
       "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792321975777_2.jpg",
       "images/products/b4083b55-d15c-49f3-83d1-812ad087155d_1792322801004_0.jpg"
     ],
     "slug": "selleta-de-cuerno-de-buey-ambar-72x3x9-b4083b55",
-    "updatedAt": "2026-10-18"
+    "updatedAt": "2026-10-18",
+    "imageWidth": 1100,
+    "imageHeight": 825
   },
   {
     "id": "1b7edbdb-530d-45b6-b635-cd465dcca965",
-    "title": "Cejuela de cuerno de buey negro 72x3x9",
-    "description": "Cejuela de cuento de buey negro para guitarra acústica \n\n72x3x9",
+    "title": "Selleta tallada de cuerno de buey negro 72 × 3 × 9 mm",
+    "description": "Selleta de cuerno de buey negro ya tallada, de 72 × 3 × 9 mm, para guitarra acústica. Negro profundo y liso, con el brillo suave propio del cuerno pulido; queda discreta en puentes claros y oscuros. La parte superior lleva el escalón de compensación habitual en acústica.\n\nFrente al hueso, el cuerno aporta un sonido algo más cálido y menos brillante en los agudos. Con 9 mm de altura se puede rebajar a tu medida y puede necesitar un ajuste final al montarla. Misma medida disponible en hueso de buey y en cuerno ámbar.\n\nMedidas: 72 × 3 × 9 mm.",
     "price": 10,
     "sku": "RR0073",
     "category": "Accesorios",
-    "subcategory": "Cejuelas talladas",
+    "subcategory": "Selletas talladas",
     "stock": 10,
-    "discountPercent": null,
     "images": [
       "images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322693895_0.jpg",
       "images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322697196_1.jpg",
       "images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322700060_2.jpg"
     ],
-    "slug": "cejuela-de-cuerno-de-buey-negro-72x3x9-1b7edbdb",
+    "slug": "selleta-de-cuerno-de-buey-negro-72x3x9-1b7edbdb",
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-10-18"

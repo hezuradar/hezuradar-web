@@ -806,6 +806,19 @@
   const IMAGE_FULL = { maxSide: 1100, maxBytes: 180 * 1024, qualityMax: 0.86, qualityMin: 0.74 };
   const IMAGE_THUMB = { maxSide: 500, maxBytes: 36 * 1024, qualityMax: 0.82, qualityMin: 0.7 };
 
+  // Mide una foto ya publicada en el sitio (ruta relativa tipo images/products/...).
+  // El parámetro evita que una respuesta antigua de la caché falsee la medida; si la
+  // foto aún no está desplegada o falla la carga, devuelve null y la ficha se publica
+  // sin dimensiones (no es un error que deba detener el guardado).
+  function measurePublishedImage(path) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img.naturalWidth && img.naturalHeight ? { width: img.naturalWidth, height: img.naturalHeight } : null);
+      img.onerror = () => resolve(null);
+      img.src = `/${path}?m=${Date.now()}`;
+    });
+  }
+
   function loadImageFile(file) {
     return new Promise((resolve, reject) => {
       const url = URL.createObjectURL(file);
@@ -960,15 +973,16 @@
 
       const slug = (existing && existing.slug) || (window.HA_TEMPLATE && window.HA_TEMPLATE.slugFor({ id, title }));
 
-      // Dimensiones reales de la imagen que queda en la posición principal (images[0]),
-      // para declarar og:image:width/height sin inventar valores. Si la principal es
-      // una foto nueva se leen sus bytes; si es una que ya existía, se reutilizan las
-      // que ya se calcularon para ella en un guardado anterior.
       // Dimensiones reales de la imagen principal (images[0]) para declarar
       // og:image:width/height sin inventar valores: si es una foto nueva salen
       // del reescalado; si ya existía, se reutilizan las de un guardado anterior.
       if (currentImages.length > 0 && existing && existing.images && existing.images[0] === currentImages[0] && existing.imageWidth && existing.imageHeight) {
         mainImageDims = { width: existing.imageWidth, height: existing.imageHeight };
+      }
+      // Si la principal cambió de sitio (se quitó o se reordenó la primera foto),
+      // no hay dimensiones guardadas para ella: se miden de la propia foto publicada.
+      if (!mainImageDims && images.length > 0) {
+        mainImageDims = await measurePublishedImage(images[0]);
       }
 
       const product = {
