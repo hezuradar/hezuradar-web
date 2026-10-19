@@ -797,7 +797,8 @@
 
   // Optimización de las fotos de producto. Una foto de móvil sin reducir (4000 px, 3 MB) hunde la
   // velocidad de carga de la ficha y su posicionamiento, así que cada foto se publica en dos
-  // tamaños, ambos en JPEG (las rutas .jpg las dan por hechas la plantilla, el sitemap y og:image):
+  // tamaños, ambos en WebP (la extensión real del archivo publicado la resuelven thumbPath, el
+  // sitemap y og:image, así que da igual .webp que .jpg):
   //  - foto de la ficha: lado largo de 1100 px (la galería muestra ~560 px CSS, es decir 2x para
   //    pantallas retina) y como mucho unos 180 KB, el mismo estándar de las fotos ya publicadas;
   //  - miniatura del catálogo: lado largo de 500 px y como mucho unos 36 KB.
@@ -805,6 +806,22 @@
   // que no se note la compresión. Una foto sencilla se queda en la calidad máxima.
   const IMAGE_FULL = { maxSide: 1100, maxBytes: 180 * 1024, qualityMax: 0.86, qualityMin: 0.74 };
   const IMAGE_THUMB = { maxSide: 500, maxBytes: 36 * 1024, qualityMax: 0.82, qualityMin: 0.7 };
+
+  // Formato de publicación: WebP, que a igualdad de calidad pesa bastante menos que el JPEG.
+  // Si el navegador del panel no lo soporta se publica en JPEG, y como la extensión sale siempre
+  // del tipo real del archivo generado, ambas versiones conviven sin tocar nada más.
+  function supportsWebp() {
+    try {
+      return document.createElement("canvas").toDataURL("image/webp").indexOf("data:image/webp") === 0;
+    } catch (e) {
+      return false;
+    }
+  }
+  const IMAGE_TYPE = supportsWebp() ? "image/webp" : "image/jpeg";
+
+  function extensionForBlob(blob) {
+    return blob.type === "image/webp" ? ".webp" : ".jpg";
+  }
 
   // Mide una foto ya publicada en el sitio (ruta relativa tipo images/products/...).
   // El parámetro evita que una respuesta antigua de la caché falsee la medida; si la
@@ -867,25 +884,25 @@
     return canvas;
   }
 
-  function canvasToJpeg(canvas, quality) {
+  function canvasToImage(canvas, quality) {
     return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No se pudo generar la imagen reducida."))), "image/jpeg", quality);
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No se pudo generar la imagen reducida."))), IMAGE_TYPE, quality);
     });
   }
 
   // La calidad más alta que quepa en maxBytes (búsqueda binaria). Si ni la mínima cabe, se
   // publica con la mínima: es preferible un archivo algo mayor a una foto estropeada.
   async function encodeWithinBudget(canvas, opts) {
-    const best = await canvasToJpeg(canvas, opts.qualityMax);
+    const best = await canvasToImage(canvas, opts.qualityMax);
     if (best.size <= opts.maxBytes) return best;
-    const floor = await canvasToJpeg(canvas, opts.qualityMin);
+    const floor = await canvasToImage(canvas, opts.qualityMin);
     if (floor.size > opts.maxBytes) return floor;
     let result = floor;
     let lo = opts.qualityMin;
     let hi = opts.qualityMax;
     for (let i = 0; i < 4; i++) {
       const mid = (lo + hi) / 2;
-      const blob = await canvasToJpeg(canvas, mid);
+      const blob = await canvasToImage(canvas, mid);
       if (blob.size <= opts.maxBytes) {
         result = blob;
         lo = mid;
@@ -912,7 +929,7 @@
   async function optimizeImage(img, opts) {
     const canvas = drawScaled(img, opts.maxSide);
     const blob = await encodeWithinBudget(canvas, opts);
-    return { base64: await blobToBase64(blob), width: canvas.width, height: canvas.height, bytes: blob.size };
+    return { base64: await blobToBase64(blob), width: canvas.width, height: canvas.height, bytes: blob.size, ext: extensionForBlob(blob) };
   }
 
   async function saveProduct() {
@@ -947,9 +964,10 @@
         for (let i = 0; i < pendingFiles.length; i++) {
           const file = pendingFiles[i];
           // La foto se decodifica una sola vez y se publica optimizada (ver IMAGE_FULL/IMAGE_THUMB).
-          const path = `images/products/${id}_${Date.now()}_${i}.jpg`;
+          // La extensión la decide el formato real del archivo generado (WebP, o JPEG de reserva).
           const img = await loadImageFile(file);
           const full = await optimizeImage(img, IMAGE_FULL);
+          const path = `images/products/${id}_${Date.now()}_${i}${full.ext}`;
           await putFile(path, full.base64, `Sube imagen de producto: ${title}`, null);
           images.push(path);
           if (i === 0 && currentImages.length === 0) mainImageDims = { width: full.width, height: full.height };
