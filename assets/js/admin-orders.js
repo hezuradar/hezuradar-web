@@ -31,6 +31,8 @@
     prepCounts: (o) => prepCounts(o),
     safeImageUrl: (u) => safeImageUrl(u),
     safeLinkUrl: (u) => safeLinkUrl(u),
+    isOldProductPhoto: (u) => isOldProductPhoto(u),
+    toWebpIfProductPhoto: (p) => toWebpIfProductPhoto(p),
     isOrderModalOpen: () => isOrderModalOpen(),
     orderFormHostHidden: () => {
       const h = document.getElementById("order-form-host");
@@ -1516,6 +1518,14 @@ ${bodyHtml}
     printWhenReady(win);
   }
 
+  // ¿Es una foto de producto con la extensión antigua? Acepta la ruta con o sin barra
+  // inicial, que es como la guardan el catálogo y los pedidos antiguos. La usan
+  // safeImageUrl() y toWebpIfProductPhoto() para reapuntar a .webp al pintar.
+  function isOldProductPhoto(url) {
+    const s = String(url == null ? "" : url);
+    return PRODUCT_PHOTO_RE.test(s.startsWith("/") ? s : "/" + s);
+  }
+
   async function deleteOrder(docId) {
     const o = orders.find((x) => x.docId === docId);
     if (!o) return;
@@ -1941,6 +1951,13 @@ ${bodyHtml}
   // rutas relativas válidas del catálogo son "/algo", nunca "//algo".
   const PROTOCOL_RELATIVE_RE = /^\/[\/\\]/;
 
+  // Las fotos de producto se migraron a WebP y los originales .jpg/.jpeg se borraron del
+  // repositorio, pero los pedidos ya guardados en Firestore conservan la ruta antigua
+  // ("..._0.jpg"). Esa ruta da 404 y la miniatura sale rota. El .webp equivalente sí existe,
+  // así que se reescribe aquí. Solo afecta a fotos de producto en /images/products/: los
+  // data URL y las rutas externas se dejan intactos.
+  const PRODUCT_PHOTO_RE = /^\/images\/products\/([A-Za-z0-9._-]+)\.jpe?g$/i;
+
   // El catálogo guarda las fotos como ruta relativa ("images/products/x.webp", sin barra
   // inicial), que en el panel de pedidos es la ruta real de la miniatura. El navegador la
   // resolvería igual, pero safeImageUrl() solo admite rutas que empiecen por "/": se
@@ -1949,7 +1966,7 @@ ${bodyHtml}
     const s = String(url == null ? "" : url).trim();
     if (!s) return "";
     if (PROTOCOL_RELATIVE_RE.test(s)) return "";
-    if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
+    if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return toWebpIfProductPhoto(s);
     if (/^https?:\/\//i.test(s)) return s;
     if (DATA_IMAGE_RE.test(s)) return s;
     // Ruta relativa sin "./" ni barra inicial (el caso del catálogo): se le pone la barra.
@@ -1958,7 +1975,15 @@ ${bodyHtml}
     if (s.includes(":")) return "";
     if (!/^[a-z0-9._-]+(\/[a-z0-9._-]+)+$/i.test(s)) return "";
     if (/(^|\/)\.\.?(\/|$)/.test(s)) return "";
-    return "/" + s;
+    return toWebpIfProductPhoto("/" + s);
+  }
+
+  // Reapunta a WebP las fotos de producto que aún guardan la extensión antigua. El patrón
+  // es estricto ("/images/products/<nombre>.jpg"): si la ruta es otra (un data URL, una URL
+  // externa o un recurso distinto) se devuelve tal cual, sin inventar nombres de fichero.
+  function toWebpIfProductPhoto(path) {
+    const m = PRODUCT_PHOTO_RE.exec(path);
+    return m ? "/images/products/" + m[1] + ".webp" : path;
   }
 
   function safeLinkUrl(url) {
