@@ -838,6 +838,18 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
 }
 .order-item-row .oi-name{flex:1;min-width:0}
 .order-item-row .oi-total{color:var(--color-muted);white-space:nowrap}
+/* Preparación física de cada pedido: casilla por línea, contador y sello de listo para enviar */
+.prep-check{display:flex;align-items:center;justify-content:center;flex:0 0 auto;cursor:pointer;padding:3px 2px}
+.prep-check input{width:17px;height:17px;margin:0;accent-color:#1c7a3f;cursor:pointer}
+.order-item-row.prepared{background:#effaf2;border-radius:8px}
+.order-item-row.prepared .oi-name{color:var(--color-muted)}
+.prep-block{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;padding:9px 12px;border:1px solid var(--color-border);border-radius:10px;background:#fbfcfd;font-size:.84rem}
+.prep-block.done{border-color:#b7e4c7;background:#effaf2}
+.prep-counter{color:var(--color-muted)}
+.prep-counter b{color:var(--color-text)}
+.prep-seal{background:#e0f2e6;color:#1c7a3f;border:1px solid #b7e4c7;border-radius:999px;padding:3px 11px;font-weight:700;font-size:.8rem}
+.prep-pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:700;background:#f1f3f5;color:var(--color-muted)}
+.prep-pill.done{background:#e0f2e6;color:#1c7a3f}
 .oi-discount-tag{background:#c0392b;color:#fff;font-size:.68rem;font-weight:800;border-radius:999px;padding:1px 7px}
 .order-totals{
   background:var(--color-bg);border:1px solid var(--color-border);border-radius:8px;

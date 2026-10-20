@@ -229,6 +229,13 @@
     o.status = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"].includes(o.status) ? o.status : "pendiente";
     o.items = Array.isArray(o.items) ? o.items.filter((it) => it && typeof it === "object") : [];
     o.mergedFrom = Array.isArray(o.mergedFrom) ? o.mergedFrom.map(str) : [];
+    // Líneas marcadas como preparadas físicamente desde la tarjeta: mapa {clave_línea: true}.
+    // Cualquier cosa que no sea un mapa se deja en vacío, y solo se conservan las marcas a true.
+    const prepSaved = o.prepared && typeof o.prepared === "object" && !Array.isArray(o.prepared) ? o.prepared : {};
+    o.prepared = {};
+    Object.keys(prepSaved).forEach((k) => {
+      if (prepSaved[k]) o.prepared[k] = true;
+    });
     if (o.designs != null && !Array.isArray(o.designs)) delete o.designs;
     if (o.total != null && typeof o.total !== "number") delete o.total;
     if (o.driveFolderUrl && !/^https:\/\/drive\.google\.com\//.test(String(o.driveFolderUrl))) o.driveFolderUrl = "";
@@ -264,6 +271,10 @@
 
   function renderOrders() {
     const list = statusFilter ? orders.filter((o) => o.status === statusFilter) : orders;
+    // Al repintar la lista se pierde el foco (por ejemplo, al marcar un checkbox): se guarda
+    // el id del elemento enfocado dentro de la lista para devolverlo justo después del innerHTML.
+    const focusEl = document.activeElement;
+    const focusId = focusEl && focusEl.id && $("orders-list").contains(focusEl) ? focusEl.id : null;
     $("orders-count").textContent = orders.length;
     const pending = orders.filter((o) => o.status === "pendiente").length;
     const badge = $("orders-pending-badge");
@@ -290,6 +301,10 @@
     }
 
     $("orders-list").innerHTML = catalogNotice + list.map(orderCard).join("");
+    if (focusId) {
+      const el = document.getElementById(focusId);
+      if (el && typeof el.focus === "function") el.focus({ preventScroll: true });
+    }
 
     list.forEach((o) => {
       const sel = document.getElementById(`status-${o.docId}`);
@@ -319,6 +334,30 @@
       });
       const sendToCutBtn = document.getElementById(`send-to-cut-${o.docId}`);
       if (sendToCutBtn) sendToCutBtn.addEventListener("click", () => sendToCut(o.docId));
+      // Checklist de preparación física: cada cambio guarda el mapa completo de marcas del
+      // pedido, y "Marcar todo" deja todas (o ninguna, si ya lo estaban todas).
+      const card = document.getElementById(`order-card-${o.docId}`);
+      if (card) {
+        card.querySelectorAll("input.oi-prep").forEach((chk) => {
+          chk.addEventListener("change", () => {
+            const keys = prepLineKeys(o.items);
+            const idx = Number(chk.dataset.prep);
+            if (typeof keys[idx] !== "string") return;
+            const state = preparedState(o);
+            if (chk.checked) state[keys[idx]] = true;
+            else delete state[keys[idx]];
+            savePrepared(o.docId, state);
+          });
+        });
+        const prepAllBtn = document.getElementById(`prep-all-${o.docId}`);
+        if (prepAllBtn) {
+          prepAllBtn.addEventListener("click", () => {
+            const state = {};
+            if (!prepCounts(o).all) prepLineKeys(o.items).forEach((k) => (state[k] = true));
+            savePrepared(o.docId, state);
+          });
+        }
+      }
     });
   }
 
@@ -856,6 +895,77 @@
     $("o-province").value = c.province || "";
   }
 
+  /* ---------------- PREPARACIÓN FÍSICA DE CADA PEDIDO ---------------- */
+
+  // Escapa los signos que Firestore trata como camino de campo (punto, barras, corchetes,
+  // asterisco) y el propio %, para que una línea con "12% · soporte v2.0" en el título no
+  // produzca una clave ambigua o que se interprete como un campo anidado.
+  function prepKeyPart(text) {
+    return String(text == null ? "" : text)
+      .replace(/%/g, "%25")
+      .replace(/[./[\]*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
+  }
+
+  // Clave de cada línea del pedido, por posición: el id del producto si tiene (así una línea
+  // que cambie de precio o de título se queda marcada) o el título en las líneas manuales,
+  // más un contador para cuando dos líneas son idénticas. Lo que sobra tras editar un pedido
+  // simplemente deja de coincidir y ya no se guarda.
+  function prepLineKeys(items) {
+    const list = Array.isArray(items) ? items : [];
+    const seen = Object.create(null);
+    return list.map((it, i) => {
+      const base = prepKeyPart(it && (it.id || it.title)) || "line" + i;
+      const times = seen[base] || 0;
+      seen[base] = times + 1;
+      return base + "#" + times;
+    });
+  }
+
+  // Marcas del pedido recortadas a las líneas que existen ahora mismo.
+  function preparedState(o) {
+    const saved = o.prepared && typeof o.prepared === "object" && !Array.isArray(o.prepared) ? o.prepared : {};
+    const state = {};
+    prepLineKeys(o.items).forEach((k) => {
+      if (saved[k]) state[k] = true;
+    });
+    return state;
+  }
+
+  function prepCounts(o) {
+    const items = Array.isArray(o.items) ? o.items : [];
+    const state = preparedState(o);
+    const done = prepLineKeys(items).filter((k) => state[k]).length;
+    return { total: items.length, done, all: items.length > 0 && done === items.length };
+  }
+
+  // Contador, sello "Listo para enviar" y botón de marcar/desmarcar todo, al pie de las líneas.
+  function prepSummaryHtml(prep, id, codeAttr) {
+    if (!prep.total) return "";
+    return `
+            <div class="prep-block${prep.all ? " done" : ""}">
+              <span class="prep-counter">📦 <b>${prep.done} de ${prep.total}</b> referencias preparadas</span>
+              ${prep.all ? '<span class="prep-seal">✅ Listo para enviar</span>' : ""}
+              <button class="small-btn" id="prep-all-${id}" type="button" aria-label="${prep.all ? "Desmarcar" : "Marcar"} todas las referencias del pedido ${codeAttr}">${prep.all ? "Desmarcar todo" : "Marcar todo"}</button>
+            </div>`;
+  }
+
+  // Guarda el mapa completo de líneas preparadas del pedido. Se pinta ya en el modelo local
+  // (la escucha de Firestore confirma con el siguiente snapshot); si la escritura falla se
+  // vuelve al estado anterior. Las reglas no limitan campos de un pedido para el admin.
+  async function savePrepared(docId, state) {
+    const o = orders.find((x) => x.docId === docId);
+    const prev = o ? o.prepared : null;
+    if (o) o.prepared = state;
+    renderOrders();
+    try {
+      await firebase.firestore().collection("orders").doc(docId).update({ prepared: state });
+    } catch (e) {
+      if (o) o.prepared = prev || {};
+      renderOrders();
+      alert("No se pudo guardar la preparación de las referencias: " + e.message);
+    }
+  }
+
   function orderCard(o) {
     const designs = orderDesigns(o);
     const design = designs.length > 0;
@@ -866,20 +976,34 @@
     const shippingCost = Number(o.shippingCost) || 0;
     const itemsSum = (o.items || []).reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
     const total = orderTotal(o);
-    const itemsHtml = (o.items || [])
-      .map(
-        (it) => `
-        <div class="order-item-row">
+    const priced = itemsSum > 0;
+    const id = escapeAttr(o.docId);
+    // Código del pedido (escapado) para los aria-label de los botones repetidos en cada tarjeta.
+    const codeAttr = escapeAttr(o.orderCode || o.docId);
+    const items = Array.isArray(o.items) ? o.items : [];
+    const prepared = preparedState(o);
+    const prepKeys = prepLineKeys(items);
+    const prep = prepCounts(o);
+    // Un diseño sin presupuestar no lista sus líneas, así que la checklist solo aparece
+    // cuando el pedido ya tiene precio y las referencias se pueden preparar de verdad.
+    const showPrep = prep.total > 0 && !(design && !priced);
+    const itemsHtml = items
+      .map((it, i) => {
+        const done = !!prepared[prepKeys[i]];
+        return `
+        <div class="order-item-row${done ? " prepared" : ""}">
+          <label class="prep-check" title="Marca la referencia cuando la tengas preparada físicamente">
+            <input type="checkbox" class="oi-prep" id="prep-${id}-${i}" data-prep="${i}" ${done ? "checked" : ""} aria-label="Preparada la referencia ${escapeAttr(`${Number(it.qty) || 0}× ${it.title || ""}`)} del pedido ${codeAttr}">
+          </label>
           ${it.image ? `<img src="${escapeAttr(it.image)}" alt="">` : `<div class="order-item-noimg"></div>`}
           <span class="oi-name">${Number(it.qty) || 0}× ${escapeHtml(it.title)}${it.discountPercent ? ` <span class="oi-discount-tag">-${Number(it.discountPercent) || 0}%</span>` : ""}</span>
           <span class="oi-total">${formatPrice(it.price * it.qty)}</span>
-        </div>`
-      )
+        </div>`;
+      })
       .join("");
     const c = o.customer || {};
     const s = o.shipping || {};
     const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
-    const id = escapeAttr(o.docId);
     const designButtons = designs
       .map((ds, i) => {
         const d = ds.design || {};
@@ -906,10 +1030,7 @@
             ${d.fileInDrive && ds.driveFolderUrl ? `<p class="help-text">El archivo original está en <a href="${escapeAttr(ds.driveFolderUrl)}" target="_blank" rel="noopener">su carpeta de Drive</a>.</p>` : ""}`;
       })
       .join("");
-    const priced = itemsSum > 0;
     const mismatches = design ? [] : catalogPriceMismatches(o);
-    // Código del pedido (escapado) para los aria-label de los botones repetidos en cada tarjeta.
-    const codeAttr = escapeAttr(o.orderCode || o.docId);
 
     return `
       <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
@@ -918,6 +1039,7 @@
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
             <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
             ${design ? `<span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 ${escapeHtml(designLabel)}</span>` : ""}
+            ${showPrep && prep.done > 0 ? `<span class="prep-pill${prep.all ? " done" : ""}" title="${prep.all ? "Todas las referencias preparadas físicamente" : `${prep.done} de ${prep.total} referencias preparadas físicamente`}">${prep.all ? "✅ Preparado" : `📦 ${prep.done}/${prep.total}`}</span>` : ""}
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
@@ -951,7 +1073,8 @@
               ${shippingCost > 0 ? `<div class="order-total-row"><span>Envío</span><span>${formatPrice(shippingCost)}</span></div>` : ""}
               <div class="order-total-row order-total-grand"><span>Total</span><b>${formatPrice(total)}</b></div>
             </div>
-            ${mismatches.length ? `<div class="status-msg err">⚠️ Precio distinto del catálogo en: ${escapeHtml(mismatches.map((it) => it.title).join(", "))}. Revisa el importe antes de confirmar.</div>` : ""}`
+            ${mismatches.length ? `<div class="status-msg err">⚠️ Precio distinto del catálogo en: ${escapeHtml(mismatches.map((it) => it.title).join(", "))}. Revisa el importe antes de confirmar.</div>` : ""}
+            ${showPrep ? prepSummaryHtml(prep, id, codeAttr) : ""}`
             }
           </div>
           <div class="order-customer">
