@@ -250,6 +250,12 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .design-view-box img{max-width:100%;border-radius:10px;background:#f0f3f5}
 .design-view-caption{margin-top:12px;color:var(--color-muted);font-size:.85rem}
 
+/* Alta/edición de pedidos: pantalla emergente de una columna, más ancha que el modal de
+   producto porque el formulario tiene muchas filas de campos. */
+.order-modal{max-width:760px}
+.order-modal-scroll{display:block;max-height:88vh;overflow:auto;padding:26px 26px 22px}
+.order-modal-scroll #order-form-host{padding-right:26px}
+
 /* Product detail page */
 .product-page{padding-top:24px;padding-bottom:48px}
 .breadcrumb{font-size:.82rem;color:var(--color-muted);margin-bottom:18px}
