@@ -252,7 +252,7 @@
     return "https://api.whatsapp.com/send?phone=" + String(phone || "").replace("+", "") + "&text=" + encodeURIComponent(text);
   }
 
-  // Lee las dimensiones reales de una imagen JPEG o PNG a partir de sus bytes,
+  // Lee las dimensiones reales de una imagen JPEG, PNG o WebP a partir de sus bytes,
   // sin dependencias externas (funciona igual en Node con un Buffer que en el
   // navegador con un Uint8Array leído de un File). Se usa para declarar
   // og:image:width/height y el width/height del <img> principal sin inventar
@@ -279,6 +279,42 @@
         width: ((bytes[16] << 24) | (bytes[17] << 16) | (bytes[18] << 8) | bytes[19]) >>> 0,
         height: ((bytes[20] << 24) | (bytes[21] << 16) | (bytes[22] << 8) | bytes[23]) >>> 0,
       };
+    }
+    // WebP (RIFF): el tamaño está en el chunk de cabecera, que puede ser VP8X
+    // (extendido, con canvas de 24 bits), VP8 (con pérdida) o VP8L (sin pérdida).
+    if (bytes[0] === 0x52 && bytes[1] === 0x49 && bytes[2] === 0x46 && bytes[3] === 0x46 &&
+        bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50) {
+      var off = 12;
+      while (off + 8 <= bytes.length) {
+        var fourcc = String.fromCharCode(bytes[off], bytes[off + 1], bytes[off + 2], bytes[off + 3]);
+        var chunkSize = (bytes[off + 4] | (bytes[off + 5] << 8) | (bytes[off + 6] << 16) | (bytes[off + 7] << 24)) >>> 0;
+        var p = off + 8;
+        if (fourcc === "VP8X") {
+          return {
+            width: 1 + (bytes[p + 4] | (bytes[p + 5] << 8) | (bytes[p + 6] << 16)),
+            height: 1 + (bytes[p + 7] | (bytes[p + 8] << 8) | (bytes[p + 9] << 16)),
+          };
+        }
+        if (fourcc === "VP8 ") {
+          if (bytes[p + 3] === 0x9d && bytes[p + 4] === 0x01 && bytes[p + 5] === 0x2a) {
+            return {
+              width: (bytes[p + 6] | (bytes[p + 7] << 8)) & 0x3fff,
+              height: (bytes[p + 8] | (bytes[p + 9] << 8)) & 0x3fff,
+            };
+          }
+          return null;
+        }
+        if (fourcc === "VP8L") {
+          if (bytes[p] !== 0x2f) return null;
+          var b0 = bytes[p + 1], b1 = bytes[p + 2], b2 = bytes[p + 3], b3 = bytes[p + 4];
+          return {
+            width: 1 + (b0 | ((b1 & 0x3f) << 8)),
+            height: 1 + (((b1 >> 6) & 0x03) | (b2 << 2) | ((b3 & 0x0f) << 10)),
+          };
+        }
+        off = p + chunkSize + (chunkSize & 1);
+      }
+      return null;
     }
     return null;
   }
