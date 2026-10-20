@@ -121,6 +121,17 @@ test("safeImageUrl no se deja engañar por mayúsculas ni espacios previos", () 
   assertEqual(I.safeImageUrl("HTTPS://hezuradar.com/a.webp"), "HTTPS://hezuradar.com/a.webp");
 });
 
+test("safeImageUrl rechaza URLs protocol-relative (//host y /\\host)", () => {
+  // Un pedido lo puede crear cualquiera: sin esto, "//evil.com/x.png" cargaría una imagen
+  // de un servidor ajeno dentro del panel del admin (fuga de IP / contenido externo).
+  assertEqual(I.safeImageUrl("//evil.com/x.png"), "");
+  assertEqual(I.safeImageUrl("/\\evil.com/x.png"), "");
+  assertEqual(I.safeImageUrl("\\/evil.com/x.png"), "");
+  assertEqual(I.safeImageUrl(" //evil.com/x.png"), "");
+  // Las rutas relativas legítimas del catálogo siguen pasando.
+  assertEqual(I.safeImageUrl("/images/products/a.webp"), "/images/products/a.webp");
+});
+
 test("safeLinkUrl solo admite http y https", () => {
   assertEqual(I.safeLinkUrl("https://drive.google.com/x"), "https://drive.google.com/x");
   assertEqual(I.safeLinkUrl("http://ejemplo.com"), "http://ejemplo.com");
