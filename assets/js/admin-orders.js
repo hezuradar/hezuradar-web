@@ -1837,10 +1837,15 @@ ${bodyHtml}
   //   vistas previas de los diseños se guardan como data URL en el propio pedido).
   // - Enlaces: solo http(s); así un "javascript:" no llega nunca al href.
   const DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp|gif|avif|bmp);base64,[a-z0-9+/=\s]+$/i;
+  // "//host" y "/\host" empiezan por "/", pero el navegador los trata como URL absoluta
+  // (protocol-relative): cargarían una imagen de un servidor ajeno dentro del panel. Las
+  // rutas relativas válidas del catálogo son "/algo", nunca "//algo".
+  const PROTOCOL_RELATIVE_RE = /^\/[\/\\]/;
 
   function safeImageUrl(url) {
     const s = String(url == null ? "" : url).trim();
     if (!s) return "";
+    if (PROTOCOL_RELATIVE_RE.test(s)) return "";
     if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
     if (/^https?:\/\//i.test(s)) return s;
     if (DATA_IMAGE_RE.test(s)) return s;
