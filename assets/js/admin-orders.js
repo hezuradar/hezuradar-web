@@ -21,6 +21,17 @@
   }
   // admin-stats.js se carga después y usa la misma regla.
   window.HA_ORDER_COUNTS_AS_REVENUE = countsAsRevenue;
+
+  // Punto de entrada para las pruebas (tests/): la lógica pura del panel se expone para
+  // poder comprobarla con Node sin navegador. No lo usa la aplicación.
+  window.HA_ORDERS_INTERNALS = {
+    prepKeyPart: (s) => prepKeyPart(s),
+    prepLineKeys: (items) => prepLineKeys(items),
+    preparedState: (o) => preparedState(o),
+    prepCounts: (o) => prepCounts(o),
+    safeImageUrl: (u) => safeImageUrl(u),
+    safeLinkUrl: (u) => safeLinkUrl(u),
+  };
   const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
   let orders = [];
   let catalogProducts = [];
@@ -416,7 +427,7 @@
       <div class="design-view-box">
         <button class="modal-close" id="design-view-close" aria-label="Cerrar">&times;</button>
         <div class="design-view-scroll">
-          <img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente">
+          <img src="${escapeAttr(safeImageUrl(d.snapshot))}" alt="Diseño configurado por el cliente">
           <div class="design-view-caption">${escapeHtml(material)}${d.fileName ? " · " + escapeHtml(d.fileName) : ""}</div>
         </div>
       </div>
@@ -995,7 +1006,7 @@
           <label class="prep-check" title="Marca la referencia cuando la tengas preparada físicamente">
             <input type="checkbox" class="oi-prep" id="prep-${id}-${i}" data-prep="${i}" ${done ? "checked" : ""} aria-label="Preparada la referencia ${escapeAttr(`${Number(it.qty) || 0}× ${it.title || ""}`)} del pedido ${codeAttr}">
           </label>
-          ${it.image ? `<img src="${escapeAttr(it.image)}" alt="">` : `<div class="order-item-noimg"></div>`}
+          ${it.image ? `<img src="${escapeAttr(safeImageUrl(it.image))}" alt="">` : `<div class="order-item-noimg"></div>`}
           <span class="oi-name">${Number(it.qty) || 0}× ${escapeHtml(it.title)}${it.discountPercent ? ` <span class="oi-discount-tag">-${Number(it.discountPercent) || 0}%</span>` : ""}</span>
           <span class="oi-total">${formatPrice(it.price * it.qty)}</span>
         </div>`;
@@ -1020,14 +1031,14 @@
         const material = (ds.material && ds.material.label) || "Sin especificar";
         return `
             ${many ? `<div class="order-total-row" style="margin-top:${i ? 14 : 0}px"><b>Diseño ${i + 1} · ${escapeHtml(DESIGN_KINDS[ds.kind] || "Diseño")} · ${escapeHtml(ds.orderCode || "")}</b></div>` : ""}
-            ${d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
+            ${d.snapshot ? `<img src="${escapeAttr(safeImageUrl(d.snapshot))}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
             <div class="order-totals">
               <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
               ${many ? `<div class="order-total-row"><span>Cantidad</span><span>${Number(ds.qty) || 1}</span></div>` : ""}
               ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
             </div>
             ${d.fileTooLargeToEmbed ? `<p class="help-text">El archivo original era demasiado grande para adjuntarlo aquí: pide al cliente que te lo reenvíe por WhatsApp o email.</p>` : ""}
-            ${d.fileInDrive && ds.driveFolderUrl ? `<p class="help-text">El archivo original está en <a href="${escapeAttr(ds.driveFolderUrl)}" target="_blank" rel="noopener">su carpeta de Drive</a>.</p>` : ""}`;
+            ${d.fileInDrive && ds.driveFolderUrl ? `<p class="help-text">El archivo original está en <a href="${escapeAttr(safeLinkUrl(ds.driveFolderUrl))}" target="_blank" rel="noopener">su carpeta de Drive</a>.</p>` : ""}`;
       })
       .join("");
     const mismatches = design ? [] : catalogPriceMismatches(o);
@@ -1050,7 +1061,7 @@
             </select>
             ${designButtons}
             ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Sube el diseño, el archivo del cliente y la nota del pedido a la carpeta compartida de Drive" aria-label="Enviar a cortar el pedido ${codeAttr}"><span aria-hidden="true">✂️</span> Enviar a cortar</button>` : ""}
-            ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(o.driveFolderUrl)}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive" aria-label="Carpeta de Drive del pedido ${codeAttr} (se abre en otra pestaña)"><span aria-hidden="true">📁</span> Drive</a>` : ""}
+            ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(safeLinkUrl(o.driveFolderUrl))}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive" aria-label="Carpeta de Drive del pedido ${codeAttr} (se abre en otra pestaña)"><span aria-hidden="true">📁</span> Drive</a>` : ""}
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío" aria-label="Imprimir etiqueta del pedido ${codeAttr}"><span aria-hidden="true">🏷️</span> Etiqueta</button>
             <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF" aria-label="Descargar albarán del pedido ${codeAttr}"><span aria-hidden="true">📄</span> Albarán</button>
             ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el presupuesto/albarán por WhatsApp al cliente" aria-label="Enviar ${design ? "presupuesto" : "albarán"} del pedido ${codeAttr} por WhatsApp"><span aria-hidden="true">📲</span> ${design ? "Presupuesto" : "Albarán"} WhatsApp</button>` : ""}
@@ -1060,7 +1071,7 @@
             <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button" aria-label="Borrar pedido ${codeAttr}"><span aria-hidden="true">🗑️</span> Borrar</button>
           </div>
         </div>
-        ${cutNotices.has(o.docId) ? `<div class="status-msg ok" role="status">Subido a Drive. El navegador bloqueó la ventana: <a href="${escapeAttr(cutNotices.get(o.docId))}" target="_blank" rel="noopener">abrir la carpeta del pedido</a>.</div>` : ""}
+        ${cutNotices.has(o.docId) ? `<div class="status-msg ok" role="status">Subido a Drive. El navegador bloqueó la ventana: <a href="${escapeAttr(safeLinkUrl(cutNotices.get(o.docId)))}" target="_blank" rel="noopener">abrir la carpeta del pedido</a>.</div>` : ""}
         <div class="order-card-body">
           <div class="order-items-block">
             ${designBlocks}
@@ -1815,5 +1826,30 @@ ${bodyHtml}
   }
   function escapeAttr(str) {
     return escapeHtml(str);
+  }
+
+  // Los pedidos los puede crear cualquiera (reglas de Firestore), así que un campo como
+  // `it.image`, `d.snapshot` o `driveFolderUrl` es texto de un tercero. escapeAttr() evita
+  // romper el atributo, pero no filtra el esquema: un "javascript:" o un "data:text/html"
+  // se colaría tal cual. Aquí se admite solo lo que de verdad se espera en cada caso.
+  //
+  // - Imágenes: rutas relativas del catálogo (/images/...), http(s) y data:image/* (las
+  //   vistas previas de los diseños se guardan como data URL en el propio pedido).
+  // - Enlaces: solo http(s); así un "javascript:" no llega nunca al href.
+  const DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp|gif|avif|bmp);base64,[a-z0-9+/=\s]+$/i;
+
+  function safeImageUrl(url) {
+    const s = String(url == null ? "" : url).trim();
+    if (!s) return "";
+    if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
+    if (/^https?:\/\//i.test(s)) return s;
+    if (DATA_IMAGE_RE.test(s)) return s;
+    return "";
+  }
+
+  function safeLinkUrl(url) {
+    const s = String(url == null ? "" : url).trim();
+    if (!s) return "";
+    return /^https?:\/\//i.test(s) ? s : "";
   }
 })();
