@@ -731,13 +731,22 @@
   // Los pedidos que alimentan este ranking los puede crear cualquier visitante, así que
   // `r.image` es texto de un tercero: se admite solo ruta de catálogo, http(s) o data:image.
   const DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp|gif|avif|bmp);base64,[a-z0-9+/=\s]+$/i;
+  // "//host" y "/\host" empiezan por "/", pero el navegador los trata como URL absoluta.
+  const PROTOCOL_RELATIVE_RE = /^\/[\/\\]/;
 
   function safeImageUrl(url) {
     const s = String(url == null ? "" : url).trim();
     if (!s) return "";
+    if (PROTOCOL_RELATIVE_RE.test(s)) return "";
     if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
     if (/^https?:\/\//i.test(s)) return s;
     if (DATA_IMAGE_RE.test(s)) return s;
-    return "";
+    // Ruta relativa sin barra inicial (así la guarda el catálogo): se normaliza para que
+    // la miniatura se pinte. Se exige forma de ruta, sin ":" (nada de esquemas) y sin
+    // segmentos "." ni "..".
+    if (s.includes(":")) return "";
+    if (!/^[a-z0-9._-]+(\/[a-z0-9._-]+)+$/i.test(s)) return "";
+    if (/(^|\/)\.\.?(\/|$)/.test(s)) return "";
+    return "/" + s;
   }
 })();

@@ -1842,6 +1842,10 @@ ${bodyHtml}
   // rutas relativas válidas del catálogo son "/algo", nunca "//algo".
   const PROTOCOL_RELATIVE_RE = /^\/[\/\\]/;
 
+  // El catálogo guarda las fotos como ruta relativa ("images/products/x.webp", sin barra
+  // inicial), que en el panel de pedidos es la ruta real de la miniatura. El navegador la
+  // resolvería igual, pero safeImageUrl() solo admite rutas que empiecen por "/": se
+  // normaliza aquí para que la miniatura se pinte (antes se descartaba y salía en blanco).
   function safeImageUrl(url) {
     const s = String(url == null ? "" : url).trim();
     if (!s) return "";
@@ -1849,7 +1853,13 @@ ${bodyHtml}
     if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
     if (/^https?:\/\//i.test(s)) return s;
     if (DATA_IMAGE_RE.test(s)) return s;
-    return "";
+    // Ruta relativa sin "./" ni barra inicial (el caso del catálogo): se le pone la barra.
+    // Se exige forma de ruta, sin ":" (nada de esquemas escondidos: "javascript:", "data:")
+    // y sin segmentos "." ni ".." (nada de salir de /images con "images/../../etc").
+    if (s.includes(":")) return "";
+    if (!/^[a-z0-9._-]+(\/[a-z0-9._-]+)+$/i.test(s)) return "";
+    if (/(^|\/)\.\.?(\/|$)/.test(s)) return "";
+    return "/" + s;
   }
 
   function safeLinkUrl(url) {

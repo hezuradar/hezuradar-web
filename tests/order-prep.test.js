@@ -101,7 +101,8 @@ test("prepCounts no confunde líneas repetidas al marcar solo una", () => {
 
 test("safeImageUrl admite rutas del catálogo, http(s) y data:image", () => {
   assertEqual(I.safeImageUrl("/images/products/a.webp"), "/images/products/a.webp");
-  assertEqual(I.safeImageUrl("images/products/a.webp"), "");
+  // El catálogo guarda la ruta sin barra inicial: se normaliza para que la miniatura salga.
+  assertEqual(I.safeImageUrl("images/products/a.webp"), "/images/products/a.webp");
   assertEqual(I.safeImageUrl("https://hezuradar.com/a.webp"), "https://hezuradar.com/a.webp");
   assertEqual(I.safeImageUrl("data:image/png;base64,iVBORw0KGgo="), "data:image/png;base64,iVBORw0KGgo=");
 });
@@ -130,6 +131,15 @@ test("safeImageUrl rechaza URLs protocol-relative (//host y /\\host)", () => {
   assertEqual(I.safeImageUrl(" //evil.com/x.png"), "");
   // Las rutas relativas legítimas del catálogo siguen pasando.
   assertEqual(I.safeImageUrl("/images/products/a.webp"), "/images/products/a.webp");
+});
+
+test("safeImageUrl normaliza la ruta relativa del catálogo pero no admite esquemas", () => {
+  // Caso real: el catálogo guarda "images/products/<uuid>_0.webp" sin barra inicial.
+  assertEqual(I.safeImageUrl("images/products/x_0.webp"), "/images/products/x_0.webp");
+  // Un esquema escondido dentro de una ruta se sigue rechazando.
+  assertEqual(I.safeImageUrl("javascript:alert(1)//x"), "");
+  assertEqual(I.safeImageUrl("images/../../etc"), "");
+  assertEqual(I.safeImageUrl("C:/windows/x.png"), "");
 });
 
 test("safeLinkUrl solo admite http y https", () => {
