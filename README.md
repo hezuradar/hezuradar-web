@@ -12,8 +12,10 @@ assets/js/main.js      lógica de la tienda
 assets/js/admin.js     lógica del panel de administración
 data/products.json     catálogo de productos
 data/store.json        datos de contacto / quiénes somos
-images/products/       fotos de producto
+images/products/       fotos de producto (WebP, con miniatura -thumb)
 images/site/           logo y foto de portada
+tests/                 pruebas automáticas (node tests/run.js)
+scripts/               generadores (fichas, miniaturas) y Apps Script de Drive
 ```
 
 ## 1. Publicar en GitHub Pages
@@ -103,6 +105,13 @@ Con esto, la cesta ya guardará los pedidos y en `admin.html` → pestaña **Ped
 sesión con el email/contraseña del paso 5 y gestionarlos: crear pedidos manuales (por ejemplo, uno
 que te llegue por teléfono), editar cualquier dato o los productos de un pedido existente, borrarlos,
 y consultar el **total facturado** filtrando por rango de fechas (no cuenta los pedidos cancelados).
+
+Cada tarjeta de pedido trae una **checklist de preparación**: una casilla por referencia, para marcar
+lo que ya has preparado físicamente antes de enviar. El panel muestra el contador «N de M referencias
+preparadas» y, cuando están todas, el sello «✅ Listo para enviar» (y un distintivo en la lista, con
+el número). El botón «Marcar todo» alterna entre marcar y desmarcar todas las líneas de golpe. Las
+marcas se guardan en el propio pedido (campo `prepared`) dentro de Firestore, así que se conservan
+aunque cambies de dispositivo, y no afectan a los emails ni al total facturado.
 
 > Estos datos de `firebaseConfig` (apiKey, projectId...) no son secretos — están pensados para ir en
 > el código de cualquier app web. La seguridad real la dan las reglas de Firestore del paso 3 y tu
@@ -269,6 +278,22 @@ Para activarlo:
 
 Mientras `RECAPTCHA_SITE_KEY` esté vacía, la cesta no muestra la casilla y no se envía
 confirmación por email (el pedido y el aviso por WhatsApp funcionan igual).
+
+## 8. Pruebas automáticas
+
+El proyecto tiene una batería de pruebas sin dependencias (solo Node) que cubre la lógica que
+comparten la tienda y el panel: precios por cantidad y descuentos, generación de fichas y sitemap,
+integridad del catálogo (que cada imagen exista, que no haya slugs duplicados, que el sitemap esté
+sincronizado...) y la checklist de preparación de pedidos.
+
+```bash
+node tests/run.js          # todas las pruebas
+node tests/run.js catalog  # solo las que contengan "catalog" en el nombre
+```
+
+Se ejecutan solas con `node`, sin instalar nada. Conviene lanzarlas antes de publicar cambios en
+`data/products.json` o en las plantillas: son las que detectan una imagen que falta o una ficha que
+se ha quedado desactualizada.
 
 ## Notas
 

@@ -507,7 +507,7 @@
         const pct = Math.max(2, (r.value / max) * 100);
         const img = withImage
           ? r.image
-            ? `<img class="rank-img" src="${escapeAttr(r.image)}" alt="" loading="lazy">`
+            ? `<img class="rank-img" src="${escapeAttr(safeImageUrl(r.image))}" alt="" loading="lazy">`
             : `<span class="rank-img rank-img-empty"></span>`
           : "";
         return `<li class="rank-row${withImage ? " has-img" : ""}">
@@ -727,4 +727,17 @@
   }
 
   const escapeAttr = escapeHtml;
+
+  // Los pedidos que alimentan este ranking los puede crear cualquier visitante, así que
+  // `r.image` es texto de un tercero: se admite solo ruta de catálogo, http(s) o data:image.
+  const DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp|gif|avif|bmp);base64,[a-z0-9+/=\s]+$/i;
+
+  function safeImageUrl(url) {
+    const s = String(url == null ? "" : url).trim();
+    if (!s) return "";
+    if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
+    if (/^https?:\/\//i.test(s)) return s;
+    if (DATA_IMAGE_RE.test(s)) return s;
+    return "";
+  }
 })();

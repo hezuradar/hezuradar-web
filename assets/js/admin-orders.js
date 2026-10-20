@@ -21,6 +21,17 @@
   }
   // admin-stats.js se carga después y usa la misma regla.
   window.HA_ORDER_COUNTS_AS_REVENUE = countsAsRevenue;
+
+  // Punto de entrada para las pruebas (tests/): la lógica pura del panel se expone para
+  // poder comprobarla con Node sin navegador. No lo usa la aplicación.
+  window.HA_ORDERS_INTERNALS = {
+    prepKeyPart: (s) => prepKeyPart(s),
+    prepLineKeys: (items) => prepLineKeys(items),
+    preparedState: (o) => preparedState(o),
+    prepCounts: (o) => prepCounts(o),
+    safeImageUrl: (u) => safeImageUrl(u),
+    safeLinkUrl: (u) => safeLinkUrl(u),
+  };
   const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
   let orders = [];
   let catalogProducts = [];
@@ -229,6 +240,13 @@
     o.status = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"].includes(o.status) ? o.status : "pendiente";
     o.items = Array.isArray(o.items) ? o.items.filter((it) => it && typeof it === "object") : [];
     o.mergedFrom = Array.isArray(o.mergedFrom) ? o.mergedFrom.map(str) : [];
+    // Líneas marcadas como preparadas físicamente desde la tarjeta: mapa {clave_línea: true}.
+    // Cualquier cosa que no sea un mapa se deja en vacío, y solo se conservan las marcas a true.
+    const prepSaved = o.prepared && typeof o.prepared === "object" && !Array.isArray(o.prepared) ? o.prepared : {};
+    o.prepared = {};
+    Object.keys(prepSaved).forEach((k) => {
+      if (prepSaved[k]) o.prepared[k] = true;
+    });
     if (o.designs != null && !Array.isArray(o.designs)) delete o.designs;
     if (o.total != null && typeof o.total !== "number") delete o.total;
     if (o.driveFolderUrl && !/^https:\/\/drive\.google\.com\//.test(String(o.driveFolderUrl))) o.driveFolderUrl = "";
@@ -264,6 +282,10 @@
 
   function renderOrders() {
     const list = statusFilter ? orders.filter((o) => o.status === statusFilter) : orders;
+    // Al repintar la lista se pierde el foco (por ejemplo, al marcar un checkbox): se guarda
+    // el id del elemento enfocado dentro de la lista para devolverlo justo después del innerHTML.
+    const focusEl = document.activeElement;
+    const focusId = focusEl && focusEl.id && $("orders-list").contains(focusEl) ? focusEl.id : null;
     $("orders-count").textContent = orders.length;
     const pending = orders.filter((o) => o.status === "pendiente").length;
     const badge = $("orders-pending-badge");
@@ -290,6 +312,10 @@
     }
 
     $("orders-list").innerHTML = catalogNotice + list.map(orderCard).join("");
+    if (focusId) {
+      const el = document.getElementById(focusId);
+      if (el && typeof el.focus === "function") el.focus({ preventScroll: true });
+    }
 
     list.forEach((o) => {
       const sel = document.getElementById(`status-${o.docId}`);
@@ -319,6 +345,30 @@
       });
       const sendToCutBtn = document.getElementById(`send-to-cut-${o.docId}`);
       if (sendToCutBtn) sendToCutBtn.addEventListener("click", () => sendToCut(o.docId));
+      // Checklist de preparación física: cada cambio guarda el mapa completo de marcas del
+      // pedido, y "Marcar todo" deja todas (o ninguna, si ya lo estaban todas).
+      const card = document.getElementById(`order-card-${o.docId}`);
+      if (card) {
+        card.querySelectorAll("input.oi-prep").forEach((chk) => {
+          chk.addEventListener("change", () => {
+            const keys = prepLineKeys(o.items);
+            const idx = Number(chk.dataset.prep);
+            if (typeof keys[idx] !== "string") return;
+            const state = preparedState(o);
+            if (chk.checked) state[keys[idx]] = true;
+            else delete state[keys[idx]];
+            savePrepared(o.docId, state);
+          });
+        });
+        const prepAllBtn = document.getElementById(`prep-all-${o.docId}`);
+        if (prepAllBtn) {
+          prepAllBtn.addEventListener("click", () => {
+            const state = {};
+            if (!prepCounts(o).all) prepLineKeys(o.items).forEach((k) => (state[k] = true));
+            savePrepared(o.docId, state);
+          });
+        }
+      }
     });
   }
 
@@ -377,7 +427,7 @@
       <div class="design-view-box">
         <button class="modal-close" id="design-view-close" aria-label="Cerrar">&times;</button>
         <div class="design-view-scroll">
-          <img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente">
+          <img src="${escapeAttr(safeImageUrl(d.snapshot))}" alt="Diseño configurado por el cliente">
           <div class="design-view-caption">${escapeHtml(material)}${d.fileName ? " · " + escapeHtml(d.fileName) : ""}</div>
         </div>
       </div>
@@ -856,6 +906,77 @@
     $("o-province").value = c.province || "";
   }
 
+  /* ---------------- PREPARACIÓN FÍSICA DE CADA PEDIDO ---------------- */
+
+  // Escapa los signos que Firestore trata como camino de campo (punto, barras, corchetes,
+  // asterisco) y el propio %, para que una línea con "12% · soporte v2.0" en el título no
+  // produzca una clave ambigua o que se interprete como un campo anidado.
+  function prepKeyPart(text) {
+    return String(text == null ? "" : text)
+      .replace(/%/g, "%25")
+      .replace(/[./[\]*]/g, (c) => "%" + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"));
+  }
+
+  // Clave de cada línea del pedido, por posición: el id del producto si tiene (así una línea
+  // que cambie de precio o de título se queda marcada) o el título en las líneas manuales,
+  // más un contador para cuando dos líneas son idénticas. Lo que sobra tras editar un pedido
+  // simplemente deja de coincidir y ya no se guarda.
+  function prepLineKeys(items) {
+    const list = Array.isArray(items) ? items : [];
+    const seen = Object.create(null);
+    return list.map((it, i) => {
+      const base = prepKeyPart(it && (it.id || it.title)) || "line" + i;
+      const times = seen[base] || 0;
+      seen[base] = times + 1;
+      return base + "#" + times;
+    });
+  }
+
+  // Marcas del pedido recortadas a las líneas que existen ahora mismo.
+  function preparedState(o) {
+    const saved = o.prepared && typeof o.prepared === "object" && !Array.isArray(o.prepared) ? o.prepared : {};
+    const state = {};
+    prepLineKeys(o.items).forEach((k) => {
+      if (saved[k]) state[k] = true;
+    });
+    return state;
+  }
+
+  function prepCounts(o) {
+    const items = Array.isArray(o.items) ? o.items : [];
+    const state = preparedState(o);
+    const done = prepLineKeys(items).filter((k) => state[k]).length;
+    return { total: items.length, done, all: items.length > 0 && done === items.length };
+  }
+
+  // Contador, sello "Listo para enviar" y botón de marcar/desmarcar todo, al pie de las líneas.
+  function prepSummaryHtml(prep, id, codeAttr) {
+    if (!prep.total) return "";
+    return `
+            <div class="prep-block${prep.all ? " done" : ""}">
+              <span class="prep-counter">📦 <b>${prep.done} de ${prep.total}</b> referencias preparadas</span>
+              ${prep.all ? '<span class="prep-seal">✅ Listo para enviar</span>' : ""}
+              <button class="small-btn" id="prep-all-${id}" type="button" aria-label="${prep.all ? "Desmarcar" : "Marcar"} todas las referencias del pedido ${codeAttr}">${prep.all ? "Desmarcar todo" : "Marcar todo"}</button>
+            </div>`;
+  }
+
+  // Guarda el mapa completo de líneas preparadas del pedido. Se pinta ya en el modelo local
+  // (la escucha de Firestore confirma con el siguiente snapshot); si la escritura falla se
+  // vuelve al estado anterior. Las reglas no limitan campos de un pedido para el admin.
+  async function savePrepared(docId, state) {
+    const o = orders.find((x) => x.docId === docId);
+    const prev = o ? o.prepared : null;
+    if (o) o.prepared = state;
+    renderOrders();
+    try {
+      await firebase.firestore().collection("orders").doc(docId).update({ prepared: state });
+    } catch (e) {
+      if (o) o.prepared = prev || {};
+      renderOrders();
+      alert("No se pudo guardar la preparación de las referencias: " + e.message);
+    }
+  }
+
   function orderCard(o) {
     const designs = orderDesigns(o);
     const design = designs.length > 0;
@@ -866,20 +987,34 @@
     const shippingCost = Number(o.shippingCost) || 0;
     const itemsSum = (o.items || []).reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 0), 0);
     const total = orderTotal(o);
-    const itemsHtml = (o.items || [])
-      .map(
-        (it) => `
-        <div class="order-item-row">
-          ${it.image ? `<img src="${escapeAttr(it.image)}" alt="">` : `<div class="order-item-noimg"></div>`}
+    const priced = itemsSum > 0;
+    const id = escapeAttr(o.docId);
+    // Código del pedido (escapado) para los aria-label de los botones repetidos en cada tarjeta.
+    const codeAttr = escapeAttr(o.orderCode || o.docId);
+    const items = Array.isArray(o.items) ? o.items : [];
+    const prepared = preparedState(o);
+    const prepKeys = prepLineKeys(items);
+    const prep = prepCounts(o);
+    // Un diseño sin presupuestar no lista sus líneas, así que la checklist solo aparece
+    // cuando el pedido ya tiene precio y las referencias se pueden preparar de verdad.
+    const showPrep = prep.total > 0 && !(design && !priced);
+    const itemsHtml = items
+      .map((it, i) => {
+        const done = !!prepared[prepKeys[i]];
+        return `
+        <div class="order-item-row${done ? " prepared" : ""}">
+          <label class="prep-check" title="Marca la referencia cuando la tengas preparada físicamente">
+            <input type="checkbox" class="oi-prep" id="prep-${id}-${i}" data-prep="${i}" ${done ? "checked" : ""} aria-label="Preparada la referencia ${escapeAttr(`${Number(it.qty) || 0}× ${it.title || ""}`)} del pedido ${codeAttr}">
+          </label>
+          ${it.image ? `<img src="${escapeAttr(safeImageUrl(it.image))}" alt="">` : `<div class="order-item-noimg"></div>`}
           <span class="oi-name">${Number(it.qty) || 0}× ${escapeHtml(it.title)}${it.discountPercent ? ` <span class="oi-discount-tag">-${Number(it.discountPercent) || 0}%</span>` : ""}</span>
           <span class="oi-total">${formatPrice(it.price * it.qty)}</span>
-        </div>`
-      )
+        </div>`;
+      })
       .join("");
     const c = o.customer || {};
     const s = o.shipping || {};
     const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
-    const id = escapeAttr(o.docId);
     const designButtons = designs
       .map((ds, i) => {
         const d = ds.design || {};
@@ -896,20 +1031,17 @@
         const material = (ds.material && ds.material.label) || "Sin especificar";
         return `
             ${many ? `<div class="order-total-row" style="margin-top:${i ? 14 : 0}px"><b>Diseño ${i + 1} · ${escapeHtml(DESIGN_KINDS[ds.kind] || "Diseño")} · ${escapeHtml(ds.orderCode || "")}</b></div>` : ""}
-            ${d.snapshot ? `<img src="${escapeAttr(d.snapshot)}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
+            ${d.snapshot ? `<img src="${escapeAttr(safeImageUrl(d.snapshot))}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
             <div class="order-totals">
               <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
               ${many ? `<div class="order-total-row"><span>Cantidad</span><span>${Number(ds.qty) || 1}</span></div>` : ""}
               ${d.fileName ? `<div class="order-total-row"><span>Archivo</span><span>${escapeHtml(d.fileName)}</span></div>` : ""}
             </div>
             ${d.fileTooLargeToEmbed ? `<p class="help-text">El archivo original era demasiado grande para adjuntarlo aquí: pide al cliente que te lo reenvíe por WhatsApp o email.</p>` : ""}
-            ${d.fileInDrive && ds.driveFolderUrl ? `<p class="help-text">El archivo original está en <a href="${escapeAttr(ds.driveFolderUrl)}" target="_blank" rel="noopener">su carpeta de Drive</a>.</p>` : ""}`;
+            ${d.fileInDrive && ds.driveFolderUrl ? `<p class="help-text">El archivo original está en <a href="${escapeAttr(safeLinkUrl(ds.driveFolderUrl))}" target="_blank" rel="noopener">su carpeta de Drive</a>.</p>` : ""}`;
       })
       .join("");
-    const priced = itemsSum > 0;
     const mismatches = design ? [] : catalogPriceMismatches(o);
-    // Código del pedido (escapado) para los aria-label de los botones repetidos en cada tarjeta.
-    const codeAttr = escapeAttr(o.orderCode || o.docId);
 
     return `
       <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
@@ -918,6 +1050,7 @@
             <b>${escapeHtml(o.orderCode || o.docId)}</b>
             <span class="status-pill status-pill-${escapeAttr(status)}">${escapeHtml(capitalize(status))}</span>
             ${design ? `<span class="status-pill" style="background:#eee7f6;color:#5b3fa0">🎨 ${escapeHtml(designLabel)}</span>` : ""}
+            ${showPrep && prep.done > 0 ? `<span class="prep-pill${prep.all ? " done" : ""}" title="${prep.all ? "Todas las referencias preparadas físicamente" : `${prep.done} de ${prep.total} referencias preparadas físicamente`}">${prep.all ? "✅ Preparado" : `📦 ${prep.done}/${prep.total}`}</span>` : ""}
             <span class="order-date">${date}</span>
           </div>
           <div class="order-head-actions">
@@ -928,7 +1061,7 @@
             </select>
             ${designButtons}
             ${design ? `<button class="small-btn" id="send-to-cut-${escapeAttr(o.docId)}" type="button" title="Sube el diseño, el archivo del cliente y la nota del pedido a la carpeta compartida de Drive" aria-label="Enviar a cortar el pedido ${codeAttr}"><span aria-hidden="true">✂️</span> Enviar a cortar</button>` : ""}
-            ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(o.driveFolderUrl)}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive" aria-label="Carpeta de Drive del pedido ${codeAttr} (se abre en otra pestaña)"><span aria-hidden="true">📁</span> Drive</a>` : ""}
+            ${design && o.driveFolderUrl ? `<a class="small-btn" href="${escapeAttr(safeLinkUrl(o.driveFolderUrl))}" target="_blank" rel="noopener" title="Abrir la carpeta del pedido en Drive" aria-label="Carpeta de Drive del pedido ${codeAttr} (se abre en otra pestaña)"><span aria-hidden="true">📁</span> Drive</a>` : ""}
             <button class="small-btn" id="label-${escapeAttr(o.docId)}" type="button" title="Imprimir etiqueta de envío" aria-label="Imprimir etiqueta del pedido ${codeAttr}"><span aria-hidden="true">🏷️</span> Etiqueta</button>
             <button class="small-btn" id="albaran-${escapeAttr(o.docId)}" type="button" title="Descargar albarán en PDF" aria-label="Descargar albarán del pedido ${codeAttr}"><span aria-hidden="true">📄</span> Albarán</button>
             ${c.phone ? `<button class="small-btn" id="wa-albaran-${escapeAttr(o.docId)}" type="button" title="Enviar el presupuesto/albarán por WhatsApp al cliente" aria-label="Enviar ${design ? "presupuesto" : "albarán"} del pedido ${codeAttr} por WhatsApp"><span aria-hidden="true">📲</span> ${design ? "Presupuesto" : "Albarán"} WhatsApp</button>` : ""}
@@ -938,7 +1071,7 @@
             <button class="small-btn danger" id="del-${escapeAttr(o.docId)}" type="button" aria-label="Borrar pedido ${codeAttr}"><span aria-hidden="true">🗑️</span> Borrar</button>
           </div>
         </div>
-        ${cutNotices.has(o.docId) ? `<div class="status-msg ok" role="status">Subido a Drive. El navegador bloqueó la ventana: <a href="${escapeAttr(cutNotices.get(o.docId))}" target="_blank" rel="noopener">abrir la carpeta del pedido</a>.</div>` : ""}
+        ${cutNotices.has(o.docId) ? `<div class="status-msg ok" role="status">Subido a Drive. El navegador bloqueó la ventana: <a href="${escapeAttr(safeLinkUrl(cutNotices.get(o.docId)))}" target="_blank" rel="noopener">abrir la carpeta del pedido</a>.</div>` : ""}
         <div class="order-card-body">
           <div class="order-items-block">
             ${designBlocks}
@@ -951,7 +1084,8 @@
               ${shippingCost > 0 ? `<div class="order-total-row"><span>Envío</span><span>${formatPrice(shippingCost)}</span></div>` : ""}
               <div class="order-total-row order-total-grand"><span>Total</span><b>${formatPrice(total)}</b></div>
             </div>
-            ${mismatches.length ? `<div class="status-msg err">⚠️ Precio distinto del catálogo en: ${escapeHtml(mismatches.map((it) => it.title).join(", "))}. Revisa el importe antes de confirmar.</div>` : ""}`
+            ${mismatches.length ? `<div class="status-msg err">⚠️ Precio distinto del catálogo en: ${escapeHtml(mismatches.map((it) => it.title).join(", "))}. Revisa el importe antes de confirmar.</div>` : ""}
+            ${showPrep ? prepSummaryHtml(prep, id, codeAttr) : ""}`
             }
           </div>
           <div class="order-customer">
@@ -1692,5 +1826,30 @@ ${bodyHtml}
   }
   function escapeAttr(str) {
     return escapeHtml(str);
+  }
+
+  // Los pedidos los puede crear cualquiera (reglas de Firestore), así que un campo como
+  // `it.image`, `d.snapshot` o `driveFolderUrl` es texto de un tercero. escapeAttr() evita
+  // romper el atributo, pero no filtra el esquema: un "javascript:" o un "data:text/html"
+  // se colaría tal cual. Aquí se admite solo lo que de verdad se espera en cada caso.
+  //
+  // - Imágenes: rutas relativas del catálogo (/images/...), http(s) y data:image/* (las
+  //   vistas previas de los diseños se guardan como data URL en el propio pedido).
+  // - Enlaces: solo http(s); así un "javascript:" no llega nunca al href.
+  const DATA_IMAGE_RE = /^data:image\/(png|jpe?g|webp|gif|avif|bmp);base64,[a-z0-9+/=\s]+$/i;
+
+  function safeImageUrl(url) {
+    const s = String(url == null ? "" : url).trim();
+    if (!s) return "";
+    if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
+    if (/^https?:\/\//i.test(s)) return s;
+    if (DATA_IMAGE_RE.test(s)) return s;
+    return "";
+  }
+
+  function safeLinkUrl(url) {
+    const s = String(url == null ? "" : url).trim();
+    if (!s) return "";
+    return /^https?:\/\//i.test(s) ? s : "";
   }
 })();

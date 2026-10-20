@@ -24,7 +24,7 @@ Mercado principal España (el "Quiénes somos" bilingüe ES/EN mira a futuro, no
 
 ## Capabilities and Constraints
 
-Catálogo con carrito de compra; checkout que abre WhatsApp con el pedido estructurado. 61 productos en dos líneas: materia prima en bruto por material (Hueso, Cuerno, Madre Perla y Abalone) y tipo de pieza (Cejuela, Silleta, Custom), y accesorios terminados (Púas, Cejuelas Talladas, Pines). Sin servidor propio: toda escritura de datos pasa por commits a GitHub (catálogo) o Firestore (pedidos). Sin proceso de build; HTML/CSS/JS servidos directamente, sin framework.
+Catálogo con carrito de compra; checkout que abre WhatsApp con el pedido estructurado. 68 productos en dos líneas: materia prima en bruto por material (Hueso, Cuerno, Madre Perla y Abalone) y tipo de pieza (Cejuela, Silleta, Custom), y accesorios terminados (Púas, Cejuelas Talladas, Pines). Las fotos de producto se publican en WebP (con miniatura de ~500 px para el grid). Sin servidor propio: toda escritura de datos pasa por commits a GitHub (catálogo) o Firestore (pedidos). Sin proceso de build; HTML/CSS/JS servidos directamente, sin framework. La pestaña Pedidos del panel incluye una checklist para marcar qué referencias se han preparado físicamente antes de enviar.
 
 ## Brand Commitments
 
