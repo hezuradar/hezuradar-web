@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261020a">
+<link rel="stylesheet" href="assets/css/style.css?v=20261020b">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -207,7 +207,7 @@
         <p class="help-text">No incluye pedidos cancelados; las solicitudes de diseño cuentan cuando están confirmadas (o enviadas/entregadas) y tienen precio. Deja las fechas vacías para ver todo el histórico.</p>
       </div>
 
-      <div class="card-panel">
+      <div class="card-panel" id="order-form-host" hidden>
         <h2 id="order-form-title" style="font-size:1.17em">Nuevo pedido</h2>
 
         <h3 class="form-section-title">📋 Estado del pedido</h3>
@@ -324,6 +324,7 @@
         <div class="orders-toolbar">
           <h2 style="font-size:1.17em;margin:0">Pedidos (<span id="orders-count">0</span>)</h2>
           <div class="orders-toolbar-actions">
+            <button class="btn btn-primary small-btn" id="new-order-btn" type="button"><span aria-hidden="true">＋</span> Nuevo pedido</button>
             <button class="small-btn" id="print-confirmed-btn" type="button" title="Imprime en una sola página todas las etiquetas de envío de los pedidos confirmados"><span aria-hidden="true">🏷️</span> Etiquetas de confirmados (<span id="confirmed-count">0</span>)</button>
           </div>
         </div>
@@ -339,6 +340,8 @@
       </div>
     </div>
 
+    <!-- El formulario de alta/edición se abre como pantalla emergente (#order-modal-backdrop).
+         El markup vive oculto aquí y se mueve al modal al abrirlo, para no duplicar campos. -->
   </div>
 
   <div id="tab-customers" class="admin-tab-panel" style="display:none">
@@ -505,7 +508,7 @@
 <script src="assets/js/catalog-template.js?v=20261010a"></script>
 <script src="assets/js/admin.js?v=20261018b"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
-<script src="assets/js/admin-orders.js?v=20261020d"></script>
+<script src="assets/js/admin-orders.js?v=20261020e"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020c"></script>
 </body>

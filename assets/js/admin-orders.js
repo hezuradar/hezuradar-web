@@ -31,6 +31,11 @@
     prepCounts: (o) => prepCounts(o),
     safeImageUrl: (u) => safeImageUrl(u),
     safeLinkUrl: (u) => safeLinkUrl(u),
+    isOrderModalOpen: () => isOrderModalOpen(),
+    orderFormHostHidden: () => {
+      const h = document.getElementById("order-form-host");
+      return !h || h.hidden;
+    },
   };
   const round2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
   let orders = [];
@@ -40,6 +45,7 @@
   let unsubscribe = null;
   let editingDocId = null;
   let itemRows = [];
+  let orderModal = null; // { overlay, box, onKey } mientras hay una pantalla emergente abierta
   let expandedCustomerKey = null;
   // docId -> enlace de la carpeta de Drive, cuando el navegador bloqueó la ventana de «Enviar a cortar».
   const cutNotices = new Map();
@@ -106,8 +112,9 @@
       itemRows.push({ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 });
       renderItemRows();
     });
+    $("new-order-btn").addEventListener("click", newOrder);
     $("order-save").addEventListener("click", saveOrder);
-    $("order-cancel").addEventListener("click", resetOrderForm);
+    $("order-cancel").addEventListener("click", closeOrderModal);
     $("o-shipping-cost").addEventListener("input", updateOrderFormSubtotal);
     $("revenue-from").addEventListener("change", renderRevenue);
     $("revenue-to").addEventListener("change", renderRevenue);
@@ -694,7 +701,10 @@
       const batch = db.batch();
       custOrders.forEach((o) => batch.delete(db.collection("orders").doc(o.docId)));
       await batch.commit();
-      if (custOrders.some((o) => o.docId === editingDocId)) resetOrderForm();
+      if (custOrders.some((o) => o.docId === editingDocId)) {
+        resetOrderForm();
+        closeOrderModal();
+      }
       if (expandedCustomerKey === key) expandedCustomerKey = null;
       if (editingCustomerKey === key) editingCustomerKey = null;
     } catch (e) {
@@ -818,7 +828,10 @@
       batch.set(db.collection("orders").doc(target.docId), merged);
       rest.forEach((o) => batch.delete(db.collection("orders").doc(o.docId)));
       await batch.commit();
-      if (group.some((o) => o.docId === editingDocId)) resetOrderForm();
+      if (group.some((o) => o.docId === editingDocId)) {
+        resetOrderForm();
+        closeOrderModal();
+      }
       expandedCustomerKey = key;
     } catch (e) {
       alert("No se pudieron agrupar los pedidos: " + e.message);
@@ -1509,13 +1522,86 @@ ${bodyHtml}
     if (!confirm(`¿Borrar el pedido ${o.orderCode || docId}? Esta acción no se puede deshacer.`)) return;
     try {
       await firebase.firestore().collection("orders").doc(docId).delete();
-      if (editingDocId === docId) resetOrderForm();
+      if (editingDocId === docId) {
+        resetOrderForm();
+        closeOrderModal();
+      }
     } catch (e) {
       alert("No se pudo borrar el pedido: " + e.message);
     }
   }
 
   /* ---------------- CREATE / EDIT FORM ---------------- */
+
+  // El formulario se abre en una pantalla emergente (modal) en vez de ocupar sitio fijo
+  // dentro de la pestaña de Pedidos. El markup vive oculto en #order-form-host y se mueve
+  // al modal al abrirlo: los campos no se duplican y los listeners siguen valiendo.
+  function orderFormHost() {
+    return document.getElementById("order-form-host");
+  }
+
+  function openOrderModal(title) {
+    if (orderModal) {
+      // Ya hay un modal abierto: solo actualiza el título (p.ej. Nuevo -> Editar).
+      const t = orderModal.box.querySelector("#order-form-title");
+      if (t) t.textContent = title;
+      return;
+    }
+    const host = orderFormHost();
+    const overlay = document.createElement("div");
+    overlay.className = "modal-backdrop";
+    overlay.id = "order-modal-backdrop";
+    overlay.innerHTML = `
+      <div class="modal order-modal" role="dialog" aria-modal="true" aria-labelledby="order-form-title">
+        <button type="button" class="modal-close" id="order-modal-close" aria-label="Cerrar">&times;</button>
+        <div class="modal-scroll order-modal-scroll"></div>
+      </div>
+    `;
+    const box = overlay.querySelector(".order-modal");
+    const scroll = overlay.querySelector(".order-modal-scroll");
+    // El formulario real (host) se mueve dentro del modal.
+    scroll.appendChild(host);
+    host.hidden = false;
+    const titleEl = host.querySelector("#order-form-title");
+    if (titleEl) titleEl.textContent = title;
+
+    document.body.appendChild(overlay);
+    document.body.style.overflow = "hidden";
+
+    function close() {
+      // Devuelve el formulario a su sitio y limpia el modal.
+      const h = orderFormHost();
+      if (h) {
+        h.hidden = true;
+        document.body.appendChild(h);
+      }
+      overlay.remove();
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+      orderModal = null;
+    }
+    function onKey(e) {
+      if (e.key === "Escape") close();
+    }
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) close();
+    });
+    overlay.querySelector("#order-modal-close").addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+
+    // El foco entra en el modal: primer campo del formulario (o el botón de cerrar).
+    const first = box.querySelector("select, input, textarea, button");
+    if (first && typeof first.focus === "function") first.focus();
+    orderModal = { overlay, box, close };
+  }
+
+  function closeOrderModal() {
+    if (orderModal) orderModal.close();
+  }
+
+  function isOrderModalOpen() {
+    return !!orderModal;
+  }
 
   function resetOrderForm() {
     editingDocId = null;
@@ -1530,6 +1616,12 @@ ${bodyHtml}
     $("order-cancel").style.display = "none";
     renderItemRows();
     setOrderFormStatus("", "");
+  }
+
+  // Abre el modal en blanco para dar de alta un pedido nuevo.
+  function newOrder() {
+    resetOrderForm();
+    openOrderModal("Nuevo pedido");
   }
 
   function editOrder(docId) {
@@ -1564,7 +1656,7 @@ ${bodyHtml}
     $("order-cancel").style.display = "inline-block";
     renderItemRows();
     setOrderFormStatus("", "");
-    document.getElementById("order-form-title").scrollIntoView({ behavior: "smooth", block: "start" });
+    openOrderModal("Editar pedido");
   }
 
   // Precio unitario de catálogo para `qty` unidades: tramo por cantidad (priceTiers) y,
@@ -1757,14 +1849,21 @@ ${bodyHtml}
     $("order-save").disabled = true;
     try {
       const db = firebase.firestore();
+      let doneMsg;
       if (editingDocId) {
         await db.collection("orders").doc(editingDocId).update(order);
         setOrderFormStatus("ok", "Pedido actualizado.");
+        doneMsg = "Pedido actualizado.";
       } else {
         await db.collection("orders").add(order);
         setOrderFormStatus("ok", "Pedido creado.");
+        doneMsg = "Pedido creado.";
       }
+      // El alta/edición ya terminó: se cierra la pantalla emergente y el aviso queda
+      // visible en la pestaña de Pedidos (que es donde está el usuario).
       resetOrderForm();
+      closeOrderModal();
+      setAuthStatus("ok", doneMsg);
     } catch (e) {
       setOrderFormStatus("err", "No se pudo guardar el pedido: " + e.message);
     } finally {
