@@ -734,11 +734,16 @@
   // "//host" y "/\host" empiezan por "/", pero el navegador los trata como URL absoluta.
   const PROTOCOL_RELATIVE_RE = /^\/[\/\\]/;
 
+  // Las fotos de producto se migraron a WebP y los originales .jpg/.jpeg se borraron, pero
+  // los pedidos ya guardados conservan la ruta antigua ("..._0.jpg") y dan 404. El .webp
+  // equivalente sí existe: se reapunta aquí. Solo afecta a fotos de /images/products/.
+  const PRODUCT_PHOTO_RE = /^\/images\/products\/([A-Za-z0-9._-]+)\.jpe?g$/i;
+
   function safeImageUrl(url) {
     const s = String(url == null ? "" : url).trim();
     if (!s) return "";
     if (PROTOCOL_RELATIVE_RE.test(s)) return "";
-    if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return s;
+    if (s.startsWith("/") || s.startsWith("./") || s.startsWith("../")) return toWebpIfProductPhoto(s);
     if (/^https?:\/\//i.test(s)) return s;
     if (DATA_IMAGE_RE.test(s)) return s;
     // Ruta relativa sin barra inicial (así la guarda el catálogo): se normaliza para que
@@ -747,6 +752,13 @@
     if (s.includes(":")) return "";
     if (!/^[a-z0-9._-]+(\/[a-z0-9._-]+)+$/i.test(s)) return "";
     if (/(^|\/)\.\.?(\/|$)/.test(s)) return "";
-    return "/" + s;
+    return toWebpIfProductPhoto("/" + s);
+  }
+
+  // Reapunta a WebP las fotos de producto con la extensión antigua. El patrón es estricto
+  // ("/images/products/<nombre>.jpg"): cualquier otra ruta se devuelve tal cual.
+  function toWebpIfProductPhoto(path) {
+    const m = PRODUCT_PHOTO_RE.exec(path);
+    return m ? "/images/products/" + m[1] + ".webp" : path;
   }
 })();

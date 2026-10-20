@@ -142,6 +142,53 @@ test("safeImageUrl normaliza la ruta relativa del catálogo pero no admite esque
   assertEqual(I.safeImageUrl("C:/windows/x.png"), "");
 });
 
+test("safeImageUrl reapunta a WebP las fotos de producto con la extensión antigua", () => {
+  // Los pedidos guardados antes de la migración conservan la ruta .jpg, que da 404 porque
+  // el original se borró. El .webp equivalente sí existe y es el que debe servirse.
+  assertEqual(
+    I.safeImageUrl("/images/products/4a02d78d-72ff-496d-a3d3-66622ce8dd62_0.jpg"),
+    "/images/products/4a02d78d-72ff-496d-a3d3-66622ce8dd62_0.webp"
+  );
+  assertEqual(
+    I.safeImageUrl("images/products/4a02d78d-72ff-496d-a3d3-66622ce8dd62_0.jpg"),
+    "/images/products/4a02d78d-72ff-496d-a3d3-66622ce8dd62_0.webp"
+  );
+  assertEqual(I.safeImageUrl("/images/products/a_0.jpeg"), "/images/products/a_0.webp");
+  assertEqual(I.safeImageUrl("images/products/a_0.JPG"), "/images/products/a_0.webp");
+  // El .webp ya correcto no se toca.
+  assertEqual(I.safeImageUrl("/images/products/a_0.webp"), "/images/products/a_0.webp");
+  // La reescritura es SOLO para fotos de producto: otras rutas .jpg se dejan intactas.
+  assertEqual(I.safeImageUrl("/images/site/hero/foto.jpg"), "/images/site/hero/foto.jpg");
+  assertEqual(I.safeImageUrl("https://ejemplo.com/foto.jpg"), "https://ejemplo.com/foto.jpg");
+  assertEqual(I.safeImageUrl("data:image/jpeg;base64,iVBORw0KGgo="), "data:image/jpeg;base64,iVBORw0KGgo=");
+  // No se inventan ficheros: un .jpg de producto anidado en subcarpeta no cumple el patrón.
+  assertEqual(I.safeImageUrl("/images/products/sub/x.jpg"), "/images/products/sub/x.jpg");
+});
+
+test("isOldProductPhoto detecta solo las fotos de producto con extensión antigua", () => {
+  // Casos reales de pedidos guardados: ruta relativa sin barra inicial.
+  assertTrue(I.isOldProductPhoto("images/products/f51b1859-58b4-4e0e-91d5-785efb72509c_0.jpg"));
+  assertTrue(I.isOldProductPhoto("/images/products/f51b1859-58b4-4e0e-91d5-785efb72509c_0.jpg"));
+  assertTrue(I.isOldProductPhoto("images/products/a_0.jpeg"));
+  assertTrue(I.isOldProductPhoto("images/products/a_0.JPG"));
+  // Lo que NO hay que tocar.
+  assertFalse(I.isOldProductPhoto("images/products/a_0.webp"));
+  assertFalse(I.isOldProductPhoto("/images/site/hero/foto.jpg"));
+  assertFalse(I.isOldProductPhoto("https://ejemplo.com/foto.jpg"));
+  assertFalse(I.isOldProductPhoto("data:image/jpeg;base64,iVBORw0KGgo="));
+  assertFalse(I.isOldProductPhoto("images/products/sub/x.jpg"));
+  assertFalse(I.isOldProductPhoto(""));
+  assertFalse(I.isOldProductPhoto(null));
+  assertFalse(I.isOldProductPhoto(undefined));
+});
+
+test("toWebpIfProductPhoto respeta las rutas que no son fotos de producto", () => {
+  assertEqual(I.toWebpIfProductPhoto("/images/products/a_0.jpg"), "/images/products/a_0.webp");
+  assertEqual(I.toWebpIfProductPhoto("/images/products/a_0.webp"), "/images/products/a_0.webp");
+  assertEqual(I.toWebpIfProductPhoto("/images/site/hero/foto.jpg"), "/images/site/hero/foto.jpg");
+  assertEqual(I.toWebpIfProductPhoto("/otra/ruta.jpg"), "/otra/ruta.jpg");
+});
+
 test("safeLinkUrl solo admite http y https", () => {
   assertEqual(I.safeLinkUrl("https://drive.google.com/x"), "https://drive.google.com/x");
   assertEqual(I.safeLinkUrl("http://ejemplo.com"), "http://ejemplo.com");
