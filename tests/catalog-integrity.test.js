@@ -153,7 +153,9 @@ test("las fichas sin marca en el título son solo las que no caben en 60 caracte
     if (!pageTitle.includes("HezurAdar")) sinMarca.push(p.slug);
   });
   // No es un fallo en sí, pero se deja constancia del número para detectar que crezca.
-  assertTrue(sinMarca.length <= 5, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
+  // 16 desde 2026-10-22: los títulos con formato ("Cejuela tallada…", "… en bruto
+  // para cejuela") y contexto ("… para guitarra") los aprobó el dueño así.
+  assertTrue(sinMarca.length <= 16, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
 });
 
 test("las páginas generadas usan las mismas versiones de assets que la portada", () => {
