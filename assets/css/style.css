@@ -1082,9 +1082,7 @@ body:has(.toolbar){scroll-padding-top:220px}
 .thumb-remove{width:24px;height:24px}
 .status-tab.active .status-tab-count{background:#fff;color:var(--color-primary-dark)}
 
-/* Admin: cabeceras de tabla ordenables (botón dentro del th) y detalle del error de exportación. */
-.sortable-th .th-sort-btn{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;user-select:none;text-align:inherit}
-.sortable-th .th-sort-btn:focus-visible{outline:3px solid var(--color-primary-dark);outline-offset:2px;border-radius:4px}
+/* Admin: detalle del error de exportación. */
 .order-export-error{font-weight:400;opacity:.85}
 
 /* Tablas de medidas desplazables (enfocables con teclado) y aviso de catálogo sin cargar. */
@@ -1093,3 +1091,59 @@ body:has(.toolbar){scroll-padding-top:220px}
 
 ::placeholder{color:var(--color-muted);opacity:1}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+
+/* Admin · Clientes: barra de búsqueda/orden y una tarjeta por cliente. Va al final para que
+   las reglas de móvil no queden pisadas por reglas base posteriores. */
+.customers-toolbar{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1.2fr);gap:12px;align-items:end}
+.customers-toolbar label{display:block;font-size:.78rem;font-weight:700;color:var(--color-ink);margin-bottom:5px}
+.customers-toolbar input,.customers-toolbar select{
+  width:100%;min-width:0;min-height:42px;padding:9px 12px;border-radius:8px;border:1px solid var(--color-border);
+  font-size:.95rem;font-family:inherit;background:#fff;color:var(--color-text);
+}
+.customers-result-info{font-size:.82rem;color:var(--color-muted);margin:10px 0 0;min-height:1.2em}
+.customers-list{display:flex;flex-direction:column;gap:12px;margin:8px 0 12px}
+.customers-list .empty-state{padding:36px 16px}
+.customer-card{border:1px solid var(--color-border);border-radius:var(--radius);padding:16px 18px;background:#fff;min-width:0}
+.customer-card.is-open{border-color:var(--color-primary)}
+.customer-card.is-editing{background:var(--color-bg)}
+.customer-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 24px;flex-wrap:wrap}
+.customer-id{min-width:0;flex:1 1 220px}
+.customer-name{font-size:1.08rem;margin:0;overflow-wrap:anywhere}
+.customer-since{font-size:.8rem;color:var(--color-muted);margin-top:2px}
+.customer-pending{color:#8a6100;font-weight:700}
+.customer-stats{display:flex;gap:6px 22px;margin:0;flex-wrap:wrap}
+.customer-stats div{min-width:0}
+.customer-stats dt{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--color-muted)}
+.customer-stats dd{margin:2px 0 0;font-size:1.02rem;font-weight:700;color:var(--color-ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.customer-contact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 20px;margin:14px 0 0;padding-top:12px;border-top:1px solid var(--color-border)}
+.customer-contact-row{min-width:0}
+.customer-contact dt{font-size:.72rem;font-weight:700;color:var(--color-muted);margin-bottom:2px}
+.customer-contact dd{margin:0;font-size:.9rem;overflow-wrap:anywhere}
+.customer-contact a{color:var(--color-primary-dark)}
+.customer-contact .muted{color:var(--color-muted);font-style:italic}
+.customer-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.customer-actions .small-btn{display:inline-flex;align-items:center;gap:6px;min-height:36px;cursor:pointer;color:var(--color-text);text-decoration:none}
+.customer-actions .small-btn.danger{color:#b3261e}
+.customer-orders{list-style:none;margin:14px 0 0;padding:0;border-top:1px solid var(--color-border)}
+.customer-order{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--color-border);font-size:.88rem}
+.customer-order:last-child{border-bottom:0}
+.customer-order-date{color:var(--color-muted)}
+.customer-order-total{font-weight:700;font-variant-numeric:tabular-nums}
+.customer-order .small-btn{margin-left:auto}
+.field-row.field-row-3{grid-template-columns:1fr 1fr 1fr}
+@media (max-width:760px){
+  .customers-toolbar{grid-template-columns:1fr 1fr}
+  .customers-search{grid-column:1 / -1}
+  .customer-contact{grid-template-columns:1fr}
+  .field-row.field-row-3{grid-template-columns:1fr}
+}
+@media (max-width:600px){
+  .customer-card{padding:14px}
+  .customer-stats{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 12px;background:var(--color-bg);border-radius:8px}
+  .customer-stats dd{font-size:.92rem;white-space:normal}
+  .customer-actions .small-btn{min-height:44px;flex:1 1 calc(50% - 4px);justify-content:center}
+  .customer-order .small-btn{margin-left:0;min-height:40px;width:100%;justify-content:center}
+}
+@media (max-width:380px){
+  .customers-toolbar{grid-template-columns:1fr}
+}

@@ -52,23 +52,8 @@
   // docId -> enlace de la carpeta de Drive, cuando el navegador bloqueó la ventana de «Enviar a cortar».
   const cutNotices = new Map();
   let editingCustomerKey = null;
-  let customerSort = { field: "lastOrderAt", dir: "desc" };
-  const CUSTOMER_SORT_DEFAULT_DIR = {
-    name: "asc",
-    phone: "asc",
-    address: "asc",
-    orderCount: "desc",
-    totalSpent: "desc",
-    lastOrderAt: "desc",
-  };
-  const CUSTOMER_SORT_GETTERS = {
-    name: (c) => (c.name || "").toLowerCase(),
-    phone: (c) => c.phone || "",
-    address: (c) => [c.address, c.postalCode, c.city].filter(Boolean).join(" ").toLowerCase(),
-    orderCount: (c) => c.orderCount,
-    totalSpent: (c) => c.totalSpent,
-    lastOrderAt: (c) => c.lastOrderAt || "",
-  };
+  // Búsqueda y orden de la pestaña Clientes: lógica en admin-customers.js.
+  const CUSTOMERS = window.HA_CUSTOMERS;
 
   document.addEventListener("DOMContentLoaded", () => {
     initTabs();
@@ -94,22 +79,8 @@
       });
     });
     $("print-confirmed-btn").addEventListener("click", printConfirmedOrders);
-    $("customer-filter").addEventListener("input", renderCustomers);
+    initCustomerControls();
     $("o-customer-select").addEventListener("change", onCustomerSelectChange);
-    document.querySelectorAll("#customers-thead-row [data-field]").forEach((th) => {
-      th.addEventListener("click", () => {
-        const field = th.dataset.field;
-        if (customerSort.field === field) {
-          customerSort.dir = customerSort.dir === "asc" ? "desc" : "asc";
-        } else {
-          customerSort.field = field;
-          customerSort.dir = CUSTOMER_SORT_DEFAULT_DIR[field] || "asc";
-        }
-        updateCustomerSortArrows();
-        renderCustomers();
-      });
-    });
-    updateCustomerSortArrows();
     $("order-add-item").addEventListener("click", () => {
       itemRows.push({ productId: null, title: "", price: 0, qty: 1, discountPercent: 0 });
       renderItemRows();
@@ -517,26 +488,19 @@
     return Array.from(map.values()).sort((a, b) => String(b.lastOrderAt || "").localeCompare(String(a.lastOrderAt || "")));
   }
 
-  function sortCustomers(list) {
-    const getter = CUSTOMER_SORT_GETTERS[customerSort.field] || CUSTOMER_SORT_GETTERS.lastOrderAt;
-    const dir = customerSort.dir === "asc" ? 1 : -1;
-    return list.slice().sort((a, b) => {
-      const av = getter(a);
-      const bv = getter(b);
-      if (typeof av === "number" || typeof bv === "number") return ((Number(av) || 0) - (Number(bv) || 0)) * dir;
-      return String(av).localeCompare(String(bv), "es", { sensitivity: "base" }) * dir;
-    });
-  }
-
-  function updateCustomerSortArrows() {
-    document.querySelectorAll("#customers-thead-row [data-field]").forEach((th) => {
-      const isActive = th.dataset.field === customerSort.field;
-      // aria-sort para lectores de pantalla; la flecha es solo visual (aria-hidden en el HTML).
-      th.setAttribute("aria-sort", isActive ? (customerSort.dir === "asc" ? "ascending" : "descending") : "none");
-      const arrow = th.querySelector(".sort-arrow");
-      if (!arrow) return;
-      arrow.textContent = isActive ? (customerSort.dir === "asc" ? " ▲" : " ▼") : "";
-    });
+  function initCustomerControls() {
+    const fieldSel = $("customer-filter-field");
+    fieldSel.innerHTML = Object.entries(CUSTOMERS.SEARCH_FIELDS)
+      .map(([value, label]) => `<option value="${escapeAttr(value)}">${escapeHtml(label)}</option>`)
+      .join("");
+    const sortSel = $("customer-sort");
+    sortSel.innerHTML = Object.entries(CUSTOMERS.SORT_OPTIONS)
+      .map(([value, opt]) => `<option value="${escapeAttr(value)}">${escapeHtml(opt.label)}</option>`)
+      .join("");
+    sortSel.value = CUSTOMERS.DEFAULT_SORT;
+    $("customer-filter").addEventListener("input", renderCustomers);
+    fieldSel.addEventListener("change", renderCustomers);
+    sortSel.addEventListener("change", renderCustomers);
   }
 
   function ordersForCustomer(key) {
@@ -548,21 +512,28 @@
   function renderCustomers() {
     const all = customersFromOrders();
     $("customers-count").textContent = all.length;
-    const filter = ($("customer-filter").value || "").trim().toLowerCase();
-    const filtered = filter
-      ? all.filter(
-          (c) =>
-            c.name.toLowerCase().includes(filter) ||
-            c.phone.toLowerCase().includes(filter) ||
-            c.email.toLowerCase().includes(filter)
-        )
-      : all;
-    const list = sortCustomers(filtered);
+    const query = $("customer-filter").value || "";
+    const field = $("customer-filter-field").value || "all";
+    const list = CUSTOMERS.sortCustomers(CUSTOMERS.filterCustomers(all, query, field), $("customer-sort").value);
+    const filtering = !!query.trim();
+    $("customers-result-info").textContent = filtering
+      ? `${list.length} de ${all.length} clientes coinciden con la búsqueda`
+      : "";
+
     if (!list.length) {
-      $("customers-table-body").innerHTML = `<tr><td colspan="7" class="empty-state">No hay clientes que mostrar.</td></tr>`;
+      $("customers-list").innerHTML = filtering
+        ? `<div class="empty-state">Ningún cliente coincide con «${escapeHtml(query.trim())}». <button class="small-btn" id="customer-filter-clear" type="button">Limpiar búsqueda</button></div>`
+        : `<div class="empty-state">Todavía no hay clientes: aparecerán con el primer pedido.</div>`;
+      const clearBtn = $("customer-filter-clear");
+      if (clearBtn)
+        clearBtn.addEventListener("click", () => {
+          $("customer-filter").value = "";
+          renderCustomers();
+          $("customer-filter").focus();
+        });
       return;
     }
-    $("customers-table-body").innerHTML = list.map(customerRowsHtml).join("");
+    $("customers-list").innerHTML = list.map(customerCardHtml).join("");
 
     list.forEach((c) => {
       const viewBtn = document.getElementById(`cust-view-${c.key}`);
@@ -604,83 +575,102 @@
     });
   }
 
-  function customerRowsHtml(c) {
+  function formatDay(iso) {
+    if (!iso) return "-";
+    const d = new Date(iso);
+    return isNaN(d) ? "-" : d.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" });
+  }
+
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  function customerEditFormHtml(c, key) {
+    return `
+      <article class="customer-card is-editing">
+        <h3 class="customer-name">Editar cliente</h3>
+        <div class="field-row">
+          <div class="field"><label for="cedit-name-${key}">Nombre *</label><input id="cedit-name-${key}" value="${escapeAttr(c.name)}"></div>
+          <div class="field"><label for="cedit-phone-${key}">Teléfono *</label><input id="cedit-phone-${key}" value="${escapeAttr(c.phone)}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label for="cedit-email-${key}">Email</label><input id="cedit-email-${key}" type="email" value="${escapeAttr(c.email)}"></div>
+          <div class="field"><label for="cedit-address-${key}">Dirección</label><input id="cedit-address-${key}" value="${escapeAttr(c.address)}"></div>
+        </div>
+        <div class="field-row field-row-3">
+          <div class="field"><label for="cedit-postal-${key}">Código postal</label><input id="cedit-postal-${key}" value="${escapeAttr(c.postalCode)}"></div>
+          <div class="field"><label for="cedit-city-${key}">Ciudad</label><input id="cedit-city-${key}" value="${escapeAttr(c.city)}"></div>
+          <div class="field"><label for="cedit-province-${key}">Provincia</label><input id="cedit-province-${key}" value="${escapeAttr(c.province)}"></div>
+        </div>
+        <p class="help-text">Se actualizará en ${c.orderCount} pedido(s) de este cliente.</p>
+        <div class="customer-actions">
+          <button class="btn btn-primary" id="cedit-save-${key}" type="button">Guardar</button>
+          <button class="btn btn-outline" id="cedit-cancel-${key}" type="button">Cancelar</button>
+        </div>
+        <div id="cedit-status-${key}"></div>
+      </article>`;
+  }
+
+  function customerContactHtml(c) {
+    const phoneDigits = waPhoneDigits(c.phone || "");
+    const place = [c.postalCode, c.city].filter(Boolean).join(" ");
+    const address = [c.address, place].filter(Boolean).join(", ") + (c.province ? ` (${c.province})` : "");
+    const row = (label, value) =>
+      `<div class="customer-contact-row"><dt>${label}</dt><dd>${value || '<span class="muted">Sin datos</span>'}</dd></div>`;
+    return `
+      <dl class="customer-contact">
+        ${row("Teléfono", c.phone ? (phoneDigits ? `<a href="tel:+${escapeAttr(phoneDigits)}">${escapeHtml(c.phone)}</a>` : escapeHtml(c.phone)) : "")}
+        ${row("Email", c.email ? (EMAIL_RE.test(c.email) ? `<a href="mailto:${escapeAttr(c.email)}">${escapeHtml(c.email)}</a>` : escapeHtml(c.email)) : "")}
+        ${row("Dirección", escapeHtml(address))}
+      </dl>`;
+  }
+
+  function customerOrdersHtml(c) {
+    const rows = ordersForCustomer(c.key)
+      .map(
+        (o) => `
+        <li class="customer-order">
+          <b class="customer-order-code">${escapeHtml(o.orderCode || o.docId)}</b>
+          <span class="status-pill status-pill-${escapeAttr(o.status || "pendiente")}">${escapeHtml(capitalize(o.status || "pendiente"))}</span>
+          <span class="customer-order-date">${formatDate(o.createdAt)}</span>
+          <span class="customer-order-total">${formatPrice(orderTotal(o))}</span>
+          <button class="small-btn" id="cust-order-open-${escapeAttr(o.docId)}" type="button">Ver / editar pedido</button>
+        </li>`
+      )
+      .join("");
+    return `<ul class="customer-orders" id="cust-orders-${escapeAttr(c.key)}">${rows || '<li class="empty-state">Sin pedidos.</li>'}</ul>`;
+  }
+
+  function customerCardHtml(c) {
     const key = escapeAttr(c.key);
+    if (editingCustomerKey === c.key) return customerEditFormHtml(c, key);
 
-    if (editingCustomerKey === c.key) {
-      return `
-        <tr>
-          <td colspan="7">
-            <div class="field-row">
-              <div class="field"><label for="cedit-name-${key}">Nombre *</label><input id="cedit-name-${key}" value="${escapeAttr(c.name)}"></div>
-              <div class="field"><label for="cedit-phone-${key}">Teléfono *</label><input id="cedit-phone-${key}" value="${escapeAttr(c.phone)}"></div>
-            </div>
-            <div class="field-row">
-              <div class="field"><label for="cedit-email-${key}">Email</label><input id="cedit-email-${key}" type="email" value="${escapeAttr(c.email)}"></div>
-              <div class="field"><label for="cedit-address-${key}">Dirección</label><input id="cedit-address-${key}" value="${escapeAttr(c.address)}"></div>
-            </div>
-            <div class="field-row">
-              <div class="field"><label for="cedit-postal-${key}">Código postal</label><input id="cedit-postal-${key}" value="${escapeAttr(c.postalCode)}"></div>
-              <div class="field"><label for="cedit-city-${key}">Ciudad</label><input id="cedit-city-${key}" value="${escapeAttr(c.city)}"></div>
-              <div class="field"><label for="cedit-province-${key}">Provincia</label><input id="cedit-province-${key}" value="${escapeAttr(c.province)}"></div>
-            </div>
-            <p class="help-text">Se actualizará en ${c.orderCount} pedido(s) de este cliente.</p>
-            <div style="display:flex;gap:10px;margin-top:6px">
-              <button class="btn btn-primary" id="cedit-save-${key}" type="button">Guardar</button>
-              <button class="btn btn-outline" id="cedit-cancel-${key}" type="button">Cancelar</button>
-            </div>
-            <div id="cedit-status-${key}"></div>
-          </td>
-        </tr>`;
-    }
-
-    const waHref = c.phone ? `https://wa.me/${waPhoneDigits(c.phone)}` : null;
-    const address = [c.address, [c.postalCode, c.city].filter(Boolean).join(" ")].filter(Boolean).join(", ");
-    const mergeable = mergeablePendingOrders(c.key).length;
-    const mainRow = `
-      <tr>
-        <td><b>${escapeHtml(c.name || "-")}</b></td>
-        <td>
-          ${c.phone ? `📞 ${escapeHtml(c.phone)}${waHref ? ` · <a href="${escapeAttr(waHref)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}<br>` : ""}
-          ${c.email ? `✉️ ${escapeHtml(c.email)}` : ""}
-        </td>
-        <td>${escapeHtml(address)}${c.province ? ` (${escapeHtml(c.province)})` : ""}</td>
-        <td>${c.orderCount}</td>
-        <td>${formatPrice(c.totalSpent)}</td>
-        <td>${formatDate(c.lastOrderAt)}</td>
-        <td class="row-actions">
-          <button class="small-btn" id="cust-view-${key}" type="button" aria-label="Pedidos de ${escapeAttr(c.name || "cliente")}"><span aria-hidden="true">📦</span> Pedidos</button>
-          ${mergeable >= 2 ? `<button class="small-btn" id="cust-merge-${key}" type="button" title="Junta sus pedidos pendientes en uno solo, con un único envío" aria-label="Agrupar ${mergeable} pedidos pendientes de ${escapeAttr(c.name || "cliente")}"><span aria-hidden="true">🔗</span> Agrupar pendientes (${mergeable})</button>` : ""}
-          <button class="small-btn" id="cust-edit-${key}" type="button" aria-label="Editar cliente ${escapeAttr(c.name || "")}"><span aria-hidden="true">✏️</span> Editar</button>
-          <button class="small-btn danger" id="cust-del-${key}" type="button" aria-label="Borrar cliente ${escapeAttr(c.name || "")}"><span aria-hidden="true">🗑️</span> Borrar</button>
-        </td>
-      </tr>`;
-
-    if (expandedCustomerKey !== c.key) return mainRow;
-
-    const custOrders = ordersForCustomer(c.key);
-    const detailRow = `
-      <tr>
-        <td colspan="7">
-          <div style="display:flex;flex-direction:column;gap:6px">
-            ${
-              custOrders
-                .map(
-                  (o) => `
-              <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--color-border)">
-                <b>${escapeHtml(o.orderCode || o.docId)}</b>
-                <span class="status-pill status-pill-${escapeAttr(o.status || "pendiente")}">${escapeHtml(capitalize(o.status || "pendiente"))}</span>
-                <span>${formatDate(o.createdAt)}</span>
-                <span>${formatPrice(orderTotal(o))}</span>
-                <button class="small-btn" id="cust-order-open-${escapeAttr(o.docId)}" type="button">Ver / editar pedido</button>
-              </div>`
-                )
-                .join("") || `<div class="empty-state">Sin pedidos.</div>`
-            }
+    const who = escapeAttr(c.name || "cliente");
+    const waDigits = waPhoneDigits(c.phone || "");
+    const expanded = expandedCustomerKey === c.key;
+    const pending = mergeablePendingOrders(c.key).length;
+    return `
+      <article class="customer-card${expanded ? " is-open" : ""}">
+        <div class="customer-card-head">
+          <div class="customer-id">
+            <h3 class="customer-name">${escapeHtml(c.name || "(sin nombre)")}</h3>
+            <div class="customer-since">Cliente desde ${formatDay(c.firstOrderAt)}${pending ? ` · <span class="customer-pending">${pending} pendiente${pending > 1 ? "s" : ""}</span>` : ""}</div>
           </div>
-        </td>
-      </tr>`;
-    return mainRow + detailRow;
+          <dl class="customer-stats">
+            <div><dt>Pedidos</dt><dd>${c.orderCount}</dd></div>
+            <div><dt>Total gastado</dt><dd>${formatPrice(c.totalSpent)}</dd></div>
+            <div><dt>Último pedido</dt><dd>${formatDay(c.lastOrderAt)}</dd></div>
+          </dl>
+        </div>
+        ${customerContactHtml(c)}
+        <div class="customer-actions">
+          <button class="small-btn" id="cust-view-${key}" type="button" aria-expanded="${expanded}" aria-controls="cust-orders-${key}" aria-label="${expanded ? "Ocultar" : "Ver"} pedidos de ${who}"><span aria-hidden="true">📦</span> ${expanded ? "Ocultar pedidos" : `Ver pedidos (${c.orderCount})`}</button>
+          ${waDigits ? `<a class="small-btn" href="https://wa.me/${escapeAttr(waDigits)}" target="_blank" rel="noopener" aria-label="WhatsApp a ${who}"><span aria-hidden="true">💬</span> WhatsApp</a>` : ""}
+          ${c.email && EMAIL_RE.test(c.email) ? `<a class="small-btn" href="mailto:${escapeAttr(c.email)}" aria-label="Email a ${who}"><span aria-hidden="true">✉️</span> Email</a>` : ""}
+          ${pending >= 2 ? `<button class="small-btn" id="cust-merge-${key}" type="button" title="Junta sus pedidos pendientes en uno solo, con un único envío" aria-label="Agrupar ${pending} pedidos pendientes de ${who}"><span aria-hidden="true">🔗</span> Agrupar pendientes (${pending})</button>` : ""}
+          <button class="small-btn" id="cust-edit-${key}" type="button" aria-label="Editar cliente ${who}"><span aria-hidden="true">✏️</span> Editar</button>
+          <button class="small-btn danger" id="cust-del-${key}" type="button" aria-label="Borrar cliente ${who}"><span aria-hidden="true">🗑️</span> Borrar</button>
+        </div>
+        ${expanded ? customerOrdersHtml(c) : ""}
+      </article>`;
   }
 
   function openCustomerOrder(docId) {

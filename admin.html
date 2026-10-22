@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261020b">
+<link rel="stylesheet" href="assets/css/style.css?v=20261022a">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -353,23 +353,22 @@
         <div class="orders-toolbar">
           <h2 style="font-size:1.17em;margin:0">Clientes (<span id="customers-count">0</span>)</h2>
         </div>
-        <input id="customer-filter" aria-label="Buscar clientes" placeholder="Buscar por nombre, teléfono o email..." style="margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px solid var(--color-border);width:100%">
-        <div style="overflow-x:auto">
-          <table class="admin-table">
-            <thead>
-              <tr id="customers-thead-row">
-                <th class="sortable-th" data-field="name" aria-sort="none"><button type="button" class="th-sort-btn">Cliente<span class="sort-arrow" aria-hidden="true"></span></button></th>
-                <th class="sortable-th" data-field="phone" aria-sort="none"><button type="button" class="th-sort-btn">Contacto<span class="sort-arrow" aria-hidden="true"></span></button></th>
-                <th class="sortable-th" data-field="address" aria-sort="none"><button type="button" class="th-sort-btn">Dirección<span class="sort-arrow" aria-hidden="true"></span></button></th>
-                <th class="sortable-th" data-field="orderCount" aria-sort="none"><button type="button" class="th-sort-btn">Pedidos<span class="sort-arrow" aria-hidden="true"></span></button></th>
-                <th class="sortable-th" data-field="totalSpent" aria-sort="none"><button type="button" class="th-sort-btn">Total gastado<span class="sort-arrow" aria-hidden="true"></span></button></th>
-                <th class="sortable-th" data-field="lastOrderAt" aria-sort="none"><button type="button" class="th-sort-btn">Último pedido<span class="sort-arrow" aria-hidden="true"></span></button></th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody id="customers-table-body"></tbody>
-          </table>
+        <div class="customers-toolbar" role="search">
+          <div class="customers-search">
+            <label for="customer-filter">Buscar</label>
+            <input id="customer-filter" type="search" autocomplete="off" placeholder="Nombre, teléfono, email, dirección, ciudad, CP...">
+          </div>
+          <div class="customers-select">
+            <label for="customer-filter-field">Buscar en</label>
+            <select id="customer-filter-field"></select>
+          </div>
+          <div class="customers-select">
+            <label for="customer-sort">Ordenar por</label>
+            <select id="customer-sort"></select>
+          </div>
         </div>
+        <p id="customers-result-info" class="customers-result-info" aria-live="polite"></p>
+        <div id="customers-list" class="customers-list"></div>
         <p class="help-text">Esta lista se genera automáticamente a partir de los pedidos guardados (no hace falta darlos de alta a mano): cada pedido nuevo actualiza los datos del cliente correspondiente.</p>
       </div>
     </div>
@@ -508,7 +507,8 @@
 <script src="assets/js/catalog-template.js?v=20261010a"></script>
 <script src="assets/js/admin.js?v=20261022a"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
-<script src="assets/js/admin-orders.js?v=20261020f"></script>
+<script src="assets/js/admin-customers.js?v=20261022a"></script>
+<script src="assets/js/admin-orders.js?v=20261022c"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>
 </body>
