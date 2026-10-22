@@ -626,8 +626,19 @@
 
   async function publishSitemap(allProducts) {
     if (!window.HA_TEMPLATE) throw new Error("No se pudo cargar la plantilla de página de producto.");
-    const xml = window.HA_TEMPLATE.buildSitemapXml(window.HA_TEMPLATE.sitemapEntries(allProducts));
     const existing = await getFile("sitemap.xml");
+    // En el navegador no se sabe la fecha del último commit de cada página: se conserva el
+    // <lastmod> que ya tenía (lo pone scripts/generate-product-pages.js) en vez de borrarlo.
+    const prevLastmod = {};
+    if (existing) {
+      existing.content.replace(/<loc>([^<]+)<\/loc>\s*<lastmod>([^<]+)<\/lastmod>/g, (_, loc, date) => {
+        prevLastmod[loc] = date;
+      });
+    }
+    const entries = window.HA_TEMPLATE.sitemapEntries(allProducts).map((e) =>
+      e.lastmod || !prevLastmod[e.loc] ? e : { ...e, lastmod: prevLastmod[e.loc] }
+    );
+    const xml = window.HA_TEMPLATE.buildSitemapXml(entries);
     await putFile("sitemap.xml", b64EncodeUnicode(xml), "Actualiza sitemap.xml", existing ? existing.sha : null);
   }
 

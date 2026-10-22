@@ -5,6 +5,8 @@
   const SHIPPING_COST = 5.5;
   const SHIPPING_FREE_MAX_ITEMS = 1;
   const MAX_QTY = 999;
+  // firestore.rules no admite pedidos de más de 50 líneas.
+  const MAX_LINES = 50;
   let cart = loadCart();
   let view = "cart"; // 'cart' | 'checkout' | 'success'
   let lastOrder = null;
@@ -37,6 +39,7 @@
 
   function reloadCart() {
     cart = loadCart();
+    pendingOrder = null;
     pruneCart();
     updateBadge();
     if (document.getElementById("cart-backdrop") && view === "cart") renderDrawer();
@@ -99,7 +102,10 @@
     const line = cart.find((c) => c.id === id);
     const max = product ? maxQtyFor(product) : MAX_QTY;
     if (line) line.qty = Math.min(line.qty + qty, max);
-    else cart.push({ id, qty: Math.min(qty, max) });
+    else if (cart.length >= MAX_LINES) {
+      announce("La cesta admite como máximo " + MAX_LINES + " productos distintos.");
+      return;
+    } else cart.push({ id, qty: Math.min(qty, max) });
     pendingOrder = null;
     persist();
     announce(`${product ? product.title : "Producto"} añadido a la cesta. Cesta: ${count()} artículos.`);
@@ -295,9 +301,13 @@
       </div>
     `;
     document.getElementById("cart-backdrop").addEventListener("click", (e) => {
-      if (e.target.id === "cart-backdrop") closeDrawer();
+      if (e.target.id === "cart-backdrop" && !submitting) closeDrawer();
     });
-    document.getElementById("cart-close").addEventListener("click", closeDrawer);
+    // Con el pedido en marcha no se cierra ni se cambia de vista (como con Escape): el
+    // resultado, o el error, se muestra en el checkout al terminar.
+    document.getElementById("cart-close").addEventListener("click", () => {
+      if (!submitting) closeDrawer();
+    });
     document.removeEventListener("keydown", onDrawerKeydown);
     document.addEventListener("keydown", onDrawerKeydown);
     bindViewEvents();
@@ -551,7 +561,9 @@
       emailInput.addEventListener("input", () => {
         if (emailInput.value.trim()) showCaptcha();
       });
-      document.getElementById("back-to-cart").addEventListener("click", () => openDrawer("cart"));
+      document.getElementById("back-to-cart").addEventListener("click", () => {
+        if (!submitting) openDrawer("cart");
+      });
       document.getElementById("checkout-form").addEventListener("submit", onSubmitCheckout);
       document.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
         input.addEventListener("change", () => {
@@ -763,8 +775,10 @@
           maybeSaved: false,
         };
       }
+      // Copia local: tocar la cesta (aquí o en otra pestaña) pone pendingOrder a null.
+      const po = pendingOrder;
       const order = {
-        orderCode: pendingOrder.orderCode,
+        orderCode: po.orderCode,
         createdAt: new Date().toISOString(),
         status: "pendiente",
         items: orderLines.map((l) => ({
@@ -794,7 +808,7 @@
       // se cuelga o falla, el otro sigue llegando.
       const [saved, mailed] = await Promise.allSettled([
         window.HA_DB && window.HA_DB.saveOrder
-          ? window.HA_DB.saveOrder(order, { id: pendingOrder.docId })
+          ? window.HA_DB.saveOrder(order, { id: po.docId })
           : Promise.reject(new Error("Base de datos no disponible")),
         window.HA_EMAIL && window.HA_EMAIL.sendOrderEmail
           ? withTimeout(window.HA_EMAIL.sendOrderEmail(order), 15000)
@@ -807,14 +821,14 @@
         console.error("No se pudo guardar el pedido en la base de datos:", err);
         // Un intento anterior se quedó sin respuesta y ahora las reglas rechazan el mismo
         // documento: es que aquel guardado sí llegó (solo el admin puede modificarlo).
-        if (pendingOrder.maybeSaved && /permission/i.test(String(err.code || err.message))) orderId = pendingOrder.docId;
-        if (err.code === "timeout") pendingOrder.maybeSaved = true;
+        if (po.maybeSaved && /permission/i.test(String(err.code || err.message))) orderId = po.docId;
+        if (err.code === "timeout") po.maybeSaved = true;
         if (!orderId && mailed.status === "fulfilled") {
           // El cliente verá el pedido como hecho (el aviso al negocio salió) pero no consta en
           // el panel: se guarda una copia limpia (sin los campos que se añaden más abajo) para
           // reintentarlo y se avisa al negocio con el motivo. Si el aviso también falló, no se
           // da el pedido por hecho y el cliente reintenta con el mismo ID.
-          queueUnsaved(pendingOrder.docId, JSON.parse(JSON.stringify(order)), pendingOrder.maybeSaved);
+          queueUnsaved(po.docId, JSON.parse(JSON.stringify(order)), po.maybeSaved);
           RETRY_DELAYS_MS.forEach((ms) => setTimeout(flushUnsaved, ms));
           order.notRegistered = String(err.code || err.message || "desconocido").slice(0, 120);
           if (window.HA_EMAIL && window.HA_EMAIL.sendOrderEmail) {

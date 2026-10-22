@@ -333,7 +333,8 @@
 
   function productWaLink(p) {
     const phone = state.store ? state.store.whatsapp : "";
-    const url = window.location.origin + window.location.pathname + "#producto-" + p.id;
+    // Enlace a la ficha del producto (el ancla #producto-id de antes no llevaba a ningún sitio).
+    const url = p.slug ? window.location.origin + "/productos/" + p.slug + ".html" : window.location.origin + "/";
     const text = `Hola, estoy interesado en este producto: ${p.title} ${url}`;
     return waLink(phone, text);
   }

@@ -173,6 +173,11 @@
         if (restErr.code === "already-exists") return id;
         if (sdkErr && sdkErr.code === "timeout" && restErr.code === "permission-denied") return id;
         restErr.message = `${restErr.message} (SDK: ${(sdkErr && (sdkErr.code || sdkErr.message)) || "?"})`;
+        // Sin red para el REST, el guardado del SDK que agotó el tiempo sigue en su cola y
+        // puede llegar más tarde: se avisa con "timeout" para que quien llama lo tenga en
+        // cuenta (maybeSaved) y no tome el pedido por perdido en el siguiente intento.
+        const restNoAnswer = !restErr.code || restErr.code === "timeout" || /^rest-5/.test(restErr.code);
+        if (sdkErr && sdkErr.code === "timeout" && restNoAnswer) restErr.code = "timeout";
         throw restErr;
       }
     }

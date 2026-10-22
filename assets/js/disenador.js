@@ -1168,8 +1168,8 @@
         material: { id: material.id, label: material.label },
         design: {
           snapshot,
-          fileName: (state.logoFile && state.logoFile.name) || "",
-          fileType: (state.logoFile && state.logoFile.type) || "",
+          fileName: ((state.logoFile && state.logoFile.name) || "").slice(0, 200), // límite de firestore.rules
+          fileType: ((state.logoFile && state.logoFile.type) || "").slice(0, 100),
           fileData: fileFits ? fileDataUrl : null,
           fileTooLargeToEmbed: !!(state.logoFile && state.logoFile.tooLarge) || (!!fileDataUrl && !fileFits),
         },
