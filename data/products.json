@@ -1440,5 +1440,25 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-10-18"
+  },
+  {
+    "id": "ba1ea5d5-eab6-4c98-91af-9129af5d08dd",
+    "title": "5 Puas estilo Jazz III de Cuerno de buey ambar",
+    "description": "5 Puas de estilo Jazz III de cuerno de buey ambar, mas pequeñas , super pulidas",
+    "price": 15,
+    "sku": "RR0074",
+    "category": "Accesorios",
+    "subcategory": "Púas",
+    "stock": 1,
+    "discountPercent": null,
+    "images": [
+      "images/products/ba1ea5d5-eab6-4c98-91af-9129af5d08dd_1792795870638_0.webp",
+      "images/products/ba1ea5d5-eab6-4c98-91af-9129af5d08dd_1792795875476_1.webp",
+      "images/products/ba1ea5d5-eab6-4c98-91af-9129af5d08dd_1792795882826_2.webp"
+    ],
+    "slug": "5-puas-estilo-jazz-iii-de-cuerno-de-buey-ambar-ba1ea5d5",
+    "imageWidth": 1100,
+    "imageHeight": 825,
+    "updatedAt": "2026-10-23"
   }
 ]
