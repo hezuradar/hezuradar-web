@@ -34,6 +34,7 @@
     isOldProductPhoto: (u) => isOldProductPhoto(u),
     toWebpIfProductPhoto: (p) => toWebpIfProductPhoto(p),
     isOrderModalOpen: () => isOrderModalOpen(),
+    mergeSavedOrder: (o, saved, deleted) => mergeSavedOrder(o, saved, deleted),
     orderFormHostHidden: () => {
       const h = document.getElementById("order-form-host");
       return !h || h.hidden;
@@ -1832,12 +1833,16 @@ ${bodyHtml}
       },
     };
 
+    // Copia de lo guardado sin los marcadores de Firestore, para pintarlo en cuanto termine.
+    const savedFields = { ...order };
+    const deletedFields = [];
     if (existing) {
       // Con otro email, la confirmación que constaba como enviada era para la dirección
       // anterior: se borra el registro para que el Apps Script pueda enviarla de nuevo.
       if (((existing.customer && existing.customer.email) || "") !== email) {
         order.customerEmailSentAt = FieldValue.delete();
         order.customerEmailError = FieldValue.delete();
+        deletedFields.push("customerEmailSentAt", "customerEmailError");
       }
     } else {
       order.createdAt = new Date().toISOString();
@@ -1849,26 +1854,73 @@ ${bodyHtml}
     $("order-save").disabled = true;
     try {
       const db = firebase.firestore();
-      let doneMsg;
-      if (editingDocId) {
-        await db.collection("orders").doc(editingDocId).update(order);
+      const savedDocId = editingDocId;
+      if (savedDocId) {
+        await db.collection("orders").doc(savedDocId).update(order);
         setOrderFormStatus("ok", "Pedido actualizado.");
-        doneMsg = "Pedido actualizado.";
       } else {
         await db.collection("orders").add(order);
         setOrderFormStatus("ok", "Pedido creado.");
-        doneMsg = "Pedido creado.";
       }
       // El alta/edición ya terminó: se cierra la pantalla emergente y el aviso queda
       // visible en la pestaña de Pedidos (que es donde está el usuario).
       resetOrderForm();
       closeOrderModal();
-      setAuthStatus("ok", doneMsg);
+      if (savedDocId) {
+        // Se pinta ya lo guardado (seguimiento, estado...) sin esperar a la escucha de
+        // Firestore, que puede llegar tarde; cuando llegue, sustituye a esta copia.
+        orders = orders.map((o) => (o.docId === savedDocId ? mergeSavedOrder(o, savedFields, deletedFields) : o));
+        renderOrders();
+        renderCustomers();
+        showSavedOrder(savedDocId);
+      } else {
+        setAuthStatus("ok", "Pedido creado.");
+      }
     } catch (e) {
       setOrderFormStatus("err", "No se pudo guardar el pedido: " + e.message);
     } finally {
       $("order-save").disabled = false;
     }
+  }
+
+  // Pedido tal y como queda tras un update(): los campos enviados sustituyen a los
+  // anteriores (los mapas también, enteros) y los borrados desaparecen. No toca el original.
+  function mergeSavedOrder(existing, savedFields, deletedFields) {
+    const merged = { ...existing, ...savedFields };
+    (deletedFields || []).forEach((k) => delete merged[k]);
+    return normalizeOrder(merged);
+  }
+
+  // Tras guardar: si el pedido se ve con el filtro actual se resalta un momento;
+  // si ha pasado a otro estado (p.ej. de Confirmado a Enviado al poner el seguimiento), se
+  // avisa de dónde está, con un botón para ir a él.
+  function showSavedOrder(docId) {
+    const o = orders.find((x) => x.docId === docId);
+    const card = document.getElementById(`order-card-${docId}`);
+    if (card) {
+      setAuthStatus("ok", "Pedido actualizado.");
+      card.classList.add("just-saved");
+      setTimeout(() => card.classList.remove("just-saved"), 2500);
+      return;
+    }
+    if (!o) {
+      setAuthStatus("ok", "Pedido actualizado.");
+      return;
+    }
+    setAuthStatus("ok", `Pedido actualizado. Ahora está en «${capitalize(o.status)}».`);
+    const box = $("orders-auth-status").querySelector(".status-msg");
+    const tab = document.querySelector(`.status-tab[data-status="${o.status}"]`);
+    if (!box || !tab) return;
+    const go = document.createElement("button");
+    go.type = "button";
+    go.className = "small-btn";
+    go.style.marginLeft = "8px";
+    go.textContent = "Ver pedido";
+    go.addEventListener("click", () => {
+      tab.click();
+      showSavedOrder(docId);
+    });
+    box.appendChild(go);
   }
 
   function setOrderFormStatus(type, msg) {

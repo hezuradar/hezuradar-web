@@ -1147,3 +1147,6 @@ body:has(.toolbar){scroll-padding-top:220px}
 @media (max-width:380px){
   .customers-toolbar{grid-template-columns:1fr}
 }
+
+/* Admin · Pedidos: resalta la tarjeta recién guardada desde la pantalla emergente. */
+.order-card.just-saved{box-shadow:0 0 0 3px var(--color-primary);transition:box-shadow .3s ease}

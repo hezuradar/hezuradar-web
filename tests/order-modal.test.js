@@ -46,9 +46,10 @@ test("alta y edición abren el modal, no pintan el formulario en la página", ()
 });
 
 test("guardar cierra el modal y avisa en la pestaña de Pedidos", () => {
-  assertTrue(/closeOrderModal\(\);\s*\n\s*setAuthStatus\("ok", doneMsg\)/.test(JS), "guardar debe cerrar y avisar");
-  assertTrue(/doneMsg = "Pedido creado\."/.test(JS), "falta el aviso de pedido creado");
-  assertTrue(/doneMsg = "Pedido actualizado\."/.test(JS), "falta el aviso de pedido actualizado");
+  const save = JS.slice(JS.indexOf("async function saveOrder"), JS.indexOf("function setOrderFormStatus"));
+  assertTrue(/closeOrderModal\(\);/.test(save), "guardar debe cerrar el modal");
+  assertTrue(/setAuthStatus\("ok", "Pedido creado\."\)/.test(save), "falta el aviso de pedido creado");
+  assertTrue(/setAuthStatus\("ok", "Pedido actualizado\."\)/.test(save), "falta el aviso de pedido actualizado");
 });
 
 test("cancelar cierra el modal sin guardar", () => {
