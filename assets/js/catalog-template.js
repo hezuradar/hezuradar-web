@@ -87,6 +87,24 @@
     return ["Todo"].concat(Object.keys(seen).sort());
   }
 
+  // Orden de las categorías en el catálogo completo ("Todo"): primero los huesos,
+  // luego los cuernos, la madre perla y abalone y al final los accesorios. Una
+  // categoría que no esté en la lista va detrás de todas.
+  var CATEGORY_ORDER = ["Hueso", "Cuerno", "Madre perla y abalone", "Accesorios"];
+
+  function categoryRank(category) {
+    var i = CATEGORY_ORDER.indexOf(category);
+    return i === -1 ? CATEGORY_ORDER.length : i;
+  }
+
+  // Devuelve una copia ordenada por categoría; dentro de cada una se mantiene el
+  // orden original (Array.prototype.sort es estable).
+  function sortByCategory(products) {
+    return products.slice().sort(function (a, b) {
+      return categoryRank(a.category) - categoryRank(b.category);
+    });
+  }
+
   function buildChipsHtml(products, activeCategory) {
     var active = activeCategory || "Todo";
     return categoryList(products)
@@ -198,7 +216,7 @@
   function injectHomepageMarkup(html, products) {
     html = replaceBetweenMarkers(html, "<!--HA:CHIPS_START-->", "<!--HA:CHIPS_END-->", buildChipsHtml(products, "Todo"));
     html = replaceBetweenMarkers(html, "<!--HA:COUNT_START-->", "<!--HA:COUNT_END-->", resultsCountText(products.length));
-    html = replaceBetweenMarkers(html, "<!--HA:GRID_START-->", "<!--HA:GRID_END-->", buildGridHtml(products));
+    html = replaceBetweenMarkers(html, "<!--HA:GRID_START-->", "<!--HA:GRID_END-->", buildGridHtml(sortByCategory(products)));
     html = html.replace(/<meta name="ha-catalog-version" content="[^"]*">/, catalogVersionMetaHtml(products));
     return html;
   }
@@ -214,6 +232,7 @@
     priceTiersHtml: priceTiersHtml,
     isOutOfStock: isOutOfStock,
     categoryList: categoryList,
+    sortByCategory: sortByCategory,
     buildChipsHtml: buildChipsHtml,
     buildCardHtml: buildCardHtml,
     buildGridHtml: buildGridHtml,

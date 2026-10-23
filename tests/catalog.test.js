@@ -76,3 +76,19 @@ test("categoryList pone Todo delante y ordena el resto", () => {
   const list = C.categoryList([{ category: "Púas" }, { category: "Hueso" }, { category: "Hueso" }]);
   assertEqual(list, ["Todo", "Hueso", "Púas"]);
 });
+
+test("sortByCategory pone hueso, cuerno, madre perla y accesorios, y respeta el orden dentro de cada una", () => {
+  const products = [
+    { id: "a1", category: "Accesorios" },
+    { id: "m1", category: "Madre perla y abalone" },
+    { id: "c1", category: "Cuerno" },
+    { id: "x1", category: "Otra" },
+    { id: "h1", category: "Hueso" },
+    { id: "c2", category: "Cuerno" },
+    { id: "h2", category: "Hueso" },
+  ];
+  const ids = C.sortByCategory(products).map((p) => p.id).join(",");
+  assertEqual(ids, "h1,h2,c1,c2,m1,a1,x1");
+  // No modifica el array original.
+  assertEqual(products[0].id, "a1");
+});
