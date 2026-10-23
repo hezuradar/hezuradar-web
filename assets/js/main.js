@@ -274,9 +274,10 @@
         list.sort((a, b) => a.title.localeCompare(b.title));
         break;
       default:
-        // Con "Todo", el orden por defecto agrupa por categoría (hueso, cuerno,
-        // madre perla y abalone, accesorios); igual que la portada pregenerada.
-        if (state.category === "Todo") list = CT.sortByCategory(list);
+        // El orden por defecto agrupa por categoría (hueso, cuerno, madre perla y
+        // abalone, accesorios) y, dentro, por subcategoría y título; igual que la
+        // portada pregenerada.
+        list = CT.sortByCategory(list);
         break;
     }
     return list;

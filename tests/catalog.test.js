@@ -77,18 +77,19 @@ test("categoryList pone Todo delante y ordena el resto", () => {
   assertEqual(list, ["Todo", "Hueso", "Púas"]);
 });
 
-test("sortByCategory pone hueso, cuerno, madre perla y accesorios, y respeta el orden dentro de cada una", () => {
+test("sortByCategory pone hueso, cuerno, madre perla y accesorios, y ordena por subcategoría y título", () => {
   const products = [
-    { id: "a1", category: "Accesorios" },
-    { id: "m1", category: "Madre perla y abalone" },
-    { id: "c1", category: "Cuerno" },
-    { id: "x1", category: "Otra" },
-    { id: "h1", category: "Hueso" },
-    { id: "c2", category: "Cuerno" },
-    { id: "h2", category: "Hueso" },
+    { id: "a1", category: "Accesorios", subcategory: "Púas", title: "5 púas" },
+    { id: "m1", category: "Madre perla y abalone", subcategory: "Selleta", title: "Madre perla" },
+    { id: "c2", category: "Cuerno", subcategory: "Selleta", title: "Cuerno ámbar" },
+    { id: "x1", category: "Otra", subcategory: "", title: "Algo" },
+    { id: "h2", category: "Hueso", subcategory: "Selleta", title: "Hueso blanco" },
+    { id: "c1", category: "Cuerno", subcategory: "Cejuela", title: "Cuerno negro" },
+    { id: "h1", category: "Hueso", subcategory: "Cejuela", title: "hueso de vaca" },
+    { id: "h3", category: "Hueso", subcategory: "Selleta", title: "Hueso ámbar" },
   ];
   const ids = C.sortByCategory(products).map((p) => p.id).join(",");
-  assertEqual(ids, "h1,h2,c1,c2,m1,a1,x1");
+  assertEqual(ids, "h1,h3,h2,c1,c2,m1,a1,x1");
   // No modifica el array original.
   assertEqual(products[0].id, "a1");
 });

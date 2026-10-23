@@ -97,11 +97,19 @@
     return i === -1 ? CATEGORY_ORDER.length : i;
   }
 
-  // Devuelve una copia ordenada por categoría; dentro de cada una se mantiene el
-  // orden original (Array.prototype.sort es estable).
+  function compareText(a, b) {
+    return String(a || "").localeCompare(String(b || ""), "es", { sensitivity: "base", numeric: true });
+  }
+
+  // Devuelve una copia ordenada por categoría y, dentro de cada una, por
+  // subcategoría y título en orden alfabético.
   function sortByCategory(products) {
     return products.slice().sort(function (a, b) {
-      return categoryRank(a.category) - categoryRank(b.category);
+      return (
+        categoryRank(a.category) - categoryRank(b.category) ||
+        compareText(a.subcategory, b.subcategory) ||
+        compareText(a.title, b.title)
+      );
     });
   }
 
