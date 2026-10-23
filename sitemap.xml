@@ -1086,4 +1086,19 @@
       <image:loc>https://hezuradar.com/images/products/1b7edbdb-530d-45b6-b635-cd465dcca965_1792322700060_2.webp</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://hezuradar.com/productos/5-puas-estilo-jazz-iii-de-cuerno-de-buey-ambar-ba1ea5d5.html</loc>
+    <lastmod>2026-10-23</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/ba1ea5d5-eab6-4c98-91af-9129af5d08dd_1792795870638_0.webp</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/ba1ea5d5-eab6-4c98-91af-9129af5d08dd_1792795875476_1.webp</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/ba1ea5d5-eab6-4c98-91af-9129af5d08dd_1792795882826_2.webp</image:loc>
+    </image:image>
+  </url>
 </urlset>
