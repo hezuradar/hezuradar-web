@@ -598,7 +598,7 @@
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20261026a" defer></script>\n' +
+      '<script src="/assets/js/emailjs-notify.js?v=20261026d" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261010a" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
       '<script src="/assets/js/cart.js?v=20261026a" defer></script>\n' +

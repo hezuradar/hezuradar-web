@@ -168,6 +168,7 @@
       order_code: `Mensaje de contacto · ${msg.name}`,
       customer_name: msg.name,
       customer_email: msg.email,
+      customer_phone: msg.phone,
       notes: msg.message,
       reply_to: msg.email,
       to_email: cfg.toEmail,
@@ -188,9 +189,10 @@
         <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
           <tr><td style="padding:3px 0;color:#6c7d89;font-size:13px;width:70px">Nombre</td><td style="padding:3px 0;color:#1c2b36;font-size:14px">${escapeHtml(msg.name)}</td></tr>
           <tr><td style="padding:3px 0;color:#6c7d89;font-size:13px">Email</td><td style="padding:3px 0;color:#1c2b36;font-size:14px"><a href="mailto:${escapeHtml(msg.email)}" style="color:#245F96">${escapeHtml(msg.email)}</a></td></tr>
+          <tr><td style="padding:3px 0;color:#6c7d89;font-size:13px">Teléfono</td><td style="padding:3px 0;color:#1c2b36;font-size:14px"><a href="tel:${escapeHtml(String(msg.phone || "").replace(/[^\d+]/g, ""))}" style="color:#245F96">${escapeHtml(msg.phone)}</a></td></tr>
         </table>
         <div style="padding:14px 16px;background:#f5f8fa;border-radius:8px;color:#1c2b36;font-size:14px;line-height:1.6;white-space:pre-wrap">${escapeHtml(msg.message)}</div>
-        <p style="margin:18px 0 0;color:#6c7d89;font-size:12px">Responde directamente a ${escapeHtml(msg.email)}.</p>
+        <p style="margin:18px 0 0;color:#6c7d89;font-size:12px">Responde a ${escapeHtml(msg.email)} o llama al ${escapeHtml(msg.phone)}.</p>
       </div>
     </div>`;
   }

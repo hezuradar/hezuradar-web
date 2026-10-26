@@ -1,5 +1,5 @@
 // Formulario de contacto de la portada: botón «Escríbenos» de la tarjeta Contacto →
-// ventana modal con nombre, email, mensaje y reCAPTCHA v2 → email a la tienda con
+// ventana modal con nombre, email, teléfono y mensaje (todos obligatorios) y reCAPTCHA v2 → email a la tienda con
 // EmailJS (HA_EMAIL.sendContactEmail en assets/js/emailjs-notify.js).
 (function () {
   "use strict";
@@ -51,7 +51,7 @@
           <button class="modal-close" id="contact-close" type="button" aria-label="Cerrar">&times;</button>
           <form id="contact-form" class="contact-form" novalidate>
             <h2 id="contact-title">Escríbenos</h2>
-            <p class="help-text">Cuéntanos qué necesitas y te respondemos por email lo antes posible.</p>
+            <p class="help-text">Cuéntanos qué necesitas y te respondemos lo antes posible. Todos los campos son obligatorios.</p>
             <div class="field">
               <label for="cf-name">Nombre</label>
               <input id="cf-name" name="name" autocomplete="name" maxlength="100" required aria-required="true">
@@ -59,6 +59,10 @@
             <div class="field">
               <label for="cf-email">Email</label>
               <input id="cf-email" name="email" type="email" autocomplete="email" maxlength="150" required aria-required="true">
+            </div>
+            <div class="field">
+              <label for="cf-phone">Teléfono</label>
+              <input id="cf-phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="20" required aria-required="true">
             </div>
             <div class="field">
               <label for="cf-message">Mensaje</label>
@@ -171,6 +175,7 @@
     return {
       name: $("cf-name").value.trim(),
       email: $("cf-email").value.trim(),
+      phone: $("cf-phone").value.trim(),
       message: $("cf-message").value.trim(),
       website: $("cf-website").value.trim(),
     };
@@ -180,6 +185,9 @@
   function validate(data) {
     if (!data.name) return ["cf-name", "Escribe tu nombre."];
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return ["cf-email", "Escribe un email válido para poder responderte."];
+    // Al menos 9 cifras (móvil o fijo español), admitiendo prefijo +34, espacios y guiones.
+    const phoneDigits = data.phone.replace(/[\s().-]/g, "");
+    if (!/^\+?\d{9,15}$/.test(phoneDigits)) return ["cf-phone", "Escribe un teléfono válido (al menos 9 cifras)."];
     if (data.message.length < 5) return ["cf-message", "Escribe tu mensaje."];
     return null;
   }
@@ -217,10 +225,10 @@
     $("cf-submit").disabled = true;
     setStatus("info", "Enviando...");
     try {
-      await window.HA_EMAIL.sendContactEmail({ name: data.name, email: data.email, message: data.message, captchaToken: token });
+      await window.HA_EMAIL.sendContactEmail({ name: data.name, email: data.email, phone: data.phone, message: data.message, captchaToken: token });
       markSent();
       $("contact-form").reset();
-      setStatus("ok", "¡Mensaje enviado! Te responderemos por email lo antes posible.");
+      setStatus("ok", "¡Mensaje enviado! Te responderemos lo antes posible.");
     } catch (err) {
       console.error("No se pudo enviar el mensaje de contacto:", err);
       setStatus("err", "No se ha podido enviar el mensaje. Inténtalo de nuevo o escríbenos a hezuradar@gmail.com.");
