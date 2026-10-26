@@ -143,7 +143,6 @@
     if (els.igLink && store.instagram) els.igLink.href = store.instagram;
     if (els.contactList) {
       els.contactList.innerHTML = `
-        <li><b>Ubicación</b>Legazpi, Gipuzkoa (España)</li>
         <li><b>Email</b><a href="mailto:${escapeAttr(store.email)}">${escapeHtml(store.email)}</a></li>
         <li><b>WhatsApp</b><a href="${escapeAttr(waLink(store.whatsapp))}" target="_blank" rel="noopener">${escapeHtml(formatPhone(store.whatsapp))}${NEW_TAB_HTML}</a></li>
         <li><b>Instagram</b><a href="${escapeAttr(store.instagram)}" target="_blank" rel="noopener">@hezuradar${NEW_TAB_HTML}</a></li>

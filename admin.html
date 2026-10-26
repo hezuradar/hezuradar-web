@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261023a">
+<link rel="stylesheet" href="assets/css/style.css?v=20261026c">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -102,6 +102,21 @@
     <button class="btn btn-primary" id="gh-save" type="submit">Guardar conexión</button>
     </form>
     <div id="gh-status"></div>
+  </div>
+
+  <div class="card-panel">
+    <h2 style="font-size:1.17em">Contacto por WhatsApp</h2>
+    <p class="help-text">
+      Si lo desactivas, desaparecen de toda la web el botón flotante, los botones «Consultar por WhatsApp» y el
+      teléfono de contacto, y al confirmar un pedido o una solicitud de presupuesto ya no se abre WhatsApp
+      (siguen llegando al panel y por email). El cambio tarda uno o dos minutos en verse en la web publicada.
+    </p>
+    <label class="check-field" for="wa-enabled">
+      <input type="checkbox" id="wa-enabled" checked>
+      Mostrar el contacto por WhatsApp en la web
+    </label>
+    <button class="btn btn-primary" id="wa-save" type="button">Guardar</button>
+    <div id="wa-status"></div>
   </div>
 
   <div class="card-panel">
@@ -280,17 +295,17 @@
           </div>
           <div class="field">
             <label for="o-postal">Código postal</label>
-            <input id="o-postal" placeholder="20230">
+            <input id="o-postal" placeholder="28013">
           </div>
         </div>
         <div class="field-row">
           <div class="field">
             <label for="o-city">Ciudad</label>
-            <input id="o-city" placeholder="Legazpi">
+            <input id="o-city" placeholder="Madrid">
           </div>
           <div class="field">
             <label for="o-province">Provincia</label>
-            <input id="o-province" placeholder="Gipuzkoa">
+            <input id="o-province" placeholder="Madrid">
           </div>
         </div>
 
@@ -503,12 +518,12 @@
 <script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js"></script>
 <script src="assets/js/emailjs-config.js?v=20261002e"></script>
 <script src="assets/js/emailjs-notify.js?v=20261016b"></script>
-<script src="assets/js/product-page-template.js?v=20261018b"></script>
+<script src="assets/js/product-page-template.js?v=20261026a"></script>
 <script src="assets/js/catalog-template.js?v=20261024d"></script>
-<script src="assets/js/admin.js?v=20261022a"></script>
+<script src="assets/js/admin.js?v=20261026e"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
-<script src="assets/js/admin-orders.js?v=20261023e"></script>
+<script src="assets/js/admin-orders.js?v=20261026a"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>
 </body>

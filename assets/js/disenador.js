@@ -67,6 +67,7 @@
 
   const materialImages = {};
   let loadSeq = 0; // cada carga de archivo recibe un número; las que acaben tarde se descartan
+  let shopWhatsappOff = false; // whatsappEnabled: false en data/store.json
   let shopWhatsapp = ""; // teléfono de la tienda (data/store.json), precargado al abrir la página
   let drawQueued = false;
   let pdfjsPromise = null;
@@ -111,12 +112,15 @@
     fetch("data/store.json", { cache: "no-cache" })
       .then((r) => (r.ok ? r.json() : null))
       .then((store) => {
+        if (store && store.whatsappEnabled === false) shopWhatsappOff = true;
         if (store && store.whatsapp) shopWhatsapp = store.whatsapp;
       })
       .catch((err) => console.error("No se pudo cargar data/store.json:", err));
   }
 
+  // "" si el contacto por WhatsApp está desactivado desde el panel: no se abre WhatsApp.
   function getShopPhone() {
+    if (shopWhatsappOff || (window.HA_whatsappEnabled && !window.HA_whatsappEnabled())) return "";
     return (window.HA && window.HA.store && window.HA.store.whatsapp) || shopWhatsapp || "";
   }
 
@@ -1243,7 +1247,7 @@
     const code = (err && err.code) || "";
     const msg = (err && err.message) || "";
     if (code === "permission-denied" || /permission|insufficient/i.test(msg)) {
-      return "Revisa que los datos no sean demasiado largos (nombre, dirección, notas...) e inténtalo de nuevo. Si sigue fallando, escríbenos por WhatsApp.";
+      return "Revisa que los datos no sean demasiado largos (nombre, dirección, notas...) e inténtalo de nuevo. Si sigue fallando, escríbenos " + (getShopPhone() ? "por WhatsApp." : "por email.");
     }
     return msg || "Error desconocido. Inténtalo de nuevo en unos minutos.";
   }

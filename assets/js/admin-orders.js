@@ -1211,7 +1211,7 @@
       <div class="albaran-header">
         <div>
           <div class="albaran-brand">HezurAdar</div>
-          <div class="albaran-brand-sub">Legazpi, Gipuzkoa · hezuradar@gmail.com</div>
+          <div class="albaran-brand-sub">hezuradar@gmail.com</div>
         </div>
         <div class="albaran-doc">
           <div class="albaran-doc-title">Albarán de entrega</div>

@@ -28,7 +28,7 @@ Catálogo con carrito de compra; checkout que abre WhatsApp con el pedido estruc
 
 ## Brand Commitments
 
-Nombre: HezurAdar. Ubicados en Legazpi. Logo en `images/site/logo.jpg`. Instagram: @hezuradar. Contacto: hezuradar@gmail.com / WhatsApp +34653713428.
+Nombre: HezurAdar. Logo en `images/site/logo.jpg`. Instagram: @hezuradar. Contacto: hezuradar@gmail.com / WhatsApp +34653713428.
 
 ## Evidence on Hand
 

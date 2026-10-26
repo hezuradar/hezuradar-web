@@ -1001,6 +1001,15 @@ html{scroll-padding-top:140px}
 :root{--color-whatsapp-strong:#0b7a3b}
 .btn-whatsapp,.wa-float{background:var(--color-whatsapp-strong)}
 
+/* Contacto por WhatsApp desactivado desde el panel (year.js pone .no-whatsapp en <html>). */
+.no-whatsapp .wa-float,
+.no-whatsapp .btn-whatsapp,
+.no-whatsapp a[href*="api.whatsapp.com"],
+.no-whatsapp li:has(> a[href*="api.whatsapp.com"]),
+.no-whatsapp [data-wa]{display:none!important}
+/* Texto alternativo que solo se ve con WhatsApp desactivado. */
+html:not(.no-whatsapp) [data-no-wa]{display:none}
+
 /* Al repintar la cesta (cambios de cantidad) no se repite la animación de entrada:
    sin transición, @starting-style no tiene efecto. Al cerrar sí se anima. */
 .cart-backdrop.no-anim:not(.closing),.cart-backdrop.no-anim:not(.closing) .cart-drawer{transition:none}
@@ -1147,6 +1156,10 @@ body:has(.toolbar){scroll-padding-top:220px}
 @media (max-width:380px){
   .customers-toolbar{grid-template-columns:1fr}
 }
+
+/* Admin · casilla con su texto al lado (ajuste de WhatsApp). */
+.check-field{display:flex;align-items:center;gap:10px;margin:14px 0;font-weight:600;cursor:pointer}
+.check-field input{width:20px;height:20px;margin:0;accent-color:var(--color-primary);cursor:pointer}
 
 /* Admin · Pedidos: resalta la tarjeta recién guardada desde la pantalla emergente. */
 .order-card.just-saved{box-shadow:0 0 0 3px var(--color-primary);transition:box-shadow .3s ease}

@@ -101,7 +101,7 @@
 
   // Frase de cierre para las fichas con descripción muy corta (solo medidas):
   // así ninguna meta description se queda en 50-70 caracteres.
-  var META_TAIL = "Material natural para luthería, preparado a mano en Legazpi. Envío a toda España.";
+  var META_TAIL = "Material natural para luthería, preparado a mano. Envío a toda España.";
 
   // Longitud máxima de la meta description (Google muestra unos 155-160 caracteres).
   var META_MAX = 158;
@@ -521,7 +521,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261016a">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261026c">\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
       "<body>\n" +
@@ -592,7 +592,7 @@
       // antes de DOMContentLoaded. El SDK de Firebase ya no va aquí:
       // firebase-orders.js lo carga solo al enviar un pedido. Las versiones ?v=
       // las alinea scripts/generate-product-pages.js con las de index.html.
-      '<script src="/assets/js/year.js?v=20260915l" defer></script>\n' +
+      '<script src="/assets/js/year.js?v=20261026a" defer></script>\n' +
       '<script src="/assets/js/firebase-config.js?v=20260915l" defer></script>\n' +
       '<script src="/assets/js/firebase-orders.js?v=20261022a" defer></script>\n' +
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
@@ -601,7 +601,7 @@
       '<script src="/assets/js/emailjs-notify.js?v=20261016b" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261010a" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261022a" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261026a" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261010a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
@@ -690,7 +690,7 @@
         "<li><strong>Ranurados:</strong> la ranura facilita el paso de la cuerda y hace más cómodo el cambio de cuerdas.</li>" +
         "<li><strong>Sin ranurar:</strong> acabado liso que mantiene el diseño tradicional del pin.</li>" +
         "</ul>" +
-        "<p>Todos son para guitarras acústicas con pines de puente estándar. Si tienes dudas con tu modelo, pregúntanos por WhatsApp. " +
+        "<p>Todos son para guitarras acústicas con pines de puente estándar.<span data-wa> Si tienes dudas con tu modelo, pregúntanos por WhatsApp.</span> " +
         'Te explicamos cómo elegir entre ranurados y lisos, y cómo cambiarlos, en la <a href="/guia-cambiar-pines-guitarra.html">guía para cambiar los pines</a>.</p>',
     },
     {
@@ -766,7 +766,7 @@
     return (
       '<footer class="site-footer">\n' +
       '  <div class="container">\n' +
-      '    <span>&copy; <span id="year"></span> HezurAdar · Legazpi, Gipuzkoa</span>\n' +
+      '    <span>&copy; <span id="year"></span> HezurAdar</span>\n' +
       '    <div class="footer-links">\n' +
       '      <a href="/#about">Quiénes somos</a>\n' +
       '      <a href="/condiciones.html">Envíos y devoluciones</a>\n' +
@@ -888,7 +888,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261016a">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261026c">\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
       "<body>\n" +
@@ -934,7 +934,7 @@
       "  </section>\n" +
       "</main>\n\n" +
       footerHtml(instagram) +
-      '<script src="/assets/js/year.js?v=20260915l" defer></script>\n' +
+      '<script src="/assets/js/year.js?v=20261026a" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
     );

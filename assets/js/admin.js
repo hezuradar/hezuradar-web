@@ -18,6 +18,7 @@
     legacyKeys: ["ha_pin_fails", "ha_pin_hash", "ha_gh_token"],
   };
   const PRODUCTS_PATH = "data/products.json";
+  const STORE_PATH = "data/store.json";
   const VAULT_CHECK = "hezuradar-admin";
   const IDLE_LOCK_MS = 15 * 60 * 1000;
   const SESSION_MAX_MS = 12 * 60 * 60 * 1000;
@@ -35,6 +36,7 @@
   let shellShown = false;
   let entering = false;
   let busy = false;
+  let waSaving = false;
 
   const $ = (id) => document.getElementById(id);
 
@@ -71,6 +73,7 @@
       e.preventDefault();
       saveGhConfig();
     });
+    $("wa-save").addEventListener("click", saveWhatsappSetting);
     $("p-save").addEventListener("click", saveProduct);
     $("p-cancel").addEventListener("click", resetForm);
     $("p-images").addEventListener("change", onFilesSelected);
@@ -370,6 +373,7 @@
     window.HA_ADMIN_UNLOCKED = true;
     window.dispatchEvent(new Event("ha-admin-unlocked"));
     loadProducts();
+    loadWhatsappSetting();
   }
 
   /* ---------------- GITHUB CONFIG ---------------- */
@@ -402,6 +406,62 @@
     ghToken = token;
     setStatus("gh-status", "ok", "Conexión guardada. El token queda en tu cuenta de administrador y vale en todos tus dispositivos.");
     loadProducts();
+    loadWhatsappSetting();
+  }
+
+  /* ---------------- CONTACTO POR WHATSAPP ---------------- */
+
+  // whatsappEnabled en data/store.json: year.js lo lee en cada página pública y, si es
+  // false, oculta botones y enlaces de WhatsApp; cart.js y disenador.js dejan de abrirlo.
+  async function readStoreFile() {
+    if (ghConfig().token) {
+      const file = await getFile(STORE_PATH);
+      if (file) return { store: JSON.parse(file.content), sha: file.sha };
+      await assertRepoAccessible();
+      throw new Error(`No se ha encontrado ${STORE_PATH} en el repositorio.`);
+    }
+    // Sin token se muestra el valor de la web publicada (no se puede guardar).
+    const res = await fetch(STORE_PATH + "?v=" + Date.now(), { cache: "no-store" });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return { store: await res.json(), sha: null };
+  }
+
+  async function loadWhatsappSetting() {
+    try {
+      const { store } = await readStoreFile();
+      $("wa-enabled").checked = store.whatsappEnabled !== false;
+      setStatus("wa-status", "", "");
+    } catch (e) {
+      setStatus("wa-status", "err", "No se pudo leer el ajuste de WhatsApp: " + e.message);
+    }
+  }
+
+  async function saveWhatsappSetting() {
+    if (waSaving) return;
+    if (!ghConfig().token) {
+      setStatus("wa-status", "err", "Configura primero la conexión con GitHub para publicar el cambio.");
+      return;
+    }
+    const enabled = $("wa-enabled").checked;
+    waSaving = true;
+    $("wa-save").disabled = true;
+    setStatus("wa-status", "info", "Publicando el cambio...");
+    try {
+      const { store, sha } = await readStoreFile();
+      const next = { ...store, whatsappEnabled: enabled };
+      const message = enabled ? "Activa el contacto por WhatsApp" : "Desactiva el contacto por WhatsApp";
+      await putFile(STORE_PATH, b64EncodeUnicode(JSON.stringify(next, null, 2) + "\n"), message, sha);
+      setStatus(
+        "wa-status",
+        "ok",
+        `Guardado: el contacto por WhatsApp queda ${enabled ? "activado" : "desactivado"}. La web publicada se actualiza en uno o dos minutos.`
+      );
+    } catch (e) {
+      setStatus("wa-status", "err", "No se pudo guardar el ajuste de WhatsApp: " + e.message);
+    } finally {
+      waSaving = false;
+      $("wa-save").disabled = false;
+    }
   }
 
   async function ghApi(path, opts) {

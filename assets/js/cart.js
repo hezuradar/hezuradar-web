@@ -361,7 +361,7 @@
     if (shipping <= 0) {
       return `
         <div class="cart-subtotal"><span>Subtotal</span><b>${formatPrice(subtotal())}</b></div>
-        <p class="help-text">Los gastos de envío se confirman por WhatsApp.</p>
+        <p class="help-text">Los gastos de envío se confirman ${whatsappEnabled() ? "por WhatsApp" : "antes del pago"}.</p>
       `;
     }
     return `
@@ -427,16 +427,16 @@
         <div class="field-row">
           <div class="field">
             <label for="co-postal">Código postal *</label>
-            <input required name="postalCode" id="co-postal" autocomplete="postal-code" maxlength="19" placeholder="20230">
+            <input required name="postalCode" id="co-postal" autocomplete="postal-code" maxlength="19" placeholder="28013">
           </div>
           <div class="field">
             <label for="co-city">Ciudad *</label>
-            <input required name="city" id="co-city" autocomplete="address-level2" maxlength="119" placeholder="Legazpi">
+            <input required name="city" id="co-city" autocomplete="address-level2" maxlength="119" placeholder="Madrid">
           </div>
         </div>
         <div class="field">
           <label for="co-province">Provincia</label>
-          <input name="province" id="co-province" autocomplete="address-level1" maxlength="119" placeholder="Gipuzkoa">
+          <input name="province" id="co-province" autocomplete="address-level1" maxlength="119" placeholder="Madrid">
         </div>
         <div class="field">
           <label for="co-notes">Notas del pedido (opcional)</label>
@@ -497,7 +497,7 @@
     if (!el) return;
     el.innerHTML = ok
       ? `Te hemos enviado la confirmación a <b>${escapeHtml(email)}</b>.`
-      : `No hemos podido enviarte el email de confirmación, pero el pedido está registrado: te escribiremos por WhatsApp.`;
+      : `No hemos podido enviarte el email de confirmación, pero el pedido está registrado: ${whatsappEnabled() ? "te escribiremos por WhatsApp" : "nos pondremos en contacto contigo"}.`;
   }
 
   function linePriceHtml(l) {
@@ -608,7 +608,7 @@
       sc.remove();
       const el = document.getElementById("co-captcha");
       if (el && !el.childElementCount) {
-        el.innerHTML = `<p class="help-text" role="alert">No se ha podido cargar la verificación «No soy un robot». Recarga la página o deja el email vacío: te confirmaremos el pedido por WhatsApp.</p>`;
+        el.innerHTML = `<p class="help-text" role="alert">No se ha podido cargar la verificación «No soy un robot». Recarga la página o deja el email vacío: te confirmaremos el pedido ${whatsappEnabled() ? "por WhatsApp" : "por teléfono"}.</p>`;
       }
     };
     document.head.appendChild(sc);
@@ -712,7 +712,15 @@
     }
   }
 
+  // El contacto por WhatsApp se puede desactivar desde el panel (whatsappEnabled en
+  // data/store.json; year.js lo refleja en <html> y expone HA_whatsappEnabled).
+  function whatsappEnabled() {
+    if (window.HA && window.HA.store && window.HA.store.whatsappEnabled === false) return false;
+    return !window.HA_whatsappEnabled || window.HA_whatsappEnabled();
+  }
+
   function whatsappUrl(order) {
+    if (!whatsappEnabled()) return "";
     const phone = (window.HA && window.HA.store && window.HA.store.whatsapp) || "";
     if (!phone) return "";
     return `https://api.whatsapp.com/send?phone=${phone.replace(/[^\d]/g, "")}&text=${encodeURIComponent(buildWhatsAppMessage(order))}`;
@@ -761,7 +769,7 @@
 
     // Se abre ya (de forma síncrona, dentro del gesto de clic) para que los
     // navegadores móviles no bloqueen la ventana emergente tras los `await` siguientes.
-    const waWindow = window.open("", "_blank");
+    const waWindow = whatsappEnabled() ? window.open("", "_blank") : null;
 
     try {
       const orderLines = lines();
@@ -868,7 +876,7 @@
     } catch (err) {
       console.error("Error al tramitar el pedido:", err);
       if (waWindow) waWindow.close();
-      setCheckoutStatus("err", "Ha habido un error al tramitar el pedido. Inténtalo de nuevo o escríbenos por WhatsApp.");
+      setCheckoutStatus("err", "Ha habido un error al tramitar el pedido. Inténtalo de nuevo o escríbenos " + (whatsappEnabled() ? "por WhatsApp." : "por email."));
     } finally {
       submitting = false;
       const btn = document.getElementById("confirm-order");
