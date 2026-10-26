@@ -1157,6 +1157,20 @@ body:has(.toolbar){scroll-padding-top:220px}
   .customers-toolbar{grid-template-columns:1fr}
 }
 
+/* Formulario de contacto (assets/js/contact-form.js): modal de una columna. */
+.about-card .contact-open{margin-top:18px;width:100%}
+.modal-contact{max-width:480px}
+.contact-form{padding:28px 26px 24px;max-height:88vh;overflow:auto}
+.contact-form h2{font-size:1.35rem;margin:0 0 6px;padding-right:40px}
+.contact-form > .help-text{margin:0 0 18px}
+.contact-form .field textarea{min-height:130px}
+.cf-captcha{min-height:78px}
+/* Campo trampa para bots: fuera de la vista, pero no display:none (algunos bots lo detectan). */
+.cf-hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+@media (max-width:768px){
+  .contact-form{max-height:92vh;padding:24px 18px calc(20px + env(safe-area-inset-bottom, 0px))}
+}
+
 /* Admin · casilla con su texto al lado (ajuste de WhatsApp). */
 .check-field{display:flex;align-items:center;gap:10px;margin:14px 0;font-weight:600;cursor:pointer}
 .check-field input{width:20px;height:20px;margin:0;accent-color:var(--color-primary);cursor:pointer}

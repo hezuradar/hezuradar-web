@@ -144,7 +144,6 @@
     if (els.contactList) {
       els.contactList.innerHTML = `
         <li><b>Email</b><a href="mailto:${escapeAttr(store.email)}">${escapeHtml(store.email)}</a></li>
-        <li><b>WhatsApp</b><a href="${escapeAttr(waLink(store.whatsapp))}" target="_blank" rel="noopener">${escapeHtml(formatPhone(store.whatsapp))}${NEW_TAB_HTML}</a></li>
         <li><b>Instagram</b><a href="${escapeAttr(store.instagram)}" target="_blank" rel="noopener">@hezuradar${NEW_TAB_HTML}</a></li>
       `;
     }
@@ -175,10 +174,6 @@
   function waLink(phone, text) {
     const msg = text || "Hola, estoy interesado en vuestros productos.";
     return `https://api.whatsapp.com/send?phone=${phone.replace("+", "")}&text=${encodeURIComponent(msg)}`;
-  }
-
-  function formatPhone(p) {
-    return p;
   }
 
   async function fetchJSON(path) {

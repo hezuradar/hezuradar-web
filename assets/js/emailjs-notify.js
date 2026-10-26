@@ -157,5 +157,43 @@
   // La confirmación al CLIENTE ya no se envía desde aquí: la manda el Apps Script
   // (scripts/drive-export/Code.gs) leyendo el pedido guardado, para que nadie pueda
   // usar la plantilla de EmailJS con un destinatario o un contenido propios.
-  window.HA_EMAIL = { sendOrderEmail };
+  // Mensaje del formulario de contacto de la portada (assets/js/contact-form.js).
+  // Si no hay plantilla propia (contactTemplateId), usa la del aviso de pedido, que
+  // pinta {{{order_html}}} tal cual. captchaToken va como g-recaptcha-response para
+  // que EmailJS lo compruebe si tiene reCAPTCHA activado en Account → Security.
+  async function sendContactEmail(msg) {
+    if (!ready()) throw new Error("El envío de email no está configurado todavía.");
+    const cfg = window.HA_EMAILJS_CONFIG;
+    const params = {
+      order_code: `Mensaje de contacto · ${msg.name}`,
+      customer_name: msg.name,
+      customer_email: msg.email,
+      notes: msg.message,
+      reply_to: msg.email,
+      to_email: cfg.toEmail,
+      order_html: buildContactHtml(msg),
+      "g-recaptcha-response": msg.captchaToken || "",
+    };
+    await emailjs.send(cfg.serviceId, cfg.contactTemplateId || cfg.templateId, params, { publicKey: cfg.publicKey });
+  }
+
+  function buildContactHtml(msg) {
+    return `
+    <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e1e8ed;border-radius:12px;overflow:hidden">
+      <div style="background:#245F96;padding:22px 28px">
+        <span style="color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:.3px">Hezur&amp;Adar</span>
+      </div>
+      <div style="padding:26px 28px">
+        <p style="margin:0 0 16px;color:#1c2b36;font-size:16px;font-weight:bold">Nuevo mensaje desde el formulario de contacto</p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+          <tr><td style="padding:3px 0;color:#6c7d89;font-size:13px;width:70px">Nombre</td><td style="padding:3px 0;color:#1c2b36;font-size:14px">${escapeHtml(msg.name)}</td></tr>
+          <tr><td style="padding:3px 0;color:#6c7d89;font-size:13px">Email</td><td style="padding:3px 0;color:#1c2b36;font-size:14px"><a href="mailto:${escapeHtml(msg.email)}" style="color:#245F96">${escapeHtml(msg.email)}</a></td></tr>
+        </table>
+        <div style="padding:14px 16px;background:#f5f8fa;border-radius:8px;color:#1c2b36;font-size:14px;line-height:1.6;white-space:pre-wrap">${escapeHtml(msg.message)}</div>
+        <p style="margin:18px 0 0;color:#6c7d89;font-size:12px">Responde directamente a ${escapeHtml(msg.email)}.</p>
+      </div>
+    </div>`;
+  }
+
+  window.HA_EMAIL = { sendOrderEmail, sendContactEmail };
 })();

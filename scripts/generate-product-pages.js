@@ -109,11 +109,9 @@ function aboutHtml(store) {
 
 // Mismo marcado que la lista de contacto de assets/js/main.js.
 function contactHtml(store) {
-  const wa = "https://api.whatsapp.com/send?phone=" + String(store.whatsapp || "").replace("+", "") + "&text=" + encodeURIComponent("Hola, estoy interesado en vuestros productos.");
   const newTab = '<span class="visually-hidden"> (se abre en una pestaña nueva)</span>';
   return (
     '\n        <li><b>Email</b><a href="mailto:' + escapeHtml(store.email) + '">' + escapeHtml(store.email) + "</a></li>" +
-    '\n        <li><b>WhatsApp</b><a href="' + escapeHtml(wa) + '" target="_blank" rel="noopener">' + escapeHtml(store.whatsapp) + newTab + "</a></li>" +
     '\n        <li><b>Instagram</b><a href="' + escapeHtml(store.instagram) + '" target="_blank" rel="noopener">@hezuradar' + newTab + "</a></li>\n      "
   );
 }
