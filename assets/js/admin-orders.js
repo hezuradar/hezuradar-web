@@ -45,6 +45,7 @@
   let catalogProducts = [];
   let catalogLoadError = false;
   let statusFilter = "";
+  let rangeDays = 0; // 0 = todos los pedidos; si no, solo los creados en los últimos N días
   let unsubscribe = null;
   let editingDocId = null;
   let itemRows = [];
@@ -78,6 +79,9 @@
         });
         renderOrders();
       });
+    });
+    document.querySelectorAll("#orders-range button").forEach((btn) => {
+      btn.addEventListener("click", () => setOrdersRange(Number(btn.dataset.days) || 0));
     });
     $("print-confirmed-btn").addEventListener("click", printConfirmedOrders);
     initCustomerControls();
@@ -261,13 +265,30 @@
 
   /* ---------------- LIST + REVENUE ---------------- */
 
+  function setOrdersRange(days) {
+    rangeDays = days;
+    document.querySelectorAll("#orders-range button").forEach((b) => {
+      const on = (Number(b.dataset.days) || 0) === days;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    renderOrders();
+  }
+
+  function inOrdersRange(o) {
+    return !rangeDays || orderTimeMs(o) >= Date.now() - rangeDays * 86400000;
+  }
+
   function renderOrders() {
-    const list = statusFilter ? orders.filter((o) => o.status === statusFilter) : orders;
+    // El periodo filtra la lista y los contadores de estado; el aviso de pendientes de la
+    // pestaña y las etiquetas de confirmados siguen contando todos los pedidos.
+    const inRange = orders.filter(inOrdersRange);
+    const list = statusFilter ? inRange.filter((o) => o.status === statusFilter) : inRange;
     // Al repintar la lista se pierde el foco (por ejemplo, al marcar un checkbox): se guarda
     // el id del elemento enfocado dentro de la lista para devolverlo justo después del innerHTML.
     const focusEl = document.activeElement;
     const focusId = focusEl && focusEl.id && $("orders-list").contains(focusEl) ? focusEl.id : null;
-    $("orders-count").textContent = orders.length;
+    $("orders-count").textContent = inRange.length;
     const pending = orders.filter((o) => o.status === "pendiente").length;
     const badge = $("orders-pending-badge");
     if (pending > 0) {
@@ -277,10 +298,10 @@
       badge.style.display = "none";
     }
     $("confirmed-count").textContent = orders.filter((o) => o.status === "confirmado").length;
-    $("count-all").textContent = orders.length;
+    $("count-all").textContent = inRange.length;
     ["pendiente", "confirmado", "enviado", "entregado", "cancelado"].forEach((s2) => {
       const el = $("count-" + s2);
-      if (el) el.textContent = orders.filter((o) => o.status === s2).length;
+      if (el) el.textContent = inRange.filter((o) => o.status === s2).length;
     });
 
     const catalogNotice = catalogLoadError
@@ -288,7 +309,8 @@
       : "";
 
     if (!list.length) {
-      $("orders-list").innerHTML = catalogNotice + '<div class="empty-state">No hay pedidos que mostrar.</div>';
+      const hint = rangeDays ? " en este periodo" : "";
+      $("orders-list").innerHTML = catalogNotice + `<div class="empty-state">No hay pedidos que mostrar${hint}.</div>`;
       return;
     }
 
@@ -1917,6 +1939,7 @@ ${bodyHtml}
     go.style.marginLeft = "8px";
     go.textContent = "Ver pedido";
     go.addEventListener("click", () => {
+      if (!inOrdersRange(o)) setOrdersRange(0);
       tab.click();
       showSavedOrder(docId);
     });

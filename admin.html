@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261026d">
+<link rel="stylesheet" href="assets/css/style.css?v=20261028a">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -343,6 +343,12 @@
             <button class="small-btn" id="print-confirmed-btn" type="button" title="Imprime en una sola página todas las etiquetas de envío de los pedidos confirmados"><span aria-hidden="true">🏷️</span> Etiquetas de confirmados (<span id="confirmed-count">0</span>)</button>
           </div>
         </div>
+        <div class="seg-toggle orders-range" id="orders-range" role="group" aria-label="Periodo de los pedidos">
+          <button type="button" data-days="7" aria-pressed="false">Últimos 7 días</button>
+          <button type="button" data-days="30" aria-pressed="false">Último mes</button>
+          <button type="button" data-days="90" aria-pressed="false">Últimos 90 días</button>
+          <button type="button" data-days="0" class="active" aria-pressed="true">Todos</button>
+        </div>
         <div class="status-tabs" id="orders-status-tabs">
           <button class="status-tab active" type="button" data-status="" aria-pressed="true">Todos <span class="status-tab-count" id="count-all">0</span></button>
           <button class="status-tab" type="button" data-status="pendiente" aria-pressed="false">Pendiente <span class="status-tab-count" id="count-pendiente">0</span></button>
@@ -523,7 +529,7 @@
 <script src="assets/js/admin.js?v=20261026e"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
-<script src="assets/js/admin-orders.js?v=20261026a"></script>
+<script src="assets/js/admin-orders.js?v=20261028a"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>
 </body>

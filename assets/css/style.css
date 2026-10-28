@@ -661,6 +661,7 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
 /* Orders */
 .orders-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .orders-toolbar-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.orders-range{margin-bottom:12px;flex-wrap:wrap}
 .status-tabs{
   display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:10px;margin-bottom:14px;
   border-bottom:1px solid var(--color-border);
@@ -881,6 +882,7 @@ a.small-btn{display:inline-block;text-decoration:none;color:var(--color-text)}
   .order-item-edit-row .oi-remove{margin-left:0;width:100%}
   .orders-toolbar{flex-direction:column;align-items:stretch}
   .orders-toolbar-actions{flex-direction:column;align-items:stretch}
+  .orders-range{display:grid;grid-template-columns:1fr 1fr;border-radius:14px}
   .revenue-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .revenue-stat{min-width:0;padding:12px 14px}
   .revenue-stat b{font-size:1.2rem}
