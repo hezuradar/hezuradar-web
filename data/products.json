@@ -696,11 +696,26 @@
     "id": "94f6b87b-ba7e-42e2-a9b6-5c4596c81f5a",
     "title": "Cuerno de buey ámbar para selleta",
     "description": "Pieza en bruto de cuerno de buey ámbar de 85 × 4 × 10 mm para tallar una selleta. Translúcido y de tono miel, con transparencias que cambian de pieza a pieza.\n\nEs el formato estándar de selleta de nuestra tienda: 85 mm de largo y 4 mm de grosor. Para una ranura más ancha tienes la versión extra gruesa de 6-7 mm, y para una pieza más alta, la de 15 mm. Suena algo más cálida que una selleta de hueso.\n\nMedidas: 85 × 4 × 10 mm.",
-    "price": 4.5,
+    "price": 4.6,
     "sku": "RR0005",
     "category": "Cuerno",
     "subcategory": "Selleta",
     "stock": 18,
+    "discountPercent": null,
+    "priceTiers": [
+      {
+        "minQty": 10,
+        "price": 4.3
+      },
+      {
+        "minQty": 20,
+        "price": 4
+      },
+      {
+        "minQty": 30,
+        "price": 3.85
+      }
+    ],
     "images": [
       "images/products/94f6b87b-ba7e-42e2-a9b6-5c4596c81f5a_0.webp",
       "images/products/94f6b87b-ba7e-42e2-a9b6-5c4596c81f5a_1.webp"
@@ -708,21 +723,7 @@
     "slug": "cuerno-de-buey-ambar-selleta-94f6b87b",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-08",
-    "priceTiers": [
-      {
-        "minQty": 10,
-        "price": 4.15
-      },
-      {
-        "minQty": 20,
-        "price": 4.05
-      },
-      {
-        "minQty": 30,
-        "price": 3.85
-      }
-    ]
+    "updatedAt": "2026-10-29"
   },
   {
     "id": "5616db44-3bd3-4bd0-b3cc-bf4bdad0b9ff",
