@@ -581,11 +581,12 @@
     "id": "e51b3193-7dd1-414a-aa3e-ff1467d4343c",
     "title": "Cuerno de buey Ankola para selleta",
     "description": "Cuerno de buey Ankola en bruto de 105 × 4 × 10 mm para tallar una selleta larga, con fondo ámbar muy claro y vetas blancas y grises en forma de nubes. El dibujo es distinto en cada pieza.\n\nEs el formato largo: 105 mm sobran para una selleta de acústica y dejan margen para ajustar el largo. Su grosor de 4 mm es el más habitual en nuestra tienda. Hay una versión más corta, de 85 mm, en cuerno ámbar y negro.\n\nMedidas: 105 × 4 × 10 mm.",
-    "price": 4.5,
+    "price": 4.6,
     "sku": "RR0030",
     "category": "Cuerno",
     "subcategory": "Selleta",
     "stock": 56,
+    "discountPercent": null,
     "images": [
       "images/products/e51b3193-7dd1-414a-aa3e-ff1467d4343c_0.webp",
       "images/products/e51b3193-7dd1-414a-aa3e-ff1467d4343c_1.webp",
@@ -594,7 +595,7 @@
     "slug": "cuerno-de-buey-ankola-para-selleta-e51b3193",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-22"
+    "updatedAt": "2026-10-29"
   },
   {
     "id": "3d0994f1-f7eb-447e-b669-7ad66421b3eb",
