@@ -1449,7 +1449,7 @@
     "sku": "RR0074",
     "category": "Accesorios",
     "subcategory": "Púas",
-    "stock": 1,
+    "stock": 0,
     "discountPercent": null,
     "images": [
       "images/products/ba1ea5d5-eab6-4c98-91af-9129af5d08dd_1792795870638_0.webp",
@@ -1459,6 +1459,6 @@
     "slug": "5-puas-estilo-jazz-iii-de-cuerno-de-buey-ambar-ba1ea5d5",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-23"
+    "updatedAt": "2026-10-29"
   }
 ]
