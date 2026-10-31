@@ -319,6 +319,14 @@
     return null;
   }
 
+  // Material para el JSON-LD a partir de la categoría (Accesorios no tiene uno fijo).
+  function materialFor(product) {
+    if (product.category === "Hueso") return "Hueso";
+    if (product.category === "Cuerno") return "Cuerno";
+    if (product.category === "Madre perla y abalone") return /abalone/i.test(product.title) ? "Abalone" : "Madre perla";
+    return undefined;
+  }
+
   function buildProductJsonLd(product, canonicalUrl) {
     var images = (product.images || []).map(function (im) {
       return SITE_URL + "/" + im;
@@ -334,6 +342,7 @@
       mpn: product.sku || undefined,
       category: product.subcategory ? product.category + " / " + product.subcategory : product.category,
       brand: { "@type": "Brand", name: "HezurAdar" },
+      material: materialFor(product),
       offers: {
         "@type": "Offer",
         url: canonicalUrl,
@@ -342,7 +351,8 @@
         // Los precios no caducan: se declara hasta el 31 de diciembre del año
         // siguiente y se renueva solo cada vez que se regeneran las fichas.
         priceValidUntil: new Date().getFullYear() + 1 + "-12-31",
-        seller: { "@type": "Organization", name: "HezurAdar", url: SITE_URL + "/" },
+        // Misma entidad que la OnlineStore declarada en la portada (index.html).
+        seller: { "@type": "Organization", "@id": SITE_URL + "/#organization", name: "HezurAdar", url: SITE_URL + "/" },
         availability: isOutOfStock(product) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
         itemCondition: "https://schema.org/NewCondition",
         shippingDetails: {
@@ -372,6 +382,7 @@
           merchantReturnDays: RETURN_WINDOW_DAYS,
           returnFees: RETURN_FEES,
           returnMethod: RETURN_METHOD,
+          merchantReturnLink: SITE_URL + "/condiciones.html",
         },
       },
     };
@@ -421,13 +432,23 @@
   }
 
   // Tarjeta enlazada a la ficha (productos relacionados y páginas de categoría).
-  function linkCardHtml(p) {
+  // En las categorías se pasa la posición: la primera fila está a la vista al cargar
+  // (la primera foto suele ser el LCP), así que no se difiere; el resto sí.
+  var EAGER_CARDS = 4;
+
+  function cardImgLoading(index) {
+    if (index === 0) return ' fetchpriority="high" decoding="async"';
+    if (index > 0 && index < EAGER_CARDS) return ' decoding="async"';
+    return ' loading="lazy" decoding="async"';
+  }
+
+  function linkCardHtml(p, index) {
     var img = (p.images && p.images[0]) || "";
     var href = "/productos/" + escapeAttr(p.slug) + ".html";
     return (
       '<a class="card' + (isOutOfStock(p) ? " out-of-stock" : "") + '" href="' + href + '">' +
       '<div class="card-img"><span class="card-cat">' + escapeHtml(p.subcategory || p.category) + "</span>" +
-      '<img src="/' + escapeAttr(thumbPath(img)) + '" alt="' + escapeAttr(p.title) + '" width="500" height="375" loading="lazy" decoding="async"></div>' +
+      '<img src="/' + escapeAttr(thumbPath(img)) + '" alt="' + escapeAttr(p.title) + '" width="500" height="375"' + cardImgLoading(index) + "></div>" +
       '<div class="card-body"><h3 class="card-title">' + escapeHtml(p.title) + "</h3>" +
       '<div class="card-price">' + formatPrice(effectivePrice(p)) + (isOutOfStock(p) ? " · Sin stock" : "") + "</div></div>" +
       "</a>"
@@ -437,7 +458,12 @@
   function relatedProductsHtml(product, allProducts) {
     var related = relatedProducts(product, allProducts);
     if (!related.length) return "";
-    var cards = related.map(linkCardHtml).join("");
+    // Sin posición: bajo el pliegue, todas diferidas.
+    var cards = related
+      .map(function (p) {
+        return linkCardHtml(p);
+      })
+      .join("");
     return (
       '<section class="related-products container">\n' +
       "  <h2>Productos relacionados</h2>\n" +
@@ -466,9 +492,9 @@
     var waFloatHref = whatsapp ? waLink(whatsapp, "Hola, tengo una consulta sobre vuestros productos.") : "#";
 
     // Miniaturas como botones (se manejan con teclado y anuncian cuál está
-    // seleccionada con aria-pressed); la imagen va con alt="" porque el nombre
-    // lo da el aria-label del botón. La clase "active" se mantiene también en la
-    // imagen para el estilo del borde.
+    // seleccionada con aria-pressed). El nombre accesible lo da el aria-label del
+    // botón; el alt de la imagen es para que Google Imágenes sepa qué muestra cada
+    // foto. La clase "active" se mantiene también en la imagen para el estilo del borde.
     var thumbsHtml =
       images.length > 1
         ? '<div class="product-gallery-thumbs" id="product-thumbs">' +
@@ -479,7 +505,7 @@
                 ' data-full="/' + escapeAttr(im) + '"' +
                 ' aria-label="Ver foto ' + (i + 1) + " de " + images.length + '"' +
                 ' aria-pressed="' + (i === 0 ? "true" : "false") + '">' +
-                '<img src="/' + escapeAttr(thumbPath(im)) + '" alt=""' + (i === 0 ? ' class="active"' : "") + ' loading="lazy">' +
+                '<img src="/' + escapeAttr(thumbPath(im)) + '" alt="' + escapeAttr(product.title + " — foto " + (i + 1) + " de " + images.length) + '"' + (i === 0 ? ' class="active"' : "") + ' loading="lazy">' +
                 "</button>"
               );
             })
@@ -497,6 +523,7 @@
       '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://www.google.com https://www.gstatic.com; frame-src https://www.google.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://firestore.googleapis.com https://api.emailjs.com https://script.google.com https://script.googleusercontent.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
       "<title>" + escapeHtml(pageTitle(product)) + "</title>\n" +
       '<meta name="description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
+      '<meta name="robots" content="max-image-preview:large">\n' +
       (catalogVersionMeta(allProducts) ? catalogVersionMeta(allProducts) + "\n" : "") +
       '<link rel="canonical" href="' + canonicalUrl + '">\n' +
       '<meta property="og:type" content="product">\n' +
@@ -599,7 +626,7 @@
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
       '<script src="/assets/js/emailjs-notify.js?v=20261031a" defer></script>\n' +
-      '<script src="/assets/js/catalog-template.js?v=20261010a" defer></script>\n' +
+      '<script src="/assets/js/catalog-template.js?v=20261024d" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
       '<script src="/assets/js/cart.js?v=20261026a" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261010a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
@@ -867,6 +894,7 @@
       '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data:; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
       "<title>" + escapeHtml(fullTitle) + "</title>\n" +
       '<meta name="description" content="' + escapeAttr(cat.description) + '">\n' +
+      '<meta name="robots" content="max-image-preview:large">\n' +
       '<link rel="canonical" href="' + url + '">\n' +
       '<meta property="og:type" content="website">\n' +
       '<meta property="og:site_name" content="HezurAdar">\n' +
