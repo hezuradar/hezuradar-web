@@ -396,6 +396,27 @@ function plain_(str, max) {
     .slice(0, max || 120);
 }
 
+// Miniatura de cada producto, como en el aviso al negocio (assets/js/emailjs-notify.js).
+// La ruta la escribe el navegador del cliente: solo se aceptan fotos de producto de la
+// propia web, así el correo no puede cargar imágenes de otro sitio.
+const SITE_URL = "https://hezuradar.com/";
+
+function itemThumbUrl_(path) {
+  const p = String(path || "").replace(/^\/+/, "");
+  if (!/^images\/products\/[\w.-]+\.(webp|jpe?g|png)$/i.test(p)) return "";
+  const i = p.lastIndexOf(".");
+  return SITE_URL + p.slice(0, i) + "-thumb" + p.slice(i);
+}
+
+function itemThumbCell_(it) {
+  const url = itemThumbUrl_(it.image);
+  return `<td style="width:64px;padding:10px 12px 10px 0;border-bottom:1px solid #e1e8ed;vertical-align:middle">${
+    url
+      ? `<img src="${esc_(url)}" width="56" height="56" alt="" style="display:block;width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e1e8ed">`
+      : ""
+  }</td>`;
+}
+
 function customerEmailHtml_(o) {
   const c0 = o.customer || {};
   const s0 = o.shipping || {};
@@ -414,6 +435,7 @@ function customerEmailHtml_(o) {
   const rows = items
     .map(
       (it) => `<tr>
+        ${itemThumbCell_(it)}
         <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">${esc_(plain_(it.title, 120))}
           <div style="color:#6c7d89;font-size:12px">${esc_(Number(it.qty) || 0)} × ${esc_(eur_(it.price))}</div></td>
         <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px;text-align:right;white-space:nowrap">${esc_(eur_((Number(it.price) || 0) * (Number(it.qty) || 0)))}</td>
