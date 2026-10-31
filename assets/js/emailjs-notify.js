@@ -51,11 +51,33 @@
     await emailjs.send(cfg.serviceId, cfg.templateId, params, { publicKey: cfg.publicKey });
   }
 
+  // En el correo las rutas relativas no se resuelven: la miniatura va con la URL
+  // absoluta de la web. Solo se aceptan fotos de producto publicadas (la ruta viene
+  // del navegador del cliente), y si no hay, la celda queda vacía.
+  const SITE_URL = "https://hezuradar.com/";
+
+  function itemThumbUrl(path) {
+    const p = String(path || "").replace(/^\/+/, "");
+    if (!/^images\/products\/[\w.-]+\.(webp|jpe?g|png)$/i.test(p)) return "";
+    const i = p.lastIndexOf(".");
+    return SITE_URL + p.slice(0, i) + "-thumb" + p.slice(i);
+  }
+
+  function itemThumbCell(it) {
+    const url = itemThumbUrl(it.image);
+    return `<td style="width:64px;padding:10px 12px 10px 0;border-bottom:1px solid #e1e8ed;vertical-align:middle">${
+      url
+        ? `<img src="${escapeHtml(url)}" width="56" height="56" alt="" style="display:block;width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e1e8ed">`
+        : ""
+    }</td>`;
+  }
+
   function itemsRowsHtml(order) {
     return order.items
       .map(
         (it) => `
         <tr>
+          ${itemThumbCell(it)}
           <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">
             ${escapeHtml(it.title)}
             ${it.discountPercent ? `<span style="color:#6c7d89;font-size:12px"> (-${Number(it.discountPercent)}%)</span>` : ""}
