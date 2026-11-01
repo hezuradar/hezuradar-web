@@ -1187,7 +1187,8 @@ body:has(.toolbar){scroll-padding-top:220px}
 .order-card.just-saved{box-shadow:0 0 0 3px var(--color-primary);transition:box-shadow .3s ease}
 
 /* Selector de idioma (assets/js/i18n.js): ES | EN en la cabecera, junto a la cesta. */
-.lang-switch{display:inline-flex;border:1px solid rgba(255,255,255,.55);border-radius:999px;padding:2px;flex:none}
+.lang-switch{display:inline-flex;align-items:center;border:1px solid rgba(255,255,255,.55);border-radius:999px;padding:2px;flex:none}
+.lang-switch-icon{display:inline-flex;align-items:center;padding:0 4px 0 8px;color:#fff;pointer-events:none}
 .lang-switch button{
   min-width:36px;min-height:32px;padding:0 10px;border:0;border-radius:999px;background:transparent;
   color:#fff;font-size:.8rem;font-weight:700;letter-spacing:.04em;cursor:pointer;
