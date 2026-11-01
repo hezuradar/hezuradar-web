@@ -109,10 +109,12 @@
   function bindGallery() {
     const main = document.getElementById("product-main-img");
     const thumbs = document.querySelectorAll("#product-thumbs .thumb-btn");
+    const CT = window.HA_CATALOG_TEMPLATE;
+    CT.preloadImages(Array.from(thumbs, (th) => th.dataset.full));
     thumbs.forEach((th) => {
       th.addEventListener("click", () => {
         if (!main || !th.dataset.full) return;
-        main.src = th.dataset.full;
+        CT.showGalleryImage(main, th.dataset.full);
         thumbs.forEach((t) => {
           const active = t === th;
           t.classList.toggle("active", active);

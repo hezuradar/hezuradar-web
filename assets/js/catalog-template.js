@@ -229,6 +229,37 @@
     return html;
   }
 
+  // Galería (modal de la portada y ficha de producto). Con la red lenta, al cambiar
+  // src el navegador sigue enseñando la foto anterior hasta tener la nueva, y parece
+  // que el clic no ha hecho nada: por eso las fotos se descargan al abrir la galería
+  // y, mientras llega la elegida, la actual se atenúa (clase is-loading).
+  // Se guardan las imágenes precargadas: si nada las referencia, el navegador puede
+  // descartarlas antes de que empiece la descarga.
+  var preloaded = {};
+
+  function preloadImages(urls) {
+    if (typeof Image === "undefined") return;
+    urls.forEach(function (url) {
+      if (!url || preloaded[url]) return;
+      var img = new Image();
+      img.decoding = "async";
+      img.src = url;
+      preloaded[url] = img;
+    });
+  }
+
+  function showGalleryImage(img, url) {
+    if (!img || !url || img.getAttribute("src") === url) return;
+    img.classList.add("is-loading");
+    var done = function () {
+      img.classList.remove("is-loading");
+    };
+    img.addEventListener("load", done, { once: true });
+    img.addEventListener("error", done, { once: true });
+    img.src = url;
+    if (img.complete) done();
+  }
+
   var api = {
     escapeHtml: escapeHtml,
     escapeAttr: escapeAttr,
@@ -248,6 +279,8 @@
     injectHomepageMarkup: injectHomepageMarkup,
     catalogVersion: catalogVersion,
     catalogVersionMetaHtml: catalogVersionMetaHtml,
+    preloadImages: preloadImages,
+    showGalleryImage: showGalleryImage,
   };
 
   if (typeof module !== "undefined" && module.exports) {

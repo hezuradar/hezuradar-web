@@ -234,6 +234,9 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .modal-close:active{transform:scale(.96)}
 .modal-gallery{background:#f0f3f5}
 .modal-gallery img{width:100%;aspect-ratio:1/1;object-fit:contain;background:#f0f3f5}
+/* Foto de la galería mientras se descarga la elegida (CT.showGalleryImage). */
+#modal-main-img,#product-main-img{transition:opacity 150ms var(--ease-out)}
+#modal-main-img.is-loading,#product-main-img.is-loading{opacity:.45}
 .modal-thumbs{display:flex;gap:6px;padding:8px;overflow-x:auto}
 .modal-thumbs img{width:56px;height:56px;object-fit:contain;background:#f0f3f5;border-radius:8px;border:2px solid transparent;flex:none;cursor:pointer}
 .modal-thumbs img.active{border-color:var(--color-primary)}

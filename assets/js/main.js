@@ -398,9 +398,10 @@
       if (e.target.id === "modal-backdrop") closeModal();
     });
     const thumbs = els.modalRoot.querySelectorAll(".modal-thumbs .thumb-btn");
+    CT.preloadImages(Array.from(thumbs, (th) => th.dataset.full));
     thumbs.forEach((th) => {
       th.addEventListener("click", () => {
-        document.getElementById("modal-main-img").src = th.dataset.full;
+        CT.showGalleryImage(document.getElementById("modal-main-img"), th.dataset.full);
         thumbs.forEach((t) => setThumbActive(t, t === th));
       });
     });
