@@ -143,6 +143,26 @@ function probarConexion() {
   console.log("✅ Firestore: pedidos accesibles.");
 }
 
+// Ejecútala desde el editor (▶ Ejecutar) para ver cómo le llega al cliente la
+// confirmación: manda la del último pedido a NOTIFY_EMAIL, no al cliente.
+function probarEmailCliente() {
+  const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/orders?pageSize=1&orderBy=createdAt%20desc`;
+  const res = UrlFetchApp.fetch(url, { headers: firestoreHeaders_(), muteHttpExceptions: true });
+  if (res.getResponseCode() !== 200) {
+    throw new Error("❌ Firestore respondió " + res.getResponseCode() + ": " + res.getContentText());
+  }
+  const doc = (JSON.parse(res.getContentText()).documents || [])[0];
+  if (!doc) throw new Error("❌ No hay pedidos.");
+  const o = decodeFields_(doc.fields || {});
+  MailApp.sendEmail({
+    to: NOTIFY_EMAIL,
+    subject: `[PRUEBA] Pedido ${plain_(o.orderCode, 40)} recibido - HezurAdar`,
+    htmlBody: customerEmailHtml_(o),
+    name: "HezurAdar",
+  });
+  console.log("✅ Enviada a " + NOTIFY_EMAIL + " la confirmación del pedido " + o.orderCode + ".");
+}
+
 // Diseños del pedido: los del personalizador llevan uno (kind/material/design) y los
 // pedidos agrupados desde el panel pueden llevar varios en designs[].
 function orderDesigns_(o) {
