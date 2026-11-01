@@ -8,6 +8,6 @@ window.HA_DESIGNER_CONFIG = {
   maxQty: 5000, // con 2,80 €/ud el subtotal queda muy por debajo del tope de las reglas de Firestore
   pricePerUnit: 2.8,
   materials: [
-    { id: "hueso", label: "Hueso y cuerno natural", img: "images/site/materials/pua.jpg", contrast: "#161616" },
+    { id: "hueso", label: "Hueso y cuerno natural", img: "images/site/materials/pua.webp", contrast: "#161616" },
   ],
 };

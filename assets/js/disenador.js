@@ -10,11 +10,11 @@
   const SAFE_ORDER_BYTES = 950 * 1024; // margen de seguridad bajo el límite de 1 MiB por documento de Firestore
 
   const DEFAULT_MATERIALS = [
-    { id: "madreperla", label: "Resina madre perla", img: "images/site/materials/madreperla.jpg", contrast: "#161616" },
-    { id: "negro", label: "Cuerno de buey negro", img: "images/site/materials/negro.jpg", contrast: "#f7f7f5" },
-    { id: "ambar", label: "Cuerno de buey ámbar", img: "images/site/materials/ambar.jpg", contrast: "#161616" },
-    { id: "blanco", label: "Hueso blanco", img: "images/site/materials/blanco.jpg", contrast: "#161616" },
-    { id: "ankola", label: "Cuerno de buey ankola", img: "images/site/materials/ankola.jpg", contrast: "#161616" },
+    { id: "madreperla", label: "Resina madre perla", img: "images/site/materials/madreperla.webp", contrast: "#161616" },
+    { id: "negro", label: "Cuerno de buey negro", img: "images/site/materials/negro.webp", contrast: "#f7f7f5" },
+    { id: "ambar", label: "Cuerno de buey ámbar", img: "images/site/materials/ambar.webp", contrast: "#161616" },
+    { id: "blanco", label: "Hueso blanco", img: "images/site/materials/blanco.webp", contrast: "#161616" },
+    { id: "ankola", label: "Cuerno de buey ankola", img: "images/site/materials/ankola.webp", contrast: "#161616" },
   ];
 
   // La página que carga este script puede definir window.HA_DESIGNER_CONFIG antes de este

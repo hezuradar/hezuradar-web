@@ -205,7 +205,7 @@
   // Logo de la cabecera: alt="" porque el nombre de la marca ya va escrito al lado.
   var BRAND_HTML =
     '    <a class="brand" href="/">\n' +
-    '      <img src="/images/site/logo.jpg" alt="">\n' +
+    '      <img src="/images/site/logo.webp" alt="">\n' +
     "      HezurAdar\n" +
     "    </a>\n";
 
