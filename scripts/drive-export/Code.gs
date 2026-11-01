@@ -411,7 +411,7 @@ const EMAIL_TEXTS = {
     payments: { paypal: "PayPal", bizum: "Bizum", otros: "Other" },
   },
 };
-const SHIPPING_METHODS_EN = { "Envío ordinario": "Standard mail", "Envío certificado": "Registered mail", "Envío a confirmar": "Shipping to be confirmed" };
+const SHIPPING_METHODS_EN = { "Envío ordinario": "Standard mail", "Envío certificado": "Registered mail", "Paq Light Internacional": "Paq Light Internacional", "Envío a confirmar": "Shipping to be confirmed" };
 
 function emailLang_(o) {
   return o && o.lang === "en" ? "en" : "es";

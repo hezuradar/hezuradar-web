@@ -3,24 +3,34 @@
 
   const LS_CART = "ha_cart";
   // Gastos de envío. En España, 1 pieza va por correo ordinario y 2 o más certificado.
-  // Fuera de España siempre certificado, con la tarifa oficial de Correos 2026 de carta
-  // certificada internacional que corresponde al peso del pedido. El tramo "hasta 20 g"
-  // es solo para cartas normalizadas y ninguna pieza pesa tan poco, así que empieza en 50 g.
+  // Fuera de España, Paq Light Internacional de Correos (tarifa 2026, PVP con IVA) según
+  // la zona del país y el peso del pedido, hasta 2 kg.
   const DOMESTIC_RATES = { single: 1.5, multi: 5.5 };
   const INTERNATIONAL_RATES = {
-    1: [[50, 7.45], [100, 8.25], [500, 12.55], [1000, 19.15], [2000, 27.25]],
-    2: [[50, 7.75], [100, 9.45], [500, 16.23], [1000, 27.45], [2000, 43.55]],
-    3: [[50, 8.15], [100, 10.15], [500, 16.23], [1000, 27.45], [2000, 43.55]],
+    EU1: [[250, 15.04], [750, 16.73], [1000, 18.6], [1500, 22.09], [2000, 25.7]],
+    EU2: [[250, 19.15], [750, 24.01], [1000, 27.25], [1500, 32.8], [2000, 38.31]],
+    AM: [[250, 18.39], [750, 22.97], [1000, 29.82], [1500, 32.29], [2000, 35.54]],
+    ASOC: [[250, 19.72], [750, 24.62], [1000, 30.13], [1500, 34.45], [2000, 37.7]],
+    AF: [[250, 16.58], [750, 17.46], [1000, 22.97], [1500, 26.93], [2000, 30.13]],
   };
   // Peso aproximado por pieza: la madre perla 45 g; cejuelas, selletas y el resto, 25 g.
   const PIECE_WEIGHT_G = 25;
   const PIECE_WEIGHT_BY_CATEGORY_G = { "Madre perla y abalone": 45 };
-  const SHIPPING_LABELS = { single: "Envío ordinario", multi: "Envío certificado" };
-  // Zona 1 de Correos: Europa incluida Groenlandia, sin Albania, Armenia, Bosnia, Chipre,
-  // Georgia, Malta, Moldavia ni Rusia. Zona 3: Australia, Canadá, EE. UU., Japón, Nueva
-  // Zelanda y Rusia. Zona 2: el resto.
-  const ZONE_1 = "AD AT AX BE BG BY CH CZ DE DK EE FI FO FR GB GG GI GL GR HR HU IE IM IS IT JE LI LT LU LV MC ME MK NL NO PL PT RO RS SE SI SK SM UA VA".split(" ");
-  const ZONE_3 = "AU CA JP NZ RU US".split(" ");
+  const SHIPPING_LABELS = { single: "Envío ordinario", multi: "Envío certificado", international: "Paq Light Internacional" };
+  // Zonas de Correos: A (Europa cercana) → EU1; B y B2 (resto de Europa y norte del Magreb)
+  // → EU2; C (América) → AM; D y D2 (Asia, Oriente Medio y Oceanía) → ASOC; E (África) → AF.
+  const ZONE_EU1 = "AT BE CH DE DK FR GB GG GI GR IE IM IT JE LU NL NO PT SE".split(" ");
+  const ZONE_EU2 = (
+    "AD AL AX BA BG BY CY CZ DZ EE FI FO GL HR HU IS LI LT LV MA MC MD ME MK MT PL RO RS RU SI SK SM TN TR UA VA"
+  ).split(" ");
+  const ZONE_AM = (
+    "AG AI AR AW BB BL BM BO BQ BR BS BZ CA CL CO CR CU CW DM DO EC FK GD GF GP GT GY HN HT JM KN KY LC MF MQ " +
+    "MS MX NI PA PE PM PR PY SR SV SX TC TT US UY VC VE VG VI"
+  ).split(" ");
+  const ZONE_AF = (
+    "AO BF BI BJ BW CD CF CG CI CM CV DJ EG EH ER ET GA GH GM GN GQ GW KE KM LR LS LY MG ML MR MU MW MZ NA NE " +
+    "NG RE RW SC SD SH SL SN SO SS ST SZ TD TG TZ UG YT ZA ZM ZW"
+  ).split(" ");
   const COUNTRY_CODES = (
     "AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ " +
     "CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM " +
@@ -203,22 +213,24 @@
     return round2(lines().reduce((s, l) => s + l.lineTotal, 0));
   }
   function internationalZone(code) {
-    if (ZONE_3.includes(code)) return 3;
-    return ZONE_1.includes(code) ? 1 : 2;
+    if (ZONE_EU1.includes(code)) return "EU1";
+    if (ZONE_EU2.includes(code)) return "EU2";
+    if (ZONE_AM.includes(code)) return "AM";
+    return ZONE_AF.includes(code) ? "AF" : "ASOC";
   }
   function cartWeight() {
     return lines().reduce((s, l) => s + (PIECE_WEIGHT_BY_CATEGORY_G[l.product.category] || PIECE_WEIGHT_G) * l.qty, 0);
   }
   // Coste y modalidad del envío para lo que hay en la cesta y el país elegido. Por encima
-  // de 2 kg Correos no admite carta certificada: el coste queda a confirmar (cost null).
+  // de 2 kg Correos no admite Paq Light: el coste queda a confirmar (cost null).
   function shippingQuote() {
     const n = count();
     if (n <= 0) return { cost: 0, label: "" };
     if (country !== "ES") {
       const weight = cartWeight();
       const band = INTERNATIONAL_RATES[internationalZone(country)].find(([max]) => weight <= max);
-      if (!band) return { cost: null, label: "Envío a confirmar", kind: "multi", weight };
-      return { cost: band[1], label: SHIPPING_LABELS.multi, kind: "multi", weight };
+      if (!band) return { cost: null, label: "Envío a confirmar", kind: "international", weight };
+      return { cost: band[1], label: SHIPPING_LABELS.international, kind: "international", weight };
     }
     const kind = n === 1 ? "single" : "multi";
     return { cost: DOMESTIC_RATES[kind], label: SHIPPING_LABELS[kind], kind };
@@ -448,7 +460,7 @@
         <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
         <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>—</span></div>
         <div class="cart-subtotal"><span>Total sin envío</span><b>${formatPrice(subtotal())}</b></div>
-        <p class="help-text">El pedido pesa unos ${formatWeight(q.weight)} y supera los 2 kg de la carta certificada internacional: te confirmaremos el coste del envío por paquetería antes de que pagues.</p>
+        <p class="help-text">El pedido pesa unos ${formatWeight(q.weight)} y supera los 2 kg del Paq Light Internacional: te confirmaremos el coste del envío por paquetería antes de que pagues.</p>
       `;
     }
     if (q.cost <= 0) {
@@ -459,7 +471,7 @@
         ? "Una pieza se envía por correo ordinario, sin número de seguimiento. A partir de dos piezas, certificado."
         : country === "ES"
         ? "Envío por correo certificado, con número de seguimiento."
-        : `Los envíos fuera de España van siempre por correo certificado, con número de seguimiento. Peso aproximado del pedido: ${formatWeight(q.weight)}.`;
+        : `Los envíos fuera de España van por Paq Light Internacional de Correos, con número de seguimiento. Peso aproximado del pedido: ${formatWeight(q.weight)}.`;
     return `
       <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
       <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>${formatPrice(q.cost)}</span></div>

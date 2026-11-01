@@ -50,6 +50,11 @@ test("los textos con datos variables de la cesta se traducen con su patrón", ()
   assertEqual(translate("22 productos"), "22 products");
   assertEqual(translate("Cesta, 3 artículos"), "Basket, 3 items");
   assertEqual(translate("Envío certificado (France)"), "Registered mail (France)");
+  assertEqual(translate("Paq Light Internacional (Japan)"), "Paq Light Internacional (Japan)");
+  assertEqual(
+    translate("Los envíos fuera de España van por Paq Light Internacional de Correos, con número de seguimiento. Peso aproximado del pedido: 75 g."),
+    "Shipments outside Spain go by Correos Paq Light Internacional, with tracking. Approximate order weight: 75 g."
+  );
   assertEqual(translate("Falta tu nombre, la ciudad."), "Missing: your name, the city.");
   assertEqual(translate("Pedido HA-261102-AB12 recibido."), "Order HA-261102-AB12 received.");
 });

@@ -627,7 +627,7 @@
       '<script src="/assets/js/emailjs-notify.js?v=20261102c" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261101c" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261102d" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261102j" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261101b" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
