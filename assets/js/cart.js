@@ -914,6 +914,8 @@
         shippingCost: orderShipping,
         total: round2(orderSubtotal + orderShipping),
         paymentMethod: data.paymentMethod,
+        // Idioma de la web al comprar: el Apps Script escribe en él el email al cliente.
+        lang: uiLang(),
         customer: { name: data.name.trim(), phone: data.phone.trim(), email },
         shipping: {
           address: data.address.trim(),

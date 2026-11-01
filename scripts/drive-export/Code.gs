@@ -145,7 +145,14 @@ function probarConexion() {
 
 // Ejecútala desde el editor (▶ Ejecutar) para ver cómo le llega al cliente la
 // confirmación: manda la del último pedido a NOTIFY_EMAIL, no al cliente.
+// probarEmailClienteIngles hace lo mismo pero como si el cliente hubiera comprado en inglés.
 function probarEmailCliente() {
+  probarEmailCliente_(null);
+}
+function probarEmailClienteIngles() {
+  probarEmailCliente_("en");
+}
+function probarEmailCliente_(forceLang) {
   const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/orders?pageSize=1&orderBy=createdAt%20desc`;
   const res = UrlFetchApp.fetch(url, { headers: firestoreHeaders_(), muteHttpExceptions: true });
   if (res.getResponseCode() !== 200) {
@@ -154,9 +161,10 @@ function probarEmailCliente() {
   const doc = (JSON.parse(res.getContentText()).documents || [])[0];
   if (!doc) throw new Error("❌ No hay pedidos.");
   const o = decodeFields_(doc.fields || {});
+  if (forceLang) o.lang = forceLang;
   MailApp.sendEmail({
     to: NOTIFY_EMAIL,
-    subject: `[PRUEBA] Pedido ${plain_(o.orderCode, 40)} recibido - HezurAdar`,
+    subject: "[PRUEBA] " + emailTexts_(o).subject(plain_(o.orderCode, 40)),
     htmlBody: customerEmailHtml_(o),
     name: "HezurAdar",
   });
@@ -360,11 +368,85 @@ function sendCustomerEmail_(o) {
   }
   MailApp.sendEmail({
     to: email,
-    subject: `Pedido ${plain_(o.orderCode, 40)} recibido - HezurAdar`,
+    subject: emailTexts_(o).subject(plain_(o.orderCode, 40)),
     htmlBody: customerEmailHtml_(o),
     name: "HezurAdar",
     replyTo: NOTIFY_EMAIL,
   });
+}
+
+// Textos del email al cliente en el idioma en que compró (campo `lang` del pedido, que pone
+// la web según el idioma elegido; los pedidos sin él son en español).
+const EMAIL_TEXTS = {
+  es: {
+    subject: (code) => `Pedido ${code} recibido - HezurAdar`,
+    thanks: (name) => `¡Gracias por tu pedido, ${name}!`,
+    intro: "Hemos recibido tu pedido. Nos pondremos en contacto contigo en breve para confirmar la disponibilidad, el envío y los datos de pago. Aquí tienes el resumen:",
+    orderNo: "Nº de pedido",
+    date: "Fecha",
+    payment: "Forma de pago",
+    subtotal: "Subtotal",
+    shipping: "Envío",
+    total: "Total",
+    quoteSoon: "Te enviaremos el presupuesto en breve.",
+    address: "Dirección de envío",
+    phone: "Tel",
+    footer: "Si tienes cualquier duda sobre tu pedido, responde a este correo o escríbenos por WhatsApp. Condiciones de venta y devoluciones: https://hezuradar.com/condiciones.html",
+    payments: { paypal: "PayPal", bizum: "Bizum", otros: "Otros" },
+  },
+  en: {
+    subject: (code) => `Order ${code} received - HezurAdar`,
+    thanks: (name) => `Thank you for your order, ${name}!`,
+    intro: "We've received your order. We'll be in touch shortly to confirm availability, shipping and payment details. Here's your summary:",
+    orderNo: "Order no.",
+    date: "Date",
+    payment: "Payment method",
+    subtotal: "Subtotal",
+    shipping: "Shipping",
+    total: "Total",
+    quoteSoon: "We'll send you a quote shortly.",
+    address: "Shipping address",
+    phone: "Phone",
+    footer: "If you have any questions about your order, just reply to this email or message us on WhatsApp. Terms of sale and returns: https://hezuradar.com/condiciones.html",
+    payments: { paypal: "PayPal", bizum: "Bizum", otros: "Other" },
+  },
+};
+const SHIPPING_METHODS_EN = { "Envío ordinario": "Standard mail", "Envío certificado": "Registered mail", "Envío a confirmar": "Shipping to be confirmed" };
+
+function emailLang_(o) {
+  return o && o.lang === "en" ? "en" : "es";
+}
+function emailTexts_(o) {
+  return EMAIL_TEXTS[emailLang_(o)];
+}
+
+// Traducciones de la web (assets/js/i18n-en.js): así los nombres de producto del email
+// coinciden con los que vio el cliente. Se descargan una vez por ejecución.
+let siteDictEn_ = null;
+function loadSiteDictEn_() {
+  if (siteDictEn_) return siteDictEn_;
+  siteDictEn_ = {};
+  try {
+    const res = UrlFetchApp.fetch(SITE_URL + "assets/js/i18n-en.js", { muteHttpExceptions: true });
+    const m = res.getResponseCode() === 200 && /window\.HA_I18N_DICT = (\{[\s\S]*?\});\n/.exec(res.getContentText());
+    if (m) siteDictEn_ = JSON.parse(m[1]);
+  } catch (err) {
+    console.warn("No se pudieron cargar las traducciones de la web: " + err);
+  }
+  return siteDictEn_;
+}
+// Texto en inglés: el de la web si existe; si no, el traductor de Google; si falla, tal cual.
+function toEnglish_(text) {
+  const s = String(text || "").replace(/\s+/g, " ").trim();
+  if (!s) return s;
+  const key = s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const hit = loadSiteDictEn_()[key];
+  if (typeof hit === "string") return hit.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  try {
+    return LanguageApp.translate(s, "es", "en") || s;
+  } catch (err) {
+    return s;
+  }
 }
 
 // Al marcar el envío se borra el error de un intento anterior (campo en la máscara sin valor).
@@ -398,7 +480,6 @@ function patchOrder_(orderId, values, clear) {
   return false;
 }
 
-const PAYMENT_LABELS = { paypal: "PayPal", bizum: "Bizum", otros: "Otros" };
 
 function eur_(n) {
   return (Number(n) || 0).toFixed(2).replace(".", ",") + " €";
@@ -449,6 +530,12 @@ function customerEmailHtml_(o) {
     country: plain_(s0.country, 80),
     method: plain_(s0.method, 60),
   };
+  const T = emailTexts_(o);
+  const en = emailLang_(o) === "en";
+  // En inglés, nombres de producto, modalidad de envío y país como los vio el cliente.
+  const title = (s) => (en ? toEnglish_(s) : s);
+  const method = en ? SHIPPING_METHODS_EN[s.method] || toEnglish_(s.method) : s.method;
+  const country = en && s.country ? toEnglish_(s.country) : s.country;
   const items = Array.isArray(o.items) ? o.items : [];
   const subtotal = Number(o.subtotal) || 0;
   const shipping = Number(o.shippingCost) || 0;
@@ -458,7 +545,7 @@ function customerEmailHtml_(o) {
     .map(
       (it) => `<tr>
         ${itemThumbCell_(it)}
-        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">${esc_(plain_(it.title, 120))}
+        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">${esc_(plain_(title(it.title), 120))}
           <div style="color:#6c7d89;font-size:12px">${esc_(Number(it.qty) || 0)} × ${esc_(eur_(it.price))}</div></td>
         <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px;text-align:right;white-space:nowrap">${esc_(eur_((Number(it.price) || 0) * (Number(it.qty) || 0)))}</td>
       </tr>`
@@ -468,27 +555,27 @@ function customerEmailHtml_(o) {
   return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e1e8ed;border-radius:12px;overflow:hidden">
     <div style="background:#245F96;padding:22px 28px"><span style="color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:.3px">HezurAdar</span></div>
     <div style="padding:28px">
-      <h2 style="margin:0 0 6px;color:#1c2b36;font-size:19px">¡Gracias por tu pedido, ${esc_(c.name || "")}!</h2>
-      <p style="margin:0 0 18px;color:#33424c;font-size:14px;line-height:1.5">Hemos recibido tu pedido. Nos pondremos en contacto contigo en breve para confirmar la disponibilidad, el envío y los datos de pago. Aquí tienes el resumen:</p>
+      <h2 style="margin:0 0 6px;color:#1c2b36;font-size:19px">${esc_(T.thanks(c.name || ""))}</h2>
+      <p style="margin:0 0 18px;color:#33424c;font-size:14px;line-height:1.5">${esc_(T.intro)}</p>
       <div style="background:#f5f7f9;border-radius:10px;padding:14px 16px;margin-bottom:20px">
         <table style="width:100%;border-collapse:collapse;font-size:13px;color:#33424c">
-          <tr><td style="padding:2px 0"><b>Nº de pedido</b></td><td style="padding:2px 0;text-align:right">${esc_(plain_(o.orderCode, 40))}</td></tr>
-          <tr><td style="padding:2px 0"><b>Fecha</b></td><td style="padding:2px 0;text-align:right">${esc_(date_(o.createdAt))}</td></tr>
-          <tr><td style="padding:2px 0"><b>Forma de pago</b></td><td style="padding:2px 0;text-align:right">${esc_(PAYMENT_LABELS[o.paymentMethod] || "-")}</td></tr>
+          <tr><td style="padding:2px 0"><b>${esc_(T.orderNo)}</b></td><td style="padding:2px 0;text-align:right">${esc_(plain_(o.orderCode, 40))}</td></tr>
+          <tr><td style="padding:2px 0"><b>${esc_(T.date)}</b></td><td style="padding:2px 0;text-align:right">${esc_(date_(o.createdAt))}</td></tr>
+          <tr><td style="padding:2px 0"><b>${esc_(T.payment)}</b></td><td style="padding:2px 0;text-align:right">${esc_(T.payments[o.paymentMethod] || "-")}</td></tr>
         </table>
       </div>
       <table style="width:100%;border-collapse:collapse;margin-bottom:6px">${rows}</table>
       ${priced ? `<table style="width:100%;border-collapse:collapse;margin-top:10px">
-        <tr><td style="${td}">Subtotal</td><td style="${td};text-align:right">${esc_(eur_(subtotal))}</td></tr>
-        ${shipping ? `<tr><td style="${td}">${esc_(s.method || "Envío")}</td><td style="${td};text-align:right">${esc_(eur_(shipping))}</td></tr>` : ""}
-        <tr><td style="padding:8px 0 0;color:#1c2b36;font-size:16px;font-weight:bold;border-top:1px solid #e1e8ed">Total</td>
+        <tr><td style="${td}">${esc_(T.subtotal)}</td><td style="${td};text-align:right">${esc_(eur_(subtotal))}</td></tr>
+        ${shipping ? `<tr><td style="${td}">${esc_(method || T.shipping)}</td><td style="${td};text-align:right">${esc_(eur_(shipping))}</td></tr>` : ""}
+        <tr><td style="padding:8px 0 0;color:#1c2b36;font-size:16px;font-weight:bold;border-top:1px solid #e1e8ed">${esc_(T.total)}</td>
             <td style="padding:8px 0 0;color:#245F96;font-size:16px;font-weight:bold;text-align:right;border-top:1px solid #e1e8ed">${esc_(eur_(total))}</td></tr>
-      </table>` : `<p style="color:#33424c;font-size:13px">Te enviaremos el presupuesto en breve.</p>`}
+      </table>` : `<p style="color:#33424c;font-size:13px">${esc_(T.quoteSoon)}</p>`}
       <div style="margin-top:22px;padding-top:18px;border-top:1px solid #e1e8ed">
-        <p style="margin:0 0 4px;color:#1c2b36;font-size:14px;font-weight:bold">Dirección de envío</p>
-        <div style="${td}">${esc_(c.name || "")}<br>${esc_(s.address || "")}<br>${esc_(s.postalCode || "")} ${esc_(s.city || "")}${s.province ? " (" + esc_(s.province) + ")" : ""}${s.country ? "<br>" + esc_(s.country) : ""}<br>Tel: ${esc_(c.phone || "")}</div>
+        <p style="margin:0 0 4px;color:#1c2b36;font-size:14px;font-weight:bold">${esc_(T.address)}</p>
+        <div style="${td}">${esc_(c.name || "")}<br>${esc_(s.address || "")}<br>${esc_(s.postalCode || "")} ${esc_(s.city || "")}${s.province ? " (" + esc_(s.province) + ")" : ""}${country ? "<br>" + esc_(country) : ""}<br>${esc_(T.phone)}: ${esc_(c.phone || "")}</div>
       </div>
-      <p style="margin:22px 0 0;color:#6c7d89;font-size:12px;line-height:1.5">Si tienes cualquier duda sobre tu pedido, responde a este correo o escríbenos por WhatsApp. Condiciones de venta y devoluciones: https://hezuradar.com/condiciones.html</p>
+      <p style="margin:22px 0 0;color:#6c7d89;font-size:12px;line-height:1.5">${esc_(T.footer)}</p>
     </div>
   </div>`;
 }

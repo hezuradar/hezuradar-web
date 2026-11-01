@@ -43,7 +43,7 @@ service cloud.firestore {
       let d = request.resource.data;
       return d.keys().hasOnly(['orderCode', 'createdAt', 'createdAtServer', 'status', 'items', 'subtotal',
                                'shippingCost', 'total', 'paymentMethod', 'customer', 'shipping',
-                               'kind', 'material', 'design'])
+                               'kind', 'material', 'design', 'lang'])
         && d.keys().hasAll(['orderCode', 'createdAtServer', 'status', 'items', 'subtotal', 'customer', 'shipping'])
         && isStr(d.orderCode, 40)
         && d.status == 'pendiente'
@@ -61,6 +61,8 @@ service cloud.firestore {
         && (!('total' in d) || (d.total is number && d.total >= 0 && d.total < 100000))
         && (!('paymentMethod' in d) || d.paymentMethod in ['', 'paypal', 'bizum', 'otros'])
         && (!('kind' in d) || d.kind in ['placa-personalizada', 'pua-personalizada'])
+        // Idioma en que compró el cliente (assets/js/i18n.js): el de su email de confirmación.
+        && (!('lang' in d) || d.lang in ['es', 'en'])
         && d.customer is map
         && d.customer.keys().hasOnly(['name', 'phone', 'email'])
         && isStr(d.customer.name, 200) && isStr(d.customer.phone, 40) && optStr(d.customer, 'email', 200)

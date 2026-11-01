@@ -1167,6 +1167,8 @@
         customer: { name, phone, email },
         shipping: { address, postalCode, city, province, notes },
         paymentMethod,
+        // Idioma de la web al pedir (assets/js/i18n.js): el del email de confirmación.
+        lang: (window.HA_I18N && window.HA_I18N.lang) || "es",
         items: [{ id: ORDER_KIND + "-" + material.id, title: `${ITEM_LABEL} — ${material.label}`, qty, price: PRICE_PER_UNIT }],
         subtotal: Math.round(qty * PRICE_PER_UNIT * 100) / 100,
         material: { id: material.id, label: material.label },
