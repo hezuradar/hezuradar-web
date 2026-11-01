@@ -425,7 +425,11 @@
           .join("")}
       </div>
       <div class="cart-summary">
-        ${shippingSummaryHtml()}
+        <div class="field cart-country">
+          <label for="cart-country">Enviar a</label>
+          <select id="cart-country" autocomplete="country">${countryOptionsHtml()}</select>
+        </div>
+        <div class="cart-totals" aria-live="polite">${shippingSummaryHtml()}</div>
         <button class="btn btn-primary" id="go-checkout" style="width:100%">Finalizar pedido</button>
       </div>
     `;
@@ -450,12 +454,11 @@
         : country === "ES"
         ? "Envío por correo certificado, con número de seguimiento."
         : `Los envíos fuera de España van siempre por correo certificado, con número de seguimiento. Peso aproximado del pedido: ${formatWeight(q.weight)}.`;
-    const abroad = view === "cart" && country === "ES" ? " ¿Fuera de España? Elige el país al finalizar el pedido." : "";
     return `
       <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
       <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>${formatPrice(q.cost)}</span></div>
       <div class="cart-subtotal"><span>Total</span><b>${formatPrice(subtotal() + q.cost)}</b></div>
-      <p class="help-text">${note}${abroad}</p>
+      <p class="help-text">${note}</p>
     `;
   }
 
@@ -487,8 +490,8 @@
             )
             .join("")}
         </div>
-        <div class="cart-summary cart-summary-compact" aria-live="polite">
-          ${shippingSummaryHtml()}
+        <div class="cart-summary cart-summary-compact">
+          <div class="cart-totals" aria-live="polite">${shippingSummaryHtml()}</div>
         </div>
       </div>
       <form id="checkout-form" novalidate>
@@ -605,12 +608,19 @@
       const el = document.querySelector(`#cart-root [data-price="${cssEscape(l.id)}"]`);
       if (el) el.innerHTML = linePriceHtml(l);
     });
-    const summary = document.querySelector("#cart-root .cart-summary");
-    if (!summary) return;
-    const btn = document.getElementById("go-checkout");
-    summary.querySelectorAll(":scope > :not(#go-checkout)").forEach((el) => el.remove());
-    summary.insertAdjacentHTML("afterbegin", shippingSummaryHtml());
-    if (btn) summary.appendChild(btn);
+    const totals = document.querySelector("#cart-root .cart-totals");
+    if (totals) totals.innerHTML = shippingSummaryHtml();
+  }
+
+  // Desplegable de país de la cesta o del checkout: recalcula el envío al momento.
+  function bindCountrySelect(id) {
+    const select = document.getElementById(id);
+    if (!select) return;
+    select.addEventListener("change", () => {
+      country = COUNTRY_CODES.includes(select.value) ? select.value : "ES";
+      pendingOrder = null;
+      refreshSummary();
+    });
   }
 
   function bindViewEvents() {
@@ -646,6 +656,7 @@
       document.querySelectorAll("[data-remove]").forEach((b) =>
         b.addEventListener("click", () => removeItem(b.dataset.remove))
       );
+      bindCountrySelect("cart-country");
       const goCheckout = document.getElementById("go-checkout");
       if (goCheckout) goCheckout.addEventListener("click", () => openDrawer("checkout"));
     } else if (view === "checkout") {
@@ -657,12 +668,7 @@
         if (!submitting) openDrawer("cart");
       });
       document.getElementById("checkout-form").addEventListener("submit", onSubmitCheckout);
-      const countrySelect = document.getElementById("co-country");
-      countrySelect.addEventListener("change", () => {
-        country = COUNTRY_CODES.includes(countrySelect.value) ? countrySelect.value : "ES";
-        pendingOrder = null;
-        refreshSummary();
-      });
+      bindCountrySelect("co-country");
       document.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
         input.addEventListener("change", () => {
           document.querySelectorAll(".payment-method-btn").forEach((btn) => btn.classList.remove("selected"));
