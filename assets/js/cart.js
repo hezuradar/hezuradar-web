@@ -2,8 +2,34 @@
   "use strict";
 
   const LS_CART = "ha_cart";
-  const SHIPPING_COST = 5.5;
-  const SHIPPING_FREE_MAX_ITEMS = 1;
+  // Gastos de envío. En España, 1 pieza va por correo ordinario y 2 o más certificado.
+  // Fuera de España siempre certificado, con la tarifa oficial de Correos 2026 de carta
+  // certificada internacional que corresponde al peso del pedido. El tramo "hasta 20 g"
+  // es solo para cartas normalizadas y ninguna pieza pesa tan poco, así que empieza en 50 g.
+  const DOMESTIC_RATES = { single: 1.5, multi: 5.5 };
+  const INTERNATIONAL_RATES = {
+    1: [[50, 7.45], [100, 8.25], [500, 12.55], [1000, 19.15], [2000, 27.25]],
+    2: [[50, 7.75], [100, 9.45], [500, 16.23], [1000, 27.45], [2000, 43.55]],
+    3: [[50, 8.15], [100, 10.15], [500, 16.23], [1000, 27.45], [2000, 43.55]],
+  };
+  // Peso aproximado por pieza: la madre perla 45 g; cejuelas, selletas y el resto, 25 g.
+  const PIECE_WEIGHT_G = 25;
+  const PIECE_WEIGHT_BY_CATEGORY_G = { "Madre perla y abalone": 45 };
+  const SHIPPING_LABELS = { single: "Envío ordinario", multi: "Envío certificado" };
+  // Zona 1 de Correos: Europa incluida Groenlandia, sin Albania, Armenia, Bosnia, Chipre,
+  // Georgia, Malta, Moldavia ni Rusia. Zona 3: Australia, Canadá, EE. UU., Japón, Nueva
+  // Zelanda y Rusia. Zona 2: el resto.
+  const ZONE_1 = "AD AT AX BE BG BY CH CZ DE DK EE FI FO FR GB GG GI GL GR HR HU IE IM IS IT JE LI LT LU LV MC ME MK NL NO PL PT RO RS SE SI SK SM UA VA".split(" ");
+  const ZONE_3 = "AU CA JP NZ RU US".split(" ");
+  const COUNTRY_CODES = (
+    "AD AE AF AG AI AL AM AO AR AS AT AU AW AX AZ BA BB BD BE BF BG BH BI BJ BL BM BN BO BQ BR BS BT BW BY BZ " +
+    "CA CC CD CF CG CH CI CK CL CM CN CO CR CU CV CW CX CY CZ DE DJ DK DM DO DZ EC EE EG EH ER ES ET FI FJ FK FM " +
+    "FO FR GA GB GD GE GF GG GH GI GL GM GN GP GQ GR GT GU GW GY HK HN HR HT HU ID IE IL IM IN IQ IR IS IT JE JM " +
+    "JO JP KE KG KH KI KM KN KP KR KW KY KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MF MG MH MK ML MM MN MO " +
+    "MP MQ MR MS MT MU MV MW MX MY MZ NA NC NE NF NG NI NL NO NP NR NU NZ OM PA PE PF PG PH PK PL PM PN PR PS PT " +
+    "PW PY QA RE RO RS RU RW SA SB SC SD SE SG SH SI SK SL SM SN SO SR SS ST SV SX SY SZ TC TD TG TH TJ TK TL TM " +
+    "TN TO TR TT TV TW TZ UA UG US UY UZ VA VC VE VG VI VN VU WF WS YE YT ZA ZM ZW"
+  ).split(" ");
   const MAX_QTY = 999;
   // firestore.rules no admite pedidos de más de 50 líneas.
   const MAX_LINES = 50;
@@ -15,6 +41,8 @@
   // para que un pedido que llegó tarde a Firestore no se guarde dos veces.
   let pendingOrder = null;
   let lastFocus = null;
+  // País de envío (código ISO) elegido en el checkout; la cesta lo usa para el resumen.
+  let country = "ES";
 
   document.addEventListener("DOMContentLoaded", () => {
     updateBadge();
@@ -174,8 +202,55 @@
   function subtotal() {
     return round2(lines().reduce((s, l) => s + l.lineTotal, 0));
   }
+  function internationalZone(code) {
+    if (ZONE_3.includes(code)) return 3;
+    return ZONE_1.includes(code) ? 1 : 2;
+  }
+  function cartWeight() {
+    return lines().reduce((s, l) => s + (PIECE_WEIGHT_BY_CATEGORY_G[l.product.category] || PIECE_WEIGHT_G) * l.qty, 0);
+  }
+  // Coste y modalidad del envío para lo que hay en la cesta y el país elegido. Por encima
+  // de 2 kg Correos no admite carta certificada: el coste queda a confirmar (cost null).
+  function shippingQuote() {
+    const n = count();
+    if (n <= 0) return { cost: 0, label: "" };
+    if (country !== "ES") {
+      const weight = cartWeight();
+      const band = INTERNATIONAL_RATES[internationalZone(country)].find(([max]) => weight <= max);
+      if (!band) return { cost: null, label: "Envío a confirmar", kind: "multi", weight };
+      return { cost: band[1], label: SHIPPING_LABELS.multi, kind: "multi", weight };
+    }
+    const kind = n === 1 ? "single" : "multi";
+    return { cost: DOMESTIC_RATES[kind], label: SHIPPING_LABELS[kind], kind };
+  }
   function shippingCost() {
-    return count() > SHIPPING_FREE_MAX_ITEMS ? SHIPPING_COST : 0;
+    return shippingQuote().cost || 0;
+  }
+
+  function formatWeight(g) {
+    return g >= 1000 ? `${(g / 1000).toLocaleString("es-ES", { maximumFractionDigits: 2 })} kg` : `${g} g`;
+  }
+
+  let countryNames = null;
+  function countryName(code) {
+    if (!countryNames) {
+      try {
+        countryNames = new Intl.DisplayNames(["es"], { type: "region" });
+      } catch (e) {
+        countryNames = { of: (c) => c };
+      }
+    }
+    return countryNames.of(code) || code;
+  }
+  // España primero y el resto por orden alfabético.
+  function countryOptionsHtml() {
+    const others = COUNTRY_CODES.filter((c) => c !== "ES")
+      .map((c) => ({ code: c, name: countryName(c) }))
+      .sort((a, b) => a.name.localeCompare(b.name, "es"));
+    return [{ code: "ES", name: countryName("ES") }]
+      .concat(others)
+      .map((c) => `<option value="${c.code}"${c.code === country ? " selected" : ""}>${escapeHtml(c.name)}</option>`)
+      .join("");
   }
 
   function updateBadge() {
@@ -357,17 +432,30 @@
   }
 
   function shippingSummaryHtml() {
-    const shipping = shippingCost();
-    if (shipping <= 0) {
+    const q = shippingQuote();
+    if (q.cost === null) {
       return `
-        <div class="cart-subtotal"><span>Subtotal</span><b>${formatPrice(subtotal())}</b></div>
-        <p class="help-text">Los gastos de envío se confirman ${whatsappEnabled() ? "por WhatsApp" : "antes del pago"}.</p>
+        <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
+        <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>—</span></div>
+        <div class="cart-subtotal"><span>Total sin envío</span><b>${formatPrice(subtotal())}</b></div>
+        <p class="help-text">El pedido pesa unos ${formatWeight(q.weight)} y supera los 2 kg de la carta certificada internacional: te confirmaremos el coste del envío por paquetería antes de que pagues.</p>
       `;
     }
+    if (q.cost <= 0) {
+      return `<div class="cart-subtotal"><span>Subtotal</span><b>${formatPrice(subtotal())}</b></div>`;
+    }
+    const note =
+      q.kind === "single"
+        ? "Una pieza se envía por correo ordinario, sin número de seguimiento. A partir de dos piezas, certificado."
+        : country === "ES"
+        ? "Envío por correo certificado, con número de seguimiento."
+        : `Los envíos fuera de España van siempre por correo certificado, con número de seguimiento. Peso aproximado del pedido: ${formatWeight(q.weight)}.`;
+    const abroad = view === "cart" && country === "ES" ? " ¿Fuera de España? Elige el país al finalizar el pedido." : "";
     return `
       <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
-      <div class="cart-mini-line"><span>Envío certificado</span><span>${formatPrice(shipping)}</span></div>
-      <div class="cart-subtotal"><span>Total</span><b>${formatPrice(subtotal() + shipping)}</b></div>
+      <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>${formatPrice(q.cost)}</span></div>
+      <div class="cart-subtotal"><span>Total</span><b>${formatPrice(subtotal() + q.cost)}</b></div>
+      <p class="help-text">${note}${abroad}</p>
     `;
   }
 
@@ -399,7 +487,7 @@
             )
             .join("")}
         </div>
-        <div class="cart-summary cart-summary-compact">
+        <div class="cart-summary cart-summary-compact" aria-live="polite">
           ${shippingSummaryHtml()}
         </div>
       </div>
@@ -419,6 +507,10 @@
             <label for="co-email">Email</label>
             <input type="email" name="email" id="co-email" autocomplete="email" maxlength="190" placeholder="tucorreo@ejemplo.com">
           </div>
+        </div>
+        <div class="field">
+          <label for="co-country">País *</label>
+          <select required name="country" id="co-country" autocomplete="country">${countryOptionsHtml()}</select>
         </div>
         <div class="field">
           <label for="co-address">Dirección de envío *</label>
@@ -565,6 +657,12 @@
         if (!submitting) openDrawer("cart");
       });
       document.getElementById("checkout-form").addEventListener("submit", onSubmitCheckout);
+      const countrySelect = document.getElementById("co-country");
+      countrySelect.addEventListener("change", () => {
+        country = COUNTRY_CODES.includes(countrySelect.value) ? countrySelect.value : "ES";
+        pendingOrder = null;
+        refreshSummary();
+      });
       document.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
         input.addEventListener("change", () => {
           document.querySelectorAll(".payment-method-btn").forEach((btn) => btn.classList.remove("selected"));
@@ -774,7 +872,9 @@
     try {
       const orderLines = lines();
       const orderSubtotal = subtotal();
-      const orderShipping = shippingCost();
+      country = COUNTRY_CODES.includes(data.country) ? data.country : "ES";
+      const quote = shippingQuote();
+      const orderShipping = quote.cost || 0;
       // Mismo código e ID de documento en los reintentos de este pedido (ver pendingOrder).
       if (!pendingOrder) {
         pendingOrder = {
@@ -808,6 +908,8 @@
           postalCode: data.postalCode.trim(),
           city: data.city.trim(),
           province: (data.province || "").trim(),
+          country: countryName(country),
+          method: quote.label,
           notes: (data.notes || "").trim(),
         },
       };
@@ -907,7 +1009,7 @@
       lines,
       "",
       `Subtotal: ${formatPrice(order.subtotal)}`,
-      order.shippingCost ? `Envío certificado: ${formatPrice(order.shippingCost)}` : null,
+      order.shippingCost ? `${s.method || "Envío"}: ${formatPrice(order.shippingCost)}` : s.method ? `${s.method} (más de 2 kg)` : null,
       order.shippingCost ? `Total: ${formatPrice(order.total)}` : null,
       "",
       `Forma de pago: ${PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-"}`,
@@ -916,7 +1018,7 @@
       `Nombre: ${c.name}`,
       `Teléfono: ${c.phone}`,
       c.email ? `Email: ${c.email}` : null,
-      `Dirección: ${s.address}, ${s.postalCode} ${s.city}${s.province ? " (" + s.province + ")" : ""}`,
+      `Dirección: ${s.address}, ${s.postalCode} ${s.city}${s.province ? " (" + s.province + ")" : ""}${s.country ? ", " + s.country : ""}`,
       s.notes ? `Notas: ${s.notes}` : null,
     ]
       .filter((l) => l !== null)

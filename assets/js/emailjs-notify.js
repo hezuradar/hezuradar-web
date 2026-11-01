@@ -42,7 +42,7 @@
       customer_name: c.name || "",
       customer_phone: c.phone || "",
       customer_email: c.email || "",
-      shipping_address: `${s.address || ""}, ${s.postalCode || ""} ${s.city || ""}${s.province ? " (" + s.province + ")" : ""}`,
+      shipping_address: `${s.address || ""}, ${s.postalCode || ""} ${s.city || ""}${s.province ? " (" + s.province + ")" : ""}${s.country ? ", " + s.country : ""}`,
       notes: s.notes || "",
       to_email: cfg.toEmail,
       order_html: buildOwnerOrderHtml(order),
@@ -94,7 +94,7 @@
   function totalsTableHtml(order) {
     const shippingRow = order.shippingCost
       ? `<tr>
-          <td style="padding:4px 0;color:#33424c;font-size:13px">Envío certificado</td>
+          <td style="padding:4px 0;color:#33424c;font-size:13px">${escapeHtml((order.shipping && order.shipping.method) || "Envío")}</td>
           <td style="padding:4px 0;color:#33424c;font-size:13px;text-align:right">${formatPrice(order.shippingCost)}</td>
         </tr>`
       : "";
@@ -169,6 +169,7 @@
           <table style="width:100%;border-collapse:collapse">
             <tr><td style="padding:2px 0;color:#33424c;font-size:13px">${escapeHtml(s.address || "")}</td></tr>
             <tr><td style="padding:2px 0;color:#33424c;font-size:13px">${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")}${s.province ? " (" + escapeHtml(s.province) + ")" : ""}</td></tr>
+            ${s.country ? `<tr><td style="padding:2px 0;color:#33424c;font-size:13px">${escapeHtml(s.country)}</td></tr>` : ""}
             ${noteRow}
           </table>
         </div>

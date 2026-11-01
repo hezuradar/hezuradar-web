@@ -5,11 +5,9 @@
   "use strict";
 
   var SITE_URL = "https://hezuradar.com";
-  // Coincide con SHIPPING_COST en assets/js/cart.js. Regla real de la cesta: con
-  // 1 unidad el envío queda "a confirmar" (no se cobra en la web) y con 2 o más se
-  // cobran 5,50 €. En los datos estructurados se declara 5,50 € para cualquier
-  // pedido: es lo que paga como mínimo un pedido con importe de envío cerrado, y
-  // Google pide no declarar envío gratis (0) cuando no lo es.
+  // Envío en España según DOMESTIC_RATES en assets/js/cart.js: 1 unidad, 1,50 € por
+  // correo ordinario; 2 o más, 5,50 € certificado. En los datos estructurados se
+  // declara la tarifa certificada (Google pide no declarar envío gratis cuando no lo es).
   var STANDARD_SHIPPING_EUR = "5.50";
   // Mínimo legal para ventas a distancia a consumidores en España (art. 102 TRLGDCU).
   var RETURN_WINDOW_DAYS = 14;
@@ -625,10 +623,10 @@
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20261031a" defer></script>\n' +
+      '<script src="/assets/js/emailjs-notify.js?v=20261101c" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261101c" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261026a" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261101t" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261101b" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"

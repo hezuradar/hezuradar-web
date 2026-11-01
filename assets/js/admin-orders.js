@@ -221,7 +221,7 @@
       return out;
     };
     o.customer = strMap(o.customer, ["name", "phone", "email"]);
-    o.shipping = strMap(o.shipping, ["address", "postalCode", "city", "province", "notes"]);
+    o.shipping = strMap(o.shipping, ["address", "postalCode", "city", "province", "country", "method", "notes"]);
     o.status = ["pendiente", "confirmado", "enviado", "entregado", "cancelado"].includes(o.status) ? o.status : "pendiente";
     o.items = Array.isArray(o.items) ? o.items.filter((it) => it && typeof it === "object") : [];
     o.mergedFrom = Array.isArray(o.mergedFrom) ? o.mergedFrom.map(str) : [];
@@ -1121,7 +1121,7 @@
             <div class="order-customer-line">📞 ${escapeHtml(c.phone || "-")} ${waHref ? `· <a href="${escapeAttr(waHref)}" target="_blank" rel="noopener">WhatsApp</a>` : ""}</div>
             ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
             ${customerEmailStatusHtml(o)}
-            ${s.address ? `<div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>` : ""}
+            ${s.address ? `<div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}${s.country ? " · " + escapeHtml(s.country) : ""}</div>` : ""}
             ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
             ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
             ${o.mergedFrom && o.mergedFrom.length ? `<div class="order-customer-line">🔗 Agrupa también: ${escapeHtml(o.mergedFrom.join(", "))}</div>` : ""}
@@ -1243,7 +1243,7 @@
       </div>
       <div class="albaran-customer">
         <div><b>${escapeHtml(c.name || "-")}</b></div>
-        <div>${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}</div>
+        <div>${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}${s.country ? ", " + escapeHtml(s.country) : ""}</div>
         <div>${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}${c.email ? " · " + escapeHtml(c.email) : ""}</div>
         ${o.paymentMethod ? `<div>Forma de pago: ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
         ${s.notes ? `<div class="albaran-notes">Notas: ${escapeHtml(s.notes)}</div>` : ""}
@@ -1254,7 +1254,7 @@
         <tbody>${rows}</tbody>
         <tfoot>
           <tr><td colspan="3">Productos</td><td class="num">${formatPrice(itemsSum)}</td></tr>
-          ${shippingCost > 0 ? `<tr><td colspan="3">Envío</td><td class="num">${formatPrice(shippingCost)}</td></tr>` : ""}
+          ${shippingCost > 0 ? `<tr><td colspan="3">${escapeHtml(s.method || "Envío")}</td><td class="num">${formatPrice(shippingCost)}</td></tr>` : ""}
           <tr class="albaran-total-row"><td colspan="3">Total</td><td class="num">${formatPrice(total)}</td></tr>
         </tfoot>
       </table>
@@ -1316,7 +1316,7 @@ ${bodyHtml}
     const lines = (o.items || [])
       .map((it) => `▫️ ${it.qty}x ${it.title} — *${formatPrice(it.price * it.qty)}*`)
       .join("\n");
-    const address = [s.address, [s.postalCode, s.city].filter(Boolean).join(" "), s.province]
+    const address = [s.address, [s.postalCode, s.city].filter(Boolean).join(" "), s.province, s.country]
       .filter(Boolean)
       .join(", ");
 
@@ -1335,7 +1335,7 @@ ${bodyHtml}
       lines,
       "―――――――――――――",
       `Subtotal: ${formatPrice(itemsSum)}`,
-      shippingCost > 0 ? `Envío: ${formatPrice(shippingCost)}` : null,
+      shippingCost > 0 ? `${s.method || "Envío"}: ${formatPrice(shippingCost)}` : null,
       `*Total: ${formatPrice(total)}*`,
       "",
       paymentInstructions(o.paymentMethod) ? `💳 ${paymentInstructions(o.paymentMethod)}` : null,
@@ -1451,6 +1451,7 @@ ${bodyHtml}
         ${escapeHtml(s.address || "")}<br>
         ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")}<br>
         ${s.province ? escapeHtml(s.province) + "<br>" : ""}
+        ${s.country ? escapeHtml(s.country) + "<br>" : ""}
         ${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}
       </div>
       <div class="code">Pedido ${escapeHtml(o.orderCode || o.docId)}</div>
@@ -1851,6 +1852,9 @@ ${bodyHtml}
         postalCode: $("o-postal").value.trim(),
         city: $("o-city").value.trim(),
         province: $("o-province").value.trim(),
+        // El formulario no los edita: se conservan los del pedido de la web.
+        ...(existing && existing.shipping && existing.shipping.country ? { country: existing.shipping.country } : {}),
+        ...(existing && existing.shipping && existing.shipping.method ? { method: existing.shipping.method } : {}),
         notes: $("o-notes").value.trim(),
       },
     };

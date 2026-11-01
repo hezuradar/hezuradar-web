@@ -65,10 +65,11 @@ service cloud.firestore {
         && d.customer.keys().hasOnly(['name', 'phone', 'email'])
         && isStr(d.customer.name, 200) && isStr(d.customer.phone, 40) && optStr(d.customer, 'email', 200)
         && d.shipping is map
-        && d.shipping.keys().hasOnly(['address', 'postalCode', 'city', 'province', 'notes'])
+        && d.shipping.keys().hasOnly(['address', 'postalCode', 'city', 'province', 'country', 'method', 'notes'])
         && isStr(d.shipping.address, 300)
         && optStr(d.shipping, 'postalCode', 20) && optStr(d.shipping, 'city', 120)
         && optStr(d.shipping, 'province', 120) && optStr(d.shipping, 'notes', 1000)
+        && optStr(d.shipping, 'country', 80) && optStr(d.shipping, 'method', 60)
         && (!('material' in d) || (d.material is map && d.material.keys().hasOnly(['id', 'label'])
               && isStr(d.material.id, 60) && isStr(d.material.label, 120)))
         && (!('design' in d) || (d.design is map

@@ -446,6 +446,8 @@ function customerEmailHtml_(o) {
     postalCode: plain_(s0.postalCode, 20),
     city: plain_(s0.city, 80),
     province: plain_(s0.province, 80),
+    country: plain_(s0.country, 80),
+    method: plain_(s0.method, 60),
   };
   const items = Array.isArray(o.items) ? o.items : [];
   const subtotal = Number(o.subtotal) || 0;
@@ -478,13 +480,13 @@ function customerEmailHtml_(o) {
       <table style="width:100%;border-collapse:collapse;margin-bottom:6px">${rows}</table>
       ${priced ? `<table style="width:100%;border-collapse:collapse;margin-top:10px">
         <tr><td style="${td}">Subtotal</td><td style="${td};text-align:right">${esc_(eur_(subtotal))}</td></tr>
-        ${shipping ? `<tr><td style="${td}">Envío certificado</td><td style="${td};text-align:right">${esc_(eur_(shipping))}</td></tr>` : ""}
+        ${shipping ? `<tr><td style="${td}">${esc_(s.method || "Envío")}</td><td style="${td};text-align:right">${esc_(eur_(shipping))}</td></tr>` : ""}
         <tr><td style="padding:8px 0 0;color:#1c2b36;font-size:16px;font-weight:bold;border-top:1px solid #e1e8ed">Total</td>
             <td style="padding:8px 0 0;color:#245F96;font-size:16px;font-weight:bold;text-align:right;border-top:1px solid #e1e8ed">${esc_(eur_(total))}</td></tr>
       </table>` : `<p style="color:#33424c;font-size:13px">Te enviaremos el presupuesto en breve.</p>`}
       <div style="margin-top:22px;padding-top:18px;border-top:1px solid #e1e8ed">
         <p style="margin:0 0 4px;color:#1c2b36;font-size:14px;font-weight:bold">Dirección de envío</p>
-        <div style="${td}">${esc_(c.name || "")}<br>${esc_(s.address || "")}<br>${esc_(s.postalCode || "")} ${esc_(s.city || "")}${s.province ? " (" + esc_(s.province) + ")" : ""}<br>Tel: ${esc_(c.phone || "")}</div>
+        <div style="${td}">${esc_(c.name || "")}<br>${esc_(s.address || "")}<br>${esc_(s.postalCode || "")} ${esc_(s.city || "")}${s.province ? " (" + esc_(s.province) + ")" : ""}${s.country ? "<br>" + esc_(s.country) : ""}<br>Tel: ${esc_(c.phone || "")}</div>
       </div>
       <p style="margin:22px 0 0;color:#6c7d89;font-size:12px;line-height:1.5">Si tienes cualquier duda sobre tu pedido, responde a este correo o escríbenos por WhatsApp. Condiciones de venta y devoluciones: https://hezuradar.com/condiciones.html</p>
     </div>
