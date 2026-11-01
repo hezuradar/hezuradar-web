@@ -1185,3 +1185,35 @@ body:has(.toolbar){scroll-padding-top:220px}
 
 /* Admin · Pedidos: resalta la tarjeta recién guardada desde la pantalla emergente. */
 .order-card.just-saved{box-shadow:0 0 0 3px var(--color-primary);transition:box-shadow .3s ease}
+
+/* Selector de idioma (assets/js/i18n.js): ES | EN en la cabecera, junto a la cesta. */
+.lang-switch{display:inline-flex;border:1px solid rgba(255,255,255,.55);border-radius:999px;padding:2px;flex:none}
+.lang-switch button{
+  min-width:36px;min-height:32px;padding:0 10px;border:0;border-radius:999px;background:transparent;
+  color:#fff;font-size:.8rem;font-weight:700;letter-spacing:.04em;cursor:pointer;
+  transition:background .15s ease,color .15s ease,transform 120ms var(--ease-out);
+}
+.lang-switch button[aria-pressed="true"]{background:#fff;color:var(--color-primary)}
+.lang-switch button[aria-pressed="false"]:hover{background:rgba(255,255,255,.16)}
+.lang-switch button:active{transform:scale(.96)}
+.site-header .lang-switch button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+@media (max-width:600px){
+  /* Sin iconos (páginas de categoría, guías...), arriba a la derecha junto al logo. */
+  .header-nav > .lang-switch{order:1;margin-left:auto}
+  .lang-switch button{min-height:34px}
+}
+/* "Quiénes somos" viene en los dos idiomas: se muestra solo el elegido. */
+html[data-lang="es"] .about-text-block[lang="en"],
+html[data-lang="en"] .about-text-block[lang="es"]{display:none}
+html[data-lang="en"] .about-text-block+.about-text-block{margin-top:0}
+/* Entre móvil y escritorio los botones de la cabecera no cabían y la página se salía de
+   ancho: la fila de enlaces se desplaza en horizontal, como en móvil. */
+@media (min-width:601px) and (max-width:1100px){
+  .brand{flex:none}
+  .header-nav{flex:1 1 auto;min-width:0;justify-content:flex-end}
+  .header-links{min-width:0;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent)}
+  .header-links::-webkit-scrollbar{display:none}
+  .header-links .pill-btn{flex:none}
+  .header-icons,.header-nav > .lang-switch{flex:none}
+}

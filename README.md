@@ -295,6 +295,31 @@ Se ejecutan solas con `node`, sin instalar nada. Conviene lanzarlas antes de pub
 `data/products.json` o en las plantillas: son las que detectan una imagen que falta o una ficha que
 se ha quedado desactualizada.
 
+## 9. Idiomas (español / inglés)
+
+La web se escribe en español. El selector **ES | EN** de la cabecera (junto a la cesta) cambia
+toda la tienda a inglés, incluidas la cesta y el checkout, y la elección se guarda en el navegador
+del cliente para el resto de páginas. También se puede enlazar directamente con `?lang=en`.
+
+- `assets/js/i18n.js` hace el cambio: sustituye cada texto por su traducción, también lo que
+  pintan después los scripts. Se carga en el `<head>` de todas las páginas públicas.
+- `assets/js/i18n-en.js` es el diccionario (texto en español → inglés). Al final están, escritos a
+  mano, los textos de los scripts y los patrones de los textos con datos variables.
+- Google sigue indexando la versión en español (la inglesa solo existe en el navegador).
+- Los pedidos se guardan siempre en español; si el cliente compró en inglés, el email del pedido
+  y el mensaje de WhatsApp lo indican para que le contestes en su idioma.
+
+**Textos nuevos** (un producto nuevo, un cambio en una página): hasta que se traduzcan se ven en
+español también en la versión inglesa. Para ver cuáles faltan:
+
+```bash
+npm install --no-save linkedom@0.18.5
+node scripts/i18n/extract.js > faltan.json
+```
+
+Añade sus traducciones a `assets/js/i18n-en.js` (con las mismas etiquetas que el original, sin
+atributos), sube la versión `?v=` de `i18n-en.js` en `assets/js/i18n.js` y pasa las pruebas.
+
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de

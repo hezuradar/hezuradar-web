@@ -231,22 +231,28 @@
     return g >= 1000 ? `${(g / 1000).toLocaleString("es-ES", { maximumFractionDigits: 2 })} kg` : `${g} g`;
   }
 
-  let countryNames = null;
-  function countryName(code) {
-    if (!countryNames) {
+  // Idioma que ha elegido el cliente (assets/js/i18n.js).
+  function uiLang() {
+    return (window.HA_I18N && window.HA_I18N.lang) || "es";
+  }
+  const countryNames = {};
+  // Nombre del país en el idioma de la web; el pedido se guarda siempre en español.
+  function countryName(code, lang) {
+    const l = lang || uiLang();
+    if (!countryNames[l]) {
       try {
-        countryNames = new Intl.DisplayNames(["es"], { type: "region" });
+        countryNames[l] = new Intl.DisplayNames([l], { type: "region" });
       } catch (e) {
-        countryNames = { of: (c) => c };
+        countryNames[l] = { of: (c) => c };
       }
     }
-    return countryNames.of(code) || code;
+    return countryNames[l].of(code) || code;
   }
   // España primero y el resto por orden alfabético.
   function countryOptionsHtml() {
     const others = COUNTRY_CODES.filter((c) => c !== "ES")
       .map((c) => ({ code: c, name: countryName(c) }))
-      .sort((a, b) => a.name.localeCompare(b.name, "es"));
+      .sort((a, b) => a.name.localeCompare(b.name, uiLang()));
     return [{ code: "ES", name: countryName("ES") }]
       .concat(others)
       .map((c) => `<option value="${c.code}"${c.code === country ? " selected" : ""}>${escapeHtml(c.name)}</option>`)
@@ -914,7 +920,7 @@
           postalCode: data.postalCode.trim(),
           city: data.city.trim(),
           province: (data.province || "").trim(),
-          country: countryName(country),
+          country: countryName(country, "es"),
           method: quote.label,
           notes: (data.notes || "").trim(),
         },
@@ -1010,6 +1016,7 @@
     return [
       `🛒 *Nuevo pedido ${order.orderCode}*`,
       order.notRegistered ? "⚠️ No se pudo registrar en el panel: añadirlo a mano." : null,
+      uiLang() === "en" ? "🌐 El cliente ha comprado con la web en inglés." : null,
       "",
       "Productos:",
       lines,

@@ -126,6 +126,11 @@
     const c = order.customer || {};
     const paymentLabel = PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-";
     const note = ownerPaymentNote(order.paymentMethod);
+    // Idioma que eligió el cliente en la web (assets/js/i18n.js), para contestarle en el suyo.
+    const langRow =
+      window.HA_I18N && window.HA_I18N.lang === "en"
+        ? `<tr><td style="padding:4px 0 0;color:#6c7d89;font-size:13px"><b>🌐 El cliente ha comprado con la web en inglés.</b></td></tr>`
+        : "";
     const noteRow = s.notes
       ? `<tr><td style="padding:4px 0 0;color:#6c7d89;font-size:13px"><b>Notas del cliente:</b> ${escapeHtml(s.notes)}</td></tr>`
       : "";
@@ -171,6 +176,7 @@
             <tr><td style="padding:2px 0;color:#33424c;font-size:13px">${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")}${s.province ? " (" + escapeHtml(s.province) + ")" : ""}</td></tr>
             ${s.country ? `<tr><td style="padding:2px 0;color:#33424c;font-size:13px">${escapeHtml(s.country)}</td></tr>` : ""}
             ${noteRow}
+            ${langRow}
           </table>
         </div>
       </div>

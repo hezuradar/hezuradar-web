@@ -546,7 +546,8 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261101c">\n' +
+      '<script src="/assets/js/i18n.js?v=20261102c"></script>\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261102a">\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
       "<body>\n" +
@@ -623,10 +624,10 @@
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20261101c" defer></script>\n' +
+      '<script src="/assets/js/emailjs-notify.js?v=20261102c" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261101c" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261101u" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261102c" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261101b" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
@@ -914,7 +915,8 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261101c">\n' +
+      '<script src="/assets/js/i18n.js?v=20261102c"></script>\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261102a">\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
       "<body>\n" +
