@@ -338,7 +338,10 @@
     url.searchParams.delete("lang");
     // Sin almacenamiento, el idioma viaja en la URL.
     if (!stored) url.searchParams.set("lang", next);
-    window.location.replace(url.toString());
+    // Con un ancla en la URL (#catalogo...), replace() a la misma dirección solo hace scroll
+    // y la página se quedaba en el idioma anterior: en ese caso se recarga.
+    if (url.toString() === window.location.href) window.location.reload();
+    else window.location.replace(url.toString());
   }
 
   // Selector ES | EN en la cabecera: junto a la cesta o, si no hay iconos, al final.

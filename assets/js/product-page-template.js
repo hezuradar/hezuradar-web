@@ -546,7 +546,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<script src="/assets/js/i18n.js?v=20261102d"></script>\n' +
+      '<script src="/assets/js/i18n.js?v=20261102e"></script>\n' +
       '<link rel="stylesheet" href="/assets/css/style.css?v=20261102b">\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -915,7 +915,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<script src="/assets/js/i18n.js?v=20261102d"></script>\n' +
+      '<script src="/assets/js/i18n.js?v=20261102e"></script>\n' +
       '<link rel="stylesheet" href="/assets/css/style.css?v=20261102b">\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
