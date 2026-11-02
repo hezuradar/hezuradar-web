@@ -45,17 +45,22 @@ service cloud.firestore {
                                'shippingCost', 'total', 'paymentMethod', 'customer', 'shipping',
                                'kind', 'material', 'design', 'lang'])
         && d.keys().hasAll(['orderCode', 'createdAtServer', 'status', 'items', 'subtotal', 'customer', 'shipping'])
-        && isStr(d.orderCode, 40)
+        // A partir de aquí las comprobaciones van escritas a mano en vez de con isStr/optStr:
+        // Firestore limita las llamadas a funciones por petición y, al añadir country y method
+        // con optStr (envíos internacionales), los pedidos de 3 líneas o más pasaban del límite
+        // y se rechazaban todos (comprobado el 02/11/2026 con la API de pruebas de reglas).
+        && d.orderCode is string && d.orderCode.size() <= 40
         && d.status == 'pendiente'
         // Siempre lo pone firebase-orders.js; el Apps Script lo usa para la ventana de
         // confirmación por email, así que no puede faltar ni falsearse con createdAt.
         && d.createdAtServer == request.time
-        && optStr(d, 'createdAt', 40)
+        && (!('createdAt' in d) || (d.createdAt is string && d.createdAt.size() <= 40))
         && d.items is list && d.items.size() > 0 && d.items.size() <= 50
         && validItem(d.items[0]) && validItem(d.items[d.items.size() - 1])
-        && (d.items.size() < 3 || validItem(d.items[1]))
-        // No añadir más llamadas a validItem: con una cuarta (items[2]) Firestore rechazaba
-        // todos los pedidos de 4 líneas o más (comprobado el 22/10/2026 con escrituras reales).
+        // No añadir más llamadas a validItem: Firestore corta la evaluación cuando pasa de un
+        // tope de expresiones por petición y rechaza el pedido. El 22/10/2026 una cuarta
+        // llamada (items[2]) tumbó los pedidos de 4+ líneas, y el 02/11/2026 la de items[1]
+        // tumbó los de 3+ líneas (comprobado con la API de pruebas de reglas).
         && d.subtotal is number && d.subtotal >= 0 && d.subtotal < 100000
         && (!('shippingCost' in d) || (d.shippingCost is number && d.shippingCost >= 0 && d.shippingCost < 100))
         && (!('total' in d) || (d.total is number && d.total >= 0 && d.total < 100000))
@@ -65,20 +70,26 @@ service cloud.firestore {
         && (!('lang' in d) || d.lang in ['es', 'en'])
         && d.customer is map
         && d.customer.keys().hasOnly(['name', 'phone', 'email'])
-        && isStr(d.customer.name, 200) && isStr(d.customer.phone, 40) && optStr(d.customer, 'email', 200)
+        && d.customer.name is string && d.customer.name.size() <= 200
+        && d.customer.phone is string && d.customer.phone.size() <= 40
+        && (!('email' in d.customer) || (d.customer.email is string && d.customer.email.size() <= 200))
         && d.shipping is map
         && d.shipping.keys().hasOnly(['address', 'postalCode', 'city', 'province', 'country', 'method', 'notes'])
-        && isStr(d.shipping.address, 300)
-        && optStr(d.shipping, 'postalCode', 20) && optStr(d.shipping, 'city', 120)
-        && optStr(d.shipping, 'province', 120) && optStr(d.shipping, 'notes', 1000)
-        && optStr(d.shipping, 'country', 80) && optStr(d.shipping, 'method', 60)
+        && d.shipping.address is string && d.shipping.address.size() <= 300
+        && (!('postalCode' in d.shipping) || (d.shipping.postalCode is string && d.shipping.postalCode.size() <= 20))
+        && (!('city' in d.shipping) || (d.shipping.city is string && d.shipping.city.size() <= 120))
+        && (!('province' in d.shipping) || (d.shipping.province is string && d.shipping.province.size() <= 120))
+        && (!('notes' in d.shipping) || (d.shipping.notes is string && d.shipping.notes.size() <= 1000))
+        && (!('country' in d.shipping) || (d.shipping.country is string && d.shipping.country.size() <= 80))
+        && (!('method' in d.shipping) || (d.shipping.method is string && d.shipping.method.size() <= 60))
         && (!('material' in d) || (d.material is map && d.material.keys().hasOnly(['id', 'label'])
-              && isStr(d.material.id, 60) && isStr(d.material.label, 120)))
+              && d.material.id is string && d.material.id.size() <= 60
+              && d.material.label is string && d.material.label.size() <= 120))
         && (!('design' in d) || (d.design is map
               && d.design.keys().hasOnly(['snapshot', 'fileName', 'fileType', 'fileData', 'fileTooLargeToEmbed'])
-              && optStr(d.design, 'snapshot', 1000000)
-              && optStr(d.design, 'fileName', 200)
-              && optStr(d.design, 'fileType', 100)
+              && (!('snapshot' in d.design) || (d.design.snapshot is string && d.design.snapshot.size() <= 1000000))
+              && (!('fileName' in d.design) || (d.design.fileName is string && d.design.fileName.size() <= 200))
+              && (!('fileType' in d.design) || (d.design.fileType is string && d.design.fileType.size() <= 100))
               && (!('fileData' in d.design) || d.design.fileData == null || d.design.fileData is string)
               && (!('fileTooLargeToEmbed' in d.design) || d.design.fileTooLargeToEmbed is bool)));
     }
