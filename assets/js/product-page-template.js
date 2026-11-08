@@ -646,7 +646,7 @@
     {
       file: "cejuelas.html",
       name: "Cejuelas",
-      title: "Cejuelas de hueso y cuerno para guitarra",
+      title: "Cejuelas de hueso y cuerno para guitarra clásica, acústica y eléctrica",
       h1: "Cejuelas de hueso, cuerno y madre perla",
       description:
         "Cejuelas talladas a mano para Fender, Les Paul, SG, acústica y clásica, y piezas en bruto de hueso, cuerno y madre perla para tallar la tuya.",
@@ -673,10 +673,10 @@
     {
       file: "selletas.html",
       name: "Selletas",
-      title: "Selletas de hueso y cuerno para guitarra",
-      h1: "Selletas de hueso, cuerno y madre perla",
+      title: "Selletas y silletas de hueso y cuerno para guitarra",
+      h1: "Selletas (silletas) de hueso, cuerno y madre perla",
       description:
-        "Selletas talladas de hueso y cuerno para acústica (72 × 3 × 9 mm) y piezas en bruto de hueso, cuerno, latxa y madre perla para tallar la tuya.",
+        "Selletas (silletas) talladas de hueso y cuerno para acústica (72 × 3 × 9 mm) y piezas en bruto de hueso, cuerno, latxa y madre perla para tallar la tuya.",
       match: function (p) {
         return p.subcategory === "Selleta" || p.subcategory === "Selletas talladas";
       },
@@ -740,10 +740,10 @@
     {
       file: "madre-perla-abalone.html",
       name: "Madre perla y abalone",
-      title: "Madre perla y abalone para luthería",
-      h1: "Madre perla y abalone para luthería",
+      title: "Nácar (madre perla) y abalone para luthería",
+      h1: "Nácar (madre perla) y abalone para luthería",
       description:
-        "Madre perla y abalone para cejuelas, selletas, cordales, incrustaciones y adornos de puente: piezas en bruto, placas y marcos mecanizados.",
+        "Nácar (madre perla) y abalone para cejuelas, selletas, cordales, incrustaciones y adornos de puente: piezas en bruto, placas y marcos mecanizados.",
       match: function (p) {
         return p.category === "Madre perla y abalone";
       },

@@ -153,9 +153,15 @@ test("las fichas sin marca en el título son solo las que no caben en 60 caracte
     if (!pageTitle.includes("HezurAdar")) sinMarca.push(p.slug);
   });
   // No es un fallo en sí, pero se deja constancia del número para detectar que crezca.
-  // 16 desde 2026-10-22: los títulos con formato ("Cejuela tallada…", "… en bruto
-  // para cejuela") y contexto ("… para guitarra") los aprobó el dueño así.
-  assertTrue(sinMarca.length <= 16, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
+  // 46 desde 2026-11-08: las piezas en bruto llevan pieza, material y medida en el
+  // título ("Cejuela de hueso de vaca Kobe en bruto 55 × 6 × 10 mm") para salir en
+  // búsquedas como "cejuela hueso"; el dueño prefirió eso a la marca en el título.
+  assertTrue(sinMarca.length <= 46, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
+});
+
+test("los títulos de producto caben en el resultado de Google (64 caracteres como mucho)", () => {
+  const largos = products.filter((p) => p.title.length > 64).map((p) => p.title.length + " " + p.title);
+  assertTrue(largos.length === 0, "títulos demasiado largos: " + largos.join(" | "));
 });
 
 test("las páginas generadas usan las mismas versiones de assets que la portada", () => {
