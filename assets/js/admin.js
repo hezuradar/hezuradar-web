@@ -702,6 +702,15 @@
     await putFile("sitemap.xml", b64EncodeUnicode(xml), "Actualiza sitemap.xml", existing ? existing.sha : null);
   }
 
+  // Feed de Google Merchant Center (Google Shopping): solo se sube si cambia.
+  async function publishMerchantFeed(allProducts) {
+    if (!window.HA_MERCHANT_FEED) throw new Error("No se pudo cargar el generador del feed de Google Shopping.");
+    const xml = window.HA_MERCHANT_FEED.buildMerchantFeed(allProducts, window.HA_TEMPLATE);
+    const existing = await getFile("merchant-feed.xml");
+    if (existing && existing.content === xml) return;
+    await putFile("merchant-feed.xml", b64EncodeUnicode(xml), "Actualiza el feed de Google Shopping", existing ? existing.sha : null);
+  }
+
   // Páginas de categoría (/cejuelas.html, ...): solo se suben las que cambian
   // (un producto nuevo, un precio, una foto...), para no crear commits vacíos.
   async function publishCategoryPages(allProducts) {
@@ -1113,6 +1122,7 @@
         await publishProductPage(product, updatedProducts);
         await publishHomepage(updatedProducts);
         await publishSitemap(updatedProducts);
+        await publishMerchantFeed(updatedProducts);
         await publishCategoryPages(updatedProducts);
       } catch (e) {
         seoWarning = " Aviso: el catálogo se publicó bien, pero no se pudo actualizar la página SEO del producto o el sitemap (" + e.message + "). Vuelve a guardar el producto para reintentarlo.";
@@ -1194,6 +1204,7 @@
         await deleteProductPage(p);
         await publishHomepage(updatedProducts);
         await publishSitemap(updatedProducts);
+        await publishMerchantFeed(updatedProducts);
         await publishCategoryPages(updatedProducts);
       } catch (e) {
         seoWarning = " Aviso: no se pudo borrar la página SEO del producto o actualizar el sitemap (" + e.message + ").";

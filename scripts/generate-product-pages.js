@@ -15,6 +15,8 @@ const { execSync } = require("child_process");
 const ROOT = path.join(__dirname, "..");
 const TEMPLATE = require(path.join(ROOT, "assets/js/product-page-template.js"));
 const CATALOG_TEMPLATE = require(path.join(ROOT, "assets/js/catalog-template.js"));
+const MERCHANT_FEED = require(path.join(ROOT, "assets/js/merchant-feed.js"));
+const FEED_PATH = path.join(ROOT, "merchant-feed.xml");
 
 const PRODUCTS_PATH = path.join(ROOT, "data/products.json");
 const STORE_PATH = path.join(ROOT, "data/store.json");
@@ -190,6 +192,10 @@ function main() {
   const entries = TEMPLATE.sitemapEntries(products, gitLastModified);
   fs.writeFileSync(SITEMAP_PATH, TEMPLATE.buildSitemapXml(entries), "utf8");
   console.log("sitemap.xml regenerado con " + entries.length + " URLs.");
+
+  const feed = MERCHANT_FEED.buildMerchantFeed(products, TEMPLATE);
+  fs.writeFileSync(FEED_PATH, feed, "utf8");
+  console.log("merchant-feed.xml regenerado con " + (feed.match(/<item>/g) || []).length + " productos.");
 
   const indexHtml = fs.readFileSync(INDEX_PATH, "utf8");
   let homeHtml = CATALOG_TEMPLATE.injectHomepageMarkup(indexHtml, products);
