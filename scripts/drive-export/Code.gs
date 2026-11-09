@@ -393,6 +393,13 @@ const EMAIL_TEXTS = {
     phone: "Tel",
     footer: "Si tienes cualquier duda sobre tu pedido, responde a este correo o escríbenos por WhatsApp. Condiciones de venta y devoluciones: https://hezuradar.com/condiciones.html",
     payments: { paypal: "PayPal", bizum: "Bizum", otros: "Otros" },
+    paypalFriends: "PayPal (amigos y familiares)",
+    paypalGoods: "PayPal (pago normal)",
+    paypalFee: "Comisión de PayPal (pago normal)",
+    howToPay: "Cómo pagar",
+    payFriends: (acc) => `Envía el pago por PayPal a ${acc} como «amigos y familiares» (sin comisión).`,
+    payGoods: (acc) => `Envía el pago por PayPal a ${acc} como pago de bienes y servicios (pago normal, con protección al comprador). La comisión de PayPal ya está sumada al total.`,
+    payBizum: (tel) => `Realiza el Bizum al número ${tel}.`,
   },
   en: {
     subject: (code) => `Order ${code} received - HezurAdar`,
@@ -409,8 +416,38 @@ const EMAIL_TEXTS = {
     phone: "Phone",
     footer: "If you have any questions about your order, just reply to this email or message us on WhatsApp. Terms of sale and returns: https://hezuradar.com/condiciones.html",
     payments: { paypal: "PayPal", bizum: "Bizum", otros: "Other" },
+    paypalFriends: "PayPal (friends and family)",
+    paypalGoods: "PayPal (goods and services)",
+    paypalFee: "PayPal fee (goods and services)",
+    howToPay: "How to pay",
+    payFriends: (acc) => `Send the PayPal payment to ${acc} as "friends and family" (no fee).`,
+    payGoods: (acc) => `Send the PayPal payment to ${acc} as goods and services (with PayPal buyer protection). The PayPal fee is already included in the total.`,
+    payBizum: (tel) => `Send the Bizum payment to ${tel}.`,
   },
 };
+
+// Cuenta de PayPal y teléfono de Bizum, como en assets/js/paypal-fee.js.
+const PAYPAL_ACCOUNT = "hezuradar@gmail.com";
+const BIZUM_PHONE = "653713428";
+
+// Recargo de PayPal (pago normal) incluido en el total del pedido: la web lo suma a `total`
+// sin guardarlo aparte (misma regla que orderFee() de assets/js/paypal-fee.js).
+function paypalFee_(o) {
+  if (!o || o.paymentMethod !== "paypal" || typeof o.total !== "number") return 0;
+  const fee = Math.round((o.total - (Number(o.subtotal) || 0) - (Number(o.shippingCost) || 0)) * 100) / 100;
+  return fee > 0 ? fee : 0;
+}
+
+function paymentLabel_(o, T) {
+  if (o.paymentMethod === "paypal") return paypalFee_(o) > 0 ? T.paypalGoods : T.paypalFriends;
+  return T.payments[o.paymentMethod] || "-";
+}
+
+function paymentHowTo_(o, T) {
+  if (o.paymentMethod === "bizum") return T.payBizum(BIZUM_PHONE);
+  if (o.paymentMethod !== "paypal") return "";
+  return paypalFee_(o) > 0 ? T.payGoods(PAYPAL_ACCOUNT) : T.payFriends(PAYPAL_ACCOUNT);
+}
 const SHIPPING_METHODS_EN = { "Envío ordinario": "Standard mail", "Envío certificado": "Registered mail", "Paq Light Internacional": "Paq Light Internacional", "Envío a confirmar": "Shipping to be confirmed" };
 
 function emailLang_(o) {
@@ -540,6 +577,8 @@ function customerEmailHtml_(o) {
   const subtotal = Number(o.subtotal) || 0;
   const shipping = Number(o.shippingCost) || 0;
   const total = typeof o.total === "number" ? o.total : subtotal + shipping;
+  const fee = paypalFee_(o);
+  const howTo = paymentHowTo_(o, T);
   const td = "padding:4px 0;color:#33424c;font-size:13px";
   const rows = items
     .map(
@@ -561,13 +600,15 @@ function customerEmailHtml_(o) {
         <table style="width:100%;border-collapse:collapse;font-size:13px;color:#33424c">
           <tr><td style="padding:2px 0"><b>${esc_(T.orderNo)}</b></td><td style="padding:2px 0;text-align:right">${esc_(plain_(o.orderCode, 40))}</td></tr>
           <tr><td style="padding:2px 0"><b>${esc_(T.date)}</b></td><td style="padding:2px 0;text-align:right">${esc_(date_(o.createdAt))}</td></tr>
-          <tr><td style="padding:2px 0"><b>${esc_(T.payment)}</b></td><td style="padding:2px 0;text-align:right">${esc_(T.payments[o.paymentMethod] || "-")}</td></tr>
+          <tr><td style="padding:2px 0"><b>${esc_(T.payment)}</b></td><td style="padding:2px 0;text-align:right">${esc_(paymentLabel_(o, T))}</td></tr>
         </table>
       </div>
+      ${howTo ? `<div style="border:1px solid #245F96;background:#eaf2fb;border-radius:10px;padding:12px 16px;margin-bottom:20px;color:#1c2b36;font-size:13px;line-height:1.5"><b>${esc_(T.howToPay)}:</b> ${esc_(howTo)}</div>` : ""}
       <table style="width:100%;border-collapse:collapse;margin-bottom:6px">${rows}</table>
       ${priced ? `<table style="width:100%;border-collapse:collapse;margin-top:10px">
         <tr><td style="${td}">${esc_(T.subtotal)}</td><td style="${td};text-align:right">${esc_(eur_(subtotal))}</td></tr>
         ${shipping ? `<tr><td style="${td}">${esc_(method || T.shipping)}</td><td style="${td};text-align:right">${esc_(eur_(shipping))}</td></tr>` : ""}
+        ${fee ? `<tr><td style="${td}">${esc_(T.paypalFee)}</td><td style="${td};text-align:right">${esc_(eur_(fee))}</td></tr>` : ""}
         <tr><td style="padding:8px 0 0;color:#1c2b36;font-size:16px;font-weight:bold;border-top:1px solid #e1e8ed">${esc_(T.total)}</td>
             <td style="padding:8px 0 0;color:#245F96;font-size:16px;font-weight:bold;text-align:right;border-top:1px solid #e1e8ed">${esc_(eur_(total))}</td></tr>
       </table>` : `<p style="color:#33424c;font-size:13px">${esc_(T.quoteSoon)}</p>`}

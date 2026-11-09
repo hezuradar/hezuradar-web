@@ -2,6 +2,14 @@
   "use strict";
 
   const PAYMENT_LABELS = { paypal: "PayPal", bizum: "Bizum", otros: "Otros" };
+  // Etiqueta, recargo e instrucciones de pago comunes (assets/js/paypal-fee.js).
+  const paypal = () => window.HA_PAYPAL || null;
+  function paymentLabelOf(order) {
+    return paypal() ? paypal().paymentLabel(order) : PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-";
+  }
+  function paymentFeeOf(order) {
+    return paypal() ? paypal().orderFee(order) : 0;
+  }
 
   function ready() {
     return window.HA_EMAILJS_ENABLED && window.emailjs;
@@ -38,7 +46,7 @@
       subtotal: formatPrice(order.subtotal),
       shipping_cost: formatPrice(order.shippingCost || 0),
       total: formatPrice(order.total),
-      payment_method: PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-",
+      payment_method: paymentLabelOf(order),
       customer_name: c.name || "",
       customer_phone: c.phone || "",
       customer_email: c.email || "",
@@ -98,6 +106,13 @@
           <td style="padding:4px 0;color:#33424c;font-size:13px;text-align:right">${formatPrice(order.shippingCost)}</td>
         </tr>`
       : "";
+    const fee = paymentFeeOf(order);
+    const feeRow = fee
+      ? `<tr>
+          <td style="padding:4px 0;color:#33424c;font-size:13px">Comisión de PayPal (pago normal)</td>
+          <td style="padding:4px 0;color:#33424c;font-size:13px;text-align:right">${formatPrice(fee)}</td>
+        </tr>`
+      : "";
     return `
         <table style="width:100%;border-collapse:collapse;margin-top:10px">
           <tr>
@@ -105,6 +120,7 @@
             <td style="padding:4px 0;color:#33424c;font-size:13px;text-align:right">${formatPrice(order.subtotal)}</td>
           </tr>
           ${shippingRow}
+          ${feeRow}
           <tr>
             <td style="padding:8px 0 0;color:#1c2b36;font-size:16px;font-weight:bold;border-top:1px solid #e1e8ed">Total</td>
             <td style="padding:8px 0 0;color:#245F96;font-size:16px;font-weight:bold;text-align:right;border-top:1px solid #e1e8ed">${formatPrice(order.total)}</td>
@@ -115,17 +131,16 @@
   // Nota informativa para el negocio, calcada de la instrucción que ya ve el
   // cliente en su albarán, para poder comprobar el pago sin tener que abrir
   // el panel de pedidos.
-  function ownerPaymentNote(method) {
-    if (method === "bizum") return "El cliente ha visto la instrucción de hacer el Bizum al 653713428.";
-    if (method === "paypal") return "El cliente ha visto la instrucción de enviar el PayPal a hezuradar@gmail.com como amigos/familia.";
-    return "";
+  function ownerPaymentNote(order) {
+    const text = paypal() ? paypal().paymentInstructions(order) : "";
+    return text ? "Instrucción que ha visto el cliente: " + text : "";
   }
 
   function buildOwnerOrderHtml(order) {
     const s = order.shipping || {};
     const c = order.customer || {};
-    const paymentLabel = PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-";
-    const note = ownerPaymentNote(order.paymentMethod);
+    const paymentLabel = paymentLabelOf(order);
+    const note = ownerPaymentNote(order);
     // Idioma que eligió el cliente en la web (assets/js/i18n.js), para contestarle en el suyo.
     const langRow =
       window.HA_I18N && window.HA_I18N.lang === "en"

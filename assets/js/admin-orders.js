@@ -94,6 +94,8 @@
     $("order-save").addEventListener("click", saveOrder);
     $("order-cancel").addEventListener("click", closeOrderModal);
     $("o-shipping-cost").addEventListener("input", updateOrderFormSubtotal);
+    $("o-payment-fee").addEventListener("input", updateOrderFormSubtotal);
+    $("o-payment").addEventListener("change", updateOrderFormSubtotal);
     $("revenue-from").addEventListener("change", renderRevenue);
     $("revenue-to").addEventListener("change", renderRevenue);
 
@@ -790,6 +792,7 @@
     );
     const subtotal = round2(items.reduce((sum, it) => sum + (Number(it.price) || 0) * (Number(it.qty) || 0), 0));
     const shippingCost = Math.max(...group.map((o) => Number(o.shippingCost) || 0));
+    const fee = round2(group.reduce((sum, o) => sum + paymentFee(o), 0));
     const notes = [...new Set(group.map((o) => ((o.shipping && o.shipping.notes) || "").trim()).filter(Boolean))].join("\n");
     const codes = group.map((o) => o.orderCode || o.docId);
     const designs = group.flatMap(orderDesigns).map((ds) => ({ ...ds, design: { ...ds.design } }));
@@ -800,7 +803,7 @@
       items,
       subtotal,
       shippingCost,
-      total: round2(subtotal + shippingCost),
+      total: round2(subtotal + shippingCost + fee),
       paymentMethod: target.paymentMethod || (group.find((o) => o.paymentMethod) || {}).paymentMethod || "",
       customer: { ...(target.customer || {}), ...(newest.customer || {}) },
       shipping: { ...(target.shipping || {}), ...(newest.shipping || {}), notes },
@@ -1122,7 +1125,7 @@
             ${c.email ? `<div class="order-customer-line">✉️ ${escapeHtml(c.email)}</div>` : ""}
             ${customerEmailStatusHtml(o)}
             ${s.address ? `<div class="order-customer-line order-address">📍 ${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}${s.country ? " · " + escapeHtml(s.country) : ""}</div>` : ""}
-            ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
+            ${o.paymentMethod ? `<div class="order-customer-line">💳 ${escapeHtml(paymentLabel(o))}</div>` : ""}
             ${o.lang === "en" ? `<div class="order-customer-line">🌐 Compró en inglés</div>` : ""}
             ${s.notes ? `<div class="order-notes">📝 ${escapeHtml(s.notes)}</div>` : ""}
             ${o.mergedFrom && o.mergedFrom.length ? `<div class="order-customer-line">🔗 Agrupa también: ${escapeHtml(o.mergedFrom.join(", "))}</div>` : ""}
@@ -1211,11 +1214,16 @@
     @media print{ .albaran{margin-bottom:0} }
   `;
 
-  function paymentInstructions(method) {
+  function paymentInstructions(o) {
     const CONFIRM = "Te enviaremos la confirmación por WhatsApp en breve.";
-    if (method === "bizum") return `Realiza el Bizum al número 653713428. ${CONFIRM}`;
-    if (method === "paypal") return `Envía el pago de PayPal a hezuradar@gmail.com como familiar o amigo. ${CONFIRM}`;
-    return null;
+    const text = window.HA_PAYPAL
+      ? window.HA_PAYPAL.paymentInstructions(o)
+      : o.paymentMethod === "bizum"
+      ? "Realiza el Bizum al número 653713428."
+      : o.paymentMethod === "paypal"
+      ? "Envía el pago por PayPal a hezuradar@gmail.com."
+      : "";
+    return text ? `${text} ${CONFIRM}` : null;
   }
 
   function albaranHtml(o) {
@@ -1246,16 +1254,17 @@
         <div><b>${escapeHtml(c.name || "-")}</b></div>
         <div>${escapeHtml(s.address || "")}, ${escapeHtml(s.postalCode || "")} ${escapeHtml(s.city || "")} ${s.province ? "(" + escapeHtml(s.province) + ")" : ""}${s.country ? ", " + escapeHtml(s.country) : ""}</div>
         <div>${c.phone ? "Tel: " + escapeHtml(c.phone) : ""}${c.email ? " · " + escapeHtml(c.email) : ""}</div>
-        ${o.paymentMethod ? `<div>Forma de pago: ${escapeHtml(paymentLabel(o.paymentMethod))}</div>` : ""}
+        ${o.paymentMethod ? `<div>Forma de pago: ${escapeHtml(paymentLabel(o))}</div>` : ""}
         ${s.notes ? `<div class="albaran-notes">Notas: ${escapeHtml(s.notes)}</div>` : ""}
       </div>
-      ${paymentInstructions(o.paymentMethod) ? `<div class="albaran-payment-note">${escapeHtml(paymentInstructions(o.paymentMethod))}</div>` : ""}
+      ${paymentInstructions(o) ? `<div class="albaran-payment-note">${escapeHtml(paymentInstructions(o))}</div>` : ""}
       <table class="albaran-table">
         <thead><tr><th>Producto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th></tr></thead>
         <tbody>${rows}</tbody>
         <tfoot>
           <tr><td colspan="3">Productos</td><td class="num">${formatPrice(itemsSum)}</td></tr>
           ${shippingCost > 0 ? `<tr><td colspan="3">${escapeHtml(s.method || "Envío")}</td><td class="num">${formatPrice(shippingCost)}</td></tr>` : ""}
+          ${paymentFee(o) > 0 ? `<tr><td colspan="3">Comisión de PayPal (pago normal)</td><td class="num">${formatPrice(paymentFee(o))}</td></tr>` : ""}
           <tr class="albaran-total-row"><td colspan="3">Total</td><td class="num">${formatPrice(total)}</td></tr>
         </tfoot>
       </table>
@@ -1337,10 +1346,11 @@ ${bodyHtml}
       "―――――――――――――",
       `Subtotal: ${formatPrice(itemsSum)}`,
       shippingCost > 0 ? `${s.method || "Envío"}: ${formatPrice(shippingCost)}` : null,
+      paymentFee(o) > 0 ? `Comisión de PayPal (pago normal): ${formatPrice(paymentFee(o))}` : null,
       `*Total: ${formatPrice(total)}*`,
       "",
-      paymentInstructions(o.paymentMethod) ? `💳 ${paymentInstructions(o.paymentMethod)}` : null,
-      paymentInstructions(o.paymentMethod) ? "" : null,
+      paymentInstructions(o) ? `💳 ${paymentInstructions(o)}` : null,
+      paymentInstructions(o) ? "" : null,
       address ? "📍 *Enviar a:*" : null,
       address ? c.name || "" : null,
       address || null,
@@ -1638,6 +1648,7 @@ ${bodyHtml}
       (id) => ($(id).value = "")
     );
     $("o-shipping-cost").value = "";
+    $("o-payment-fee").value = "";
     $("order-cancel").style.display = "none";
     renderItemRows();
     setOrderFormStatus("", "");
@@ -1670,6 +1681,7 @@ ${bodyHtml}
     $("o-province").value = s.province || "";
     $("o-notes").value = s.notes || "";
     $("o-shipping-cost").value = o.shippingCost || "";
+    $("o-payment-fee").value = paymentFee(o) || "";
     itemRows = (o.items || []).map((it) => ({
       productId: it.id || null,
       title: it.title == null ? "" : String(it.title),
@@ -1793,12 +1805,22 @@ ${bodyHtml}
     updateOrderFormSubtotal();
   }
 
+  // Comisión de PayPal (pago normal) del formulario: solo cuenta si la forma de pago es PayPal.
+  // Va sumada en el total del pedido, igual que en los pedidos de la web (paypal-fee.js).
+  function formPaymentFee() {
+    if ($("o-payment").value !== "paypal") return 0;
+    return Math.max(0, round2(Number($("o-payment-fee").value) || 0));
+  }
+
   function updateOrderFormSubtotal() {
     const itemsTotal = itemRows.reduce((s, r) => s + (Number(r.price) || 0) * (Number(r.qty) || 0), 0);
     const shippingCost = Number($("o-shipping-cost").value) || 0;
+    const fee = formPaymentFee();
     $("order-form-items-total").textContent = formatPrice(itemsTotal);
     $("order-form-shipping-total").textContent = formatPrice(shippingCost);
-    $("order-form-subtotal").textContent = formatPrice(itemsTotal + shippingCost);
+    $("order-form-fee-line").hidden = !fee;
+    $("order-form-fee-total").textContent = formatPrice(fee);
+    $("order-form-subtotal").textContent = formatPrice(itemsTotal + shippingCost + fee);
   }
 
   async function saveOrder() {
@@ -1829,6 +1851,7 @@ ${bodyHtml}
     });
     const subtotal = round2(items.reduce((s, it) => s + it.price * it.qty, 0));
     const shippingCost = round2($("o-shipping-cost").value);
+    const fee = formPaymentFee();
     const existing = editingDocId ? orders.find((x) => x.docId === editingDocId) : null;
     const email = $("o-email").value.trim();
     const FieldValue = firebase.firestore.FieldValue;
@@ -1846,7 +1869,7 @@ ${bodyHtml}
       items,
       subtotal,
       shippingCost,
-      total: round2(subtotal + shippingCost),
+      total: round2(subtotal + shippingCost + fee),
       customer: { name, phone, email },
       shipping: {
         address: $("o-address").value.trim(),
@@ -1965,8 +1988,13 @@ ${bodyHtml}
 
   /* ---------------- UTIL ---------------- */
 
-  function paymentLabel(method) {
-    return { paypal: "PayPal", bizum: "Bizum", otros: "Otros" }[method] || method;
+  // Etiqueta con la modalidad de PayPal (assets/js/paypal-fee.js); sin ese script, la de siempre.
+  function paymentLabel(o) {
+    if (window.HA_PAYPAL) return window.HA_PAYPAL.paymentLabel(o);
+    return { paypal: "PayPal", bizum: "Bizum", otros: "Otros" }[o.paymentMethod] || o.paymentMethod;
+  }
+  function paymentFee(o) {
+    return window.HA_PAYPAL ? window.HA_PAYPAL.orderFee(o) : 0;
   }
   function waPhoneDigits(phone) {
     let digits = String(phone || "").replace(/[^\d+]/g, "");

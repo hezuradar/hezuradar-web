@@ -455,11 +455,16 @@
 
   function shippingSummaryHtml() {
     const q = shippingQuote();
+    const fee = paypalFee();
+    const feeRow = fee
+      ? `<div class="cart-mini-line"><span>Comisión de PayPal (pago normal)</span><span>${formatPrice(fee)}</span></div>`
+      : "";
     if (q.cost === null) {
       return `
         <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
         <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>—</span></div>
-        <div class="cart-subtotal"><span>Total sin envío</span><b>${formatPrice(subtotal())}</b></div>
+        ${feeRow}
+        <div class="cart-subtotal"><span>Total sin envío</span><b>${formatPrice(round2(subtotal() + fee))}</b></div>
         <p class="help-text">El pedido pesa unos ${formatWeight(q.weight)} y supera los 2 kg del Paq Light Internacional: te confirmaremos el coste del envío por paquetería antes de que pagues.</p>
       `;
     }
@@ -475,7 +480,8 @@
     return `
       <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
       <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>${formatPrice(q.cost)}</span></div>
-      <div class="cart-subtotal"><span>Total</span><b>${formatPrice(subtotal() + q.cost)}</b></div>
+      ${feeRow}
+      <div class="cart-subtotal"><span>Total</span><b>${formatPrice(round2(subtotal() + q.cost + fee))}</b></div>
       <p class="help-text">${note}</p>
     `;
   }
@@ -485,7 +491,70 @@
     { value: "bizum", label: "Bizum", img: "images/site/payment/bizum.png" },
     { value: "otros", label: "Otros", img: "images/site/payment/otros.png" },
   ];
-  const PAYMENT_LABELS = PAYMENT_METHODS.reduce((m, p) => ((m[p.value] = p.label), m), {});
+
+  // Forma de pago elegida en el checkout. Con PayPal hay dos modalidades
+  // (assets/js/paypal-fee.js): "amigos" (sin recargo) y "normal" (bienes y servicios, con
+  // la comisión de PayPal sumada al pedido). Se reinician al pintar el checkout.
+  let paymentMethod = "";
+  let paypalMode = "";
+  const paypalApi = () => window.HA_PAYPAL || null;
+
+  // Importe sobre el que PayPal cobra: productos + envío (si el envío está por confirmar,
+  // solo productos; la comisión se ajusta al confirmar el envío).
+  function paypalBase() {
+    return round2(subtotal() + shippingCost());
+  }
+  function paypalFee() {
+    if (view !== "checkout" || paymentMethod !== "paypal" || paypalMode !== "normal" || !paypalApi()) return 0;
+    return paypalApi().feeFor(paypalBase(), country);
+  }
+  function paymentLabelFor(order) {
+    return paypalApi() ? paypalApi().paymentLabel(order) : order.paymentMethod || "-";
+  }
+
+  function paypalModeHtml() {
+    const api = paypalApi();
+    const fee = api ? api.feeFor(paypalBase(), country) : 0;
+    const option = (value, title, desc, amount) => `
+      <label class="paypal-mode-opt${paypalMode === value ? " selected" : ""}">
+        <input type="radio" name="paypalMode" value="${value}"${paypalMode === value ? " checked" : ""}>
+        <div class="paypal-mode-body">
+          <div class="paypal-mode-title">${title}</div>
+          <div class="help-text">${desc}</div>
+        </div>
+        <div class="paypal-mode-amount">${amount}</div>
+      </label>`;
+    return `
+      <p class="paypal-mode-intro">El pago se envía a la cuenta de PayPal <b>${escapeHtml(api ? api.PAYPAL_ACCOUNT : "hezuradar@gmail.com")}</b>. Elige cómo:</p>
+      ${option("amigos", "Amigos y familiares", "Sin comisión: pagas solo el total del pedido.", "<span>Sin recargo</span>")}
+      ${option(
+        "normal",
+        "Pago normal (bienes y servicios)",
+        "Con la protección al comprador de PayPal. PayPal cobra a la tienda una comisión (2,9 % + 0,35 €, algo más fuera del EEE) que se suma a tu pedido.",
+        `+${formatPrice(fee)}`
+      )}`;
+  }
+
+  function refreshPaypalMode() {
+    const box = document.getElementById("co-paypal-mode");
+    if (!box) return;
+    box.hidden = paymentMethod !== "paypal";
+    box.innerHTML = paypalModeHtml();
+    box.querySelectorAll('input[name="paypalMode"]').forEach((input) =>
+      input.addEventListener("change", () => {
+        paypalMode = input.value;
+        refreshPaypalMode();
+        refreshSummary();
+        const again = box.querySelector(`input[value="${paypalMode}"]`);
+        if (again) again.focus();
+      })
+    );
+    // Con PayPal el email es obligatorio (para mandarle el resumen con los datos de pago).
+    const label = document.querySelector('label[for="co-email"]');
+    if (label) label.textContent = paymentMethod === "paypal" ? "Email *" : "Email";
+    const email = document.getElementById("co-email");
+    if (email) email.required = paymentMethod === "paypal";
+  }
 
   function checkoutTemplate() {
     const list = lines();
@@ -568,6 +637,7 @@
             `
             ).join("")}
           </div>
+          <div class="paypal-mode" id="co-paypal-mode" role="radiogroup" aria-label="Modalidad de pago con PayPal" hidden></div>
         </fieldset>
 
         <p class="help-text checkout-legal">Al confirmar aceptas las <a href="/condiciones.html" target="_blank" rel="noopener">condiciones de venta</a>
@@ -589,11 +659,13 @@
   function successTemplate() {
     const email = lastOrder && lastOrder.customerEmailRequested && lastOrder.customer && lastOrder.customer.email;
     const waUrl = lastOrder && lastOrder.waUrl;
+    const payNote = lastOrder && paypalApi() ? paypalApi().paymentInstructions(lastOrder) : "";
     return `
       <h3 id="cart-title" tabindex="-1">¡Pedido enviado!</h3>
       <div class="status-msg ok" role="status">Pedido ${escapeHtml((lastOrder && lastOrder.orderCode) || "")} recibido.</div>
       <p>Tu pedido será tramitado, nos pondremos en contacto contigo en breve para concretar los
       detalles pendientes, gracias por tu compra.</p>
+      ${payNote ? `<p class="status-msg info" role="note">${escapeHtml(payNote)}</p>` : ""}
       ${
         waUrl
           ? `<p class="help-text">Envíanos el resumen por WhatsApp para confirmarlo (si no se ha abierto solo, usa este botón):</p>
@@ -628,6 +700,13 @@
     });
     const totals = document.querySelector("#cart-root .cart-totals");
     if (totals) totals.innerHTML = shippingSummaryHtml();
+    // El recargo de PayPal depende del total y del país: se recalcula con ellos.
+    const modeBox = document.getElementById("co-paypal-mode");
+    if (modeBox && !modeBox.hidden) {
+      const amount = modeBox.querySelector('.paypal-mode-opt input[value="normal"]');
+      const out = amount && amount.closest(".paypal-mode-opt").querySelector(".paypal-mode-amount");
+      if (out && paypalApi()) out.textContent = `+${formatPrice(paypalApi().feeFor(paypalBase(), country))}`;
+    }
   }
 
   // Desplegable de país de la cesta o del checkout: recalcula el envío al momento.
@@ -687,10 +766,16 @@
       });
       document.getElementById("checkout-form").addEventListener("submit", onSubmitCheckout);
       bindCountrySelect("co-country");
+      paymentMethod = "";
+      paypalMode = "";
       document.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
         input.addEventListener("change", () => {
           document.querySelectorAll(".payment-method-btn").forEach((btn) => btn.classList.remove("selected"));
           input.closest(".payment-method-btn").classList.add("selected");
+          paymentMethod = input.value;
+          if (paymentMethod !== "paypal") paypalMode = "";
+          refreshPaypalMode();
+          refreshSummary();
         });
       });
     } else if (view === "success") {
@@ -864,6 +949,11 @@
       return;
     }
     const email = String(data.email || "").trim();
+    if (data.paymentMethod === "paypal" && !email) {
+      setCheckoutStatus("err", "Para pagar con PayPal necesitamos tu email, para enviarte el resumen con los datos del pago.");
+      markInvalid(form, ["co-email"]);
+      return;
+    }
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setCheckoutStatus("err", "El email no parece correcto. Revísalo o déjalo vacío.");
       markInvalid(form, ["co-email"]);
@@ -874,6 +964,13 @@
       markInvalid(form, []);
       const firstRadio = form.querySelector('input[name="paymentMethod"]');
       if (firstRadio) firstRadio.focus();
+      return;
+    }
+    if (data.paymentMethod === "paypal" && !["amigos", "normal"].includes(data.paypalMode)) {
+      setCheckoutStatus("err", "Elige cómo pagar con PayPal: amigos y familiares o pago normal.");
+      markInvalid(form, []);
+      const firstMode = form.querySelector('input[name="paypalMode"]');
+      if (firstMode) firstMode.focus();
       return;
     }
     markInvalid(form, []);
@@ -899,6 +996,11 @@
       country = COUNTRY_CODES.includes(data.country) ? data.country : "ES";
       const quote = shippingQuote();
       const orderShipping = quote.cost || 0;
+      // Recargo de PayPal (pago normal): va sumado en `total`, no en un campo propio
+      // (ver assets/js/paypal-fee.js).
+      paymentMethod = data.paymentMethod;
+      paypalMode = data.paymentMethod === "paypal" ? data.paypalMode : "";
+      const orderFee = paypalFee();
       // Mismo código e ID de documento en los reintentos de este pedido (ver pendingOrder).
       if (!pendingOrder) {
         pendingOrder = {
@@ -924,7 +1026,7 @@
         })),
         subtotal: orderSubtotal,
         shippingCost: orderShipping,
-        total: round2(orderSubtotal + orderShipping),
+        total: round2(orderSubtotal + orderShipping + orderFee),
         paymentMethod: data.paymentMethod,
         // Idioma de la web al comprar: el Apps Script escribe en él el email al cliente.
         lang: uiLang(),
@@ -1027,6 +1129,7 @@
       .join("\n");
     const s = order.shipping;
     const c = order.customer;
+    const fee = paypalApi() ? paypalApi().orderFee(order) : 0;
     return [
       `🛒 *Nuevo pedido ${order.orderCode}*`,
       order.notRegistered ? "⚠️ No se pudo registrar en el panel: añadirlo a mano." : null,
@@ -1037,9 +1140,11 @@
       "",
       `Subtotal: ${formatPrice(order.subtotal)}`,
       order.shippingCost ? `${s.method || "Envío"}: ${formatPrice(order.shippingCost)}` : s.method ? `${s.method} (más de 2 kg)` : null,
-      order.shippingCost ? `Total: ${formatPrice(order.total)}` : null,
+      fee ? `Comisión de PayPal (pago normal): ${formatPrice(fee)}` : null,
+      order.shippingCost || fee ? `Total: ${formatPrice(order.total)}` : null,
       "",
-      `Forma de pago: ${PAYMENT_LABELS[order.paymentMethod] || order.paymentMethod || "-"}`,
+      `Forma de pago: ${paymentLabelFor(order)}`,
+      paypalApi() && paypalApi().paymentInstructions(order) ? `💳 ${paypalApi().paymentInstructions(order)}` : null,
       "",
       "Datos de envío:",
       `Nombre: ${c.name}`,

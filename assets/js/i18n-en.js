@@ -114,6 +114,7 @@ window.HA_I18N_DICT = {"Página no encontrada — HezurAdar":"Page not found —
 "Para las placas y púas personalizadas, el diseñador genera una <b>solicitud de presupuesto</b>, no un pedido en firme: te enviaremos el precio y solo se fabrica cuando lo aceptas.":"For custom plates and picks, the designer generates a <b>quote request</b>, not a firm order: we will send you the price and the piece is only made once you accept it.",
 "4. Formas de pago":"4. Payment methods",
 "Bizum, PayPal u otro medio que acordemos contigo por<span> WhatsApp o</span> email. No guardamos datos de tarjetas ni de cuentas bancarias.":"Bizum, PayPal or another method we agree with you by<span> WhatsApp or</span> email. We do not store card or bank account details.",
+"Con PayPal, el pago se envía a <b>hezuradar@gmail.com</b> y puedes elegir entre «amigos y familiares», sin recargo, o el pago normal de bienes y servicios, con la protección al comprador de PayPal. En el pago normal se suma a tu pedido la comisión que PayPal cobra a la tienda (2,9 % + 0,35 €, algo más si pagas desde fuera del Espacio Económico Europeo). Verás el importe exacto en la cesta antes de confirmar el pedido.":"With PayPal, the payment goes to <b>hezuradar@gmail.com</b> and you can choose between \"friends and family\", with no surcharge, or a goods and services payment, with PayPal buyer protection. With goods and services, the fee PayPal charges the shop (2.9% + €0.35, a little more if you pay from outside the European Economic Area) is added to your order. You'll see the exact amount in the basket before confirming the order.",
 "5. Envíos":"5. Shipping",
 "<b>Destino:</b> España y el resto del mundo. Elige el país en la cesta y verás el coste de envío al momento, antes de confirmarlo.":"<b>Destination:</b> Spain and the rest of the world. Choose the country in the basket and you will see the shipping cost straight away, before confirming.",
 "<b>Coste en España:</b> los pedidos de una sola pieza se envían por correo ordinario (sin número de seguimiento) por 1,50 €; a partir de dos piezas, por correo certificado por 5,50 €.":"<b>Cost within Spain:</b> single-piece orders are sent by standard mail (untracked) for 1,50 €; from two pieces upwards, by registered mail (tracked) for 5,50 €.",
@@ -1319,6 +1320,23 @@ Object.assign(window.HA_I18N_DICT, {
   "Instrucciones de entrega, preferencias...": "Delivery instructions, preferences...",
   "Forma de pago *": "Payment method *",
   "Otros": "Other",
+  "Email *": "Email *",
+  "Modalidad de pago con PayPal": "PayPal payment type",
+  "El pago se envía a la cuenta de PayPal <b>hezuradar@gmail.com</b>. Elige cómo:": "The payment goes to the PayPal account <b>hezuradar@gmail.com</b>. Choose how:",
+  "Amigos y familiares": "Friends and family",
+  "Sin comisión: pagas solo el total del pedido.": "No fee: you pay just the order total.",
+  "Sin recargo": "No surcharge",
+  "Pago normal (bienes y servicios)": "Goods and services payment",
+  "Con la protección al comprador de PayPal. PayPal cobra a la tienda una comisión (2,9 % + 0,35 €, algo más fuera del EEE) que se suma a tu pedido.":
+    "With PayPal buyer protection. PayPal charges the shop a fee (2.9% + €0.35, a little more outside the EEA), which is added to your order.",
+  "Comisión de PayPal (pago normal)": "PayPal fee (goods and services)",
+  "Para pagar con PayPal necesitamos tu email, para enviarte el resumen con los datos del pago.":
+    "To pay with PayPal we need your email, so we can send you the summary with the payment details.",
+  "Elige cómo pagar con PayPal: amigos y familiares o pago normal.": "Choose how to pay with PayPal: friends and family or goods and services.",
+  "Envía el pago por PayPal a hezuradar@gmail.com como «amigos y familiares».": "Send the PayPal payment to hezuradar@gmail.com as \"friends and family\".",
+  "Envía el pago por PayPal a hezuradar@gmail.com como pago de bienes y servicios (pago normal, con protección al comprador).":
+    "Send the PayPal payment to hezuradar@gmail.com as goods and services (with buyer protection).",
+  "Realiza el Bizum al número 653713428.": "Send the Bizum payment to 653713428.",
   "Al confirmar aceptas las <a>condiciones de venta</a> (incluido el derecho de desistimiento de 14 días) y el tratamiento de tus datos según la <a>política de privacidad</a>.":
     "By confirming you accept the <a>terms of sale</a> (including the 14-day right of withdrawal) and the processing of your data under the <a>privacy policy</a>.",
   "Para enviarte la confirmación por email, marca la casilla:": "To receive the confirmation by email, tick the box:",

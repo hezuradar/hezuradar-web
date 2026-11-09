@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261102b">
+<link rel="stylesheet" href="assets/css/style.css?v=20261109a">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -320,11 +320,17 @@
             <label for="o-shipping-cost">Gastos de envío (EUR)</label>
             <input id="o-shipping-cost" type="number" step="0.01" min="0" placeholder="0,00">
           </div>
+          <div class="field">
+            <label for="o-payment-fee">Comisión PayPal pago normal (EUR)</label>
+            <input id="o-payment-fee" type="number" step="0.01" min="0" placeholder="0,00">
+            <span class="help-text">Solo con PayPal. Vacío o 0 = amigos y familiares.</span>
+          </div>
         </div>
 
         <div class="order-form-total">
           <div>Productos: <b id="order-form-items-total">0,00 €</b></div>
           <div>Envío: <b id="order-form-shipping-total">0,00 €</b></div>
+          <div id="order-form-fee-line" hidden>Comisión PayPal: <b id="order-form-fee-total">0,00 €</b></div>
           <div class="order-form-grand">Total: <b id="order-form-subtotal">0,00 €</b></div>
         </div>
 
@@ -523,14 +529,15 @@
 <script src="assets/js/firebase-config.js?v=20260915l"></script>
 <script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js"></script>
 <script src="assets/js/emailjs-config.js?v=20261002e"></script>
-<script src="assets/js/emailjs-notify.js?v=20261102c"></script>
-<script src="assets/js/product-page-template.js?v=20261108b"></script>
+<script src="assets/js/paypal-fee.js?v=20261109a"></script>
+<script src="assets/js/emailjs-notify.js?v=20261109f"></script>
+<script src="assets/js/product-page-template.js?v=20261109a"></script>
 <script src="assets/js/catalog-template.js?v=20261101c"></script>
 <script src="assets/js/merchant-feed.js?v=20261108a"></script>
 <script src="assets/js/admin.js?v=20261108b"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
-<script src="assets/js/admin-orders.js?v=20261102e"></script>
+<script src="assets/js/admin-orders.js?v=20261109b"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>
 </body>
