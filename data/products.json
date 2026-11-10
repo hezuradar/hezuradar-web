@@ -1522,5 +1522,24 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-11-10"
+  },
+  {
+    "id": "b783c9ae-b116-4b09-bb4a-4994b0c13914",
+    "title": "Selleta de hueso de buey curado en grasa 105 x 4 x 10",
+    "description": "Hueso de buey curando en grasa \n\nMedidas 105 x 4 x 10",
+    "price": 4.5,
+    "sku": "RR0078",
+    "category": "Hueso",
+    "subcategory": "Selleta",
+    "stock": 10,
+    "discountPercent": null,
+    "images": [
+      "images/products/b783c9ae-b116-4b09-bb4a-4994b0c13914_1794319760336_0.jpg",
+      "images/products/b783c9ae-b116-4b09-bb4a-4994b0c13914_1794319764452_1.jpg"
+    ],
+    "slug": "selleta-de-hueso-de-buey-curado-en-grasa-105-x-4-x-10-b783c9ae",
+    "imageWidth": 1100,
+    "imageHeight": 825,
+    "updatedAt": "2026-11-10"
   }
 ]
