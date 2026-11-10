@@ -1146,4 +1146,16 @@
       <image:loc>https://hezuradar.com/images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319069659_2.jpg</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://hezuradar.com/productos/selleta-de-hueso-de-buey-curado-en-grasa-105-x-4-x-10-b783c9ae.html</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/b783c9ae-b116-4b09-bb4a-4994b0c13914_1794319760336_0.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/b783c9ae-b116-4b09-bb4a-4994b0c13914_1794319764452_1.jpg</image:loc>
+    </image:image>
+  </url>
 </urlset>
