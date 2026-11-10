@@ -1116,4 +1116,19 @@
       <image:loc>https://hezuradar.com/images/products/e472f81b-bff0-4e41-a766-432e26727cd5_1794298537533_0.webp</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://hezuradar.com/productos/cejuela-de-hueso-tenido-negro-60x7x12-mm-en-bruto-5d598606.html</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/5d598606-6c81-4618-8b9d-07330f976b3a_1794315488734_0.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/5d598606-6c81-4618-8b9d-07330f976b3a_1794315492868_1.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/5d598606-6c81-4618-8b9d-07330f976b3a_1794315497071_2.jpg</image:loc>
+    </image:image>
+  </url>
 </urlset>
