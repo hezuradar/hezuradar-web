@@ -20,7 +20,7 @@
 
   var LS_KEY = "ha_lang";
   var LANGS = ["es", "en"];
-  var DICT_URL = "/assets/js/i18n-en.js?v=20261109a";
+  var DICT_URL = "/assets/js/i18n-en.js?v=20261110a";
   // Etiquetas que pueden ir dentro de una frase sin partirla.
   var INLINE = /^(A|B|STRONG|EM|I|SPAN|BR|SMALL|SUP|SUB|ABBR|CODE|KBD|MARK|U|S|TIME|Q|WBR)$/;
   // Donde nunca hay texto que traducir (o no se debe tocar).

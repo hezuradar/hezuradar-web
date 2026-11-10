@@ -157,7 +157,9 @@ test("las fichas sin marca en el título son solo las que no caben en 60 caracte
   // título ("Cejuela de hueso de vaca Kobe en bruto 55 × 6 × 10 mm") para salir en
   // búsquedas como "cejuela hueso"; el dueño prefirió eso a la marca en el título.
   // 47 desde 2026-11-10: "Selleta o cordal de hueso de búfalo ámbar 80 × 2 × 12 mm".
-  assertTrue(sinMarca.length <= 47, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
+  // 51 el mismo día: hueso de buey teñido negro 60 mm, hueso de buey curado en grasa
+  // (cejuela y selleta) y cejuela Fender de cuerno de oveja latxa.
+  assertTrue(sinMarca.length <= 51, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
 });
 
 test("los títulos de producto caben en el resultado de Google (64 caracteres como mucho)", () => {
