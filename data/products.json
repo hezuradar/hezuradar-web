@@ -1295,7 +1295,7 @@
     "sku": "RR0056",
     "category": "Madre perla y abalone",
     "subcategory": "Bloques y placas",
-    "stock": 5,
+    "stock": 25,
     "discountPercent": null,
     "images": [
       "images/products/9cf44366-365b-4864-bf43-8559c5a2f91e_1789715933392_0.webp",
@@ -1304,7 +1304,7 @@
     "slug": "madre-perla-black-9cf44366",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-22"
+    "updatedAt": "2026-11-10"
   },
   {
     "id": "5488f43b-8110-47b1-9c00-a979ceb88bce",
