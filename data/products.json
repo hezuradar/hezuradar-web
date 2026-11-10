@@ -1502,5 +1502,25 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-11-10"
+  },
+  {
+    "id": "c96c8995-e88e-4b71-9cad-f8f776c5f9a9",
+    "title": "Cejuela de hueso buey curado en grasa en bruto  55 x 6 x 10",
+    "description": "Hueso de buey con un proceso de curado muy especial , dejando la grada durante un periodo para que oxide y después se desgrasa y se estabiliza , consiguiendo un tono de color muy llamativo y una estructura del hueso más flexible",
+    "price": 4,
+    "sku": "RR0077",
+    "category": "Hueso",
+    "subcategory": "Cejuela",
+    "stock": 10,
+    "discountPercent": null,
+    "images": [
+      "images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319062028_0.jpg",
+      "images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319066070_1.jpg",
+      "images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319069659_2.jpg"
+    ],
+    "slug": "cejuela-de-hueso-buey-curado-en-grasa-en-bruto-55-x-6-x-10-c96c8995",
+    "imageWidth": 1100,
+    "imageHeight": 825,
+    "updatedAt": "2026-11-10"
   }
 ]
