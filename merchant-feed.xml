@@ -1122,5 +1122,21 @@
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>Hueso &gt; Cejuela</g:product_type>
     </item>
+    <item>
+      <g:id>RR0077</g:id>
+      <title>Cejuela de hueso buey curado en grasa en bruto 55 x 6 x 10</title>
+      <description>Hueso de buey con un proceso de curado muy especial , dejando la grada durante un periodo para que oxide y después se desgrasa y se estabiliza , consiguiendo un tono de color muy llamativo y una estructura del hueso más flexible</description>
+      <link>https://hezuradar.com/productos/cejuela-de-hueso-buey-curado-en-grasa-en-bruto-55-x-6-x-10-c96c8995.html</link>
+      <g:image_link>https://hezuradar.com/images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319062028_0.jpg</g:image_link>
+      <g:additional_image_link>https://hezuradar.com/images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319066070_1.jpg</g:additional_image_link>
+      <g:additional_image_link>https://hezuradar.com/images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319069659_2.jpg</g:additional_image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>4.00 EUR</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>HezurAdar</g:brand>
+      <g:mpn>RR0077</g:mpn>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>Hueso &gt; Cejuela</g:product_type>
+    </item>
   </channel>
 </rss>
