@@ -1314,7 +1314,7 @@
     "sku": "RR0066",
     "category": "Madre perla y abalone",
     "subcategory": "Bloques y placas",
-    "stock": null,
+    "stock": 10,
     "discountPercent": null,
     "images": [
       "images/products/5488f43b-8110-47b1-9c00-a979ceb88bce_1790948729428_0.webp",
@@ -1324,7 +1324,7 @@
     "slug": "marco-de-madre-perla-5488f43b",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-22"
+    "updatedAt": "2026-11-10"
   },
   {
     "id": "4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7",
