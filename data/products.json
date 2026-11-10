@@ -1237,7 +1237,7 @@
     "sku": "RR0068",
     "category": "Cuerno",
     "subcategory": "Bloques y placas",
-    "stock": null,
+    "stock": 0,
     "discountPercent": null,
     "images": [
       "images/products/8fc55074-c794-419f-897b-d9fb191d80d1_1789650967175_0.webp",
@@ -1247,7 +1247,7 @@
     "slug": "cuerno-buey-negro-bloque-8fc55074",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-22"
+    "updatedAt": "2026-11-10"
   },
   {
     "id": "7995a685-3dca-4cec-a824-bcf89a6e2d40",
