@@ -1080,21 +1080,9 @@
   const IMAGE_FULL = { maxSide: 1100, maxBytes: 180 * 1024, qualityMax: 0.86, qualityMin: 0.74 };
   const IMAGE_THUMB = { maxSide: 500, maxBytes: 36 * 1024, qualityMax: 0.82, qualityMin: 0.7 };
 
-  // Formato de publicación: WebP, que a igualdad de calidad pesa bastante menos que el JPEG.
-  // Si el navegador del panel no lo soporta se publica en JPEG, y como la extensión sale siempre
-  // del tipo real del archivo generado, ambas versiones conviven sin tocar nada más.
-  function supportsWebp() {
-    try {
-      return document.createElement("canvas").toDataURL("image/webp").indexOf("data:image/webp") === 0;
-    } catch (e) {
-      return false;
-    }
-  }
-  const IMAGE_TYPE = supportsWebp() ? "image/webp" : "image/jpeg";
-
-  function extensionForBlob(blob) {
-    return blob.type === "image/webp" ? ".webp" : ".jpg";
-  }
+  // Formato de publicación: siempre WebP, que a igualdad de calidad pesa bastante menos que el
+  // JPEG. En Safari, que no sabe generarlo, lo hace assets/js/webp-encoder.js con WebAssembly.
+  const IMAGE_EXT = ".webp";
 
   // Mide una foto ya publicada en el sitio (ruta relativa tipo images/products/...).
   // El parámetro evita que una respuesta antigua de la caché falsee la medida; si la
@@ -1158,9 +1146,7 @@
   }
 
   function canvasToImage(canvas, quality) {
-    return new Promise((resolve, reject) => {
-      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("No se pudo generar la imagen reducida."))), IMAGE_TYPE, quality);
-    });
+    return window.HA_WEBP.encodeCanvas(canvas, quality);
   }
 
   // La calidad más alta que quepa en maxBytes (búsqueda binaria). Si ni la mínima cabe, se
@@ -1202,7 +1188,7 @@
   async function optimizeImage(img, opts) {
     const canvas = drawScaled(img, opts.maxSide);
     const blob = await encodeWithinBudget(canvas, opts);
-    return { blob, base64: await blobToBase64(blob), width: canvas.width, height: canvas.height, bytes: blob.size, ext: extensionForBlob(blob) };
+    return { blob, base64: await blobToBase64(blob), width: canvas.width, height: canvas.height, bytes: blob.size, ext: IMAGE_EXT };
   }
 
   async function saveProduct() {
