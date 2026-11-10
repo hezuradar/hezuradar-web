@@ -27,8 +27,15 @@
   let products = [];
   let productsSha = null;
   let editingId = null;
-  let pendingFiles = [];
-  let currentImages = [];
+  // Fotos del formulario en el orden de publicación (la 0 es la principal):
+  // {kind:"existing", path} ya publicadas, {kind:"pending", file, url, name} por subir.
+  let formImages = [];
+  let productModal = null;
+  let lastSavedId = null;
+  let savingProduct = false;
+  const PV = window.HA_PRODUCTS_VIEW;
+  // Muestra las fotos aunque GitHub Pages aún no las haya desplegado (ver admin-products-view.js).
+  const imageResolver = PV.createImageResolver((path) => getRawBlob(path));
 
   // Solo en memoria: se pierde al recargar o cerrar la pestaña. El token vive en Firestore
   // (adminConfig/github, solo legible por los emails de administrador) y se descarga al entrar.
@@ -74,11 +81,7 @@
       saveGhConfig();
     });
     $("wa-save").addEventListener("click", saveWhatsappSetting);
-    $("p-save").addEventListener("click", saveProduct);
-    $("p-cancel").addEventListener("click", resetForm);
-    $("p-images").addEventListener("change", onFilesSelected);
-    $("p-category").addEventListener("change", () => updateSubcategoryOptions(""));
-    $("p-filter").addEventListener("input", renderTable);
+    initProductScreen();
     $("logout-btn").addEventListener("click", lockPanel);
   });
 
@@ -368,6 +371,7 @@
     $("admin-shell").style.display = "block";
     $("logout-btn").style.display = "inline-block";
     $("gh-token").value = ghToken;
+    updateSettingsState();
     startIdleLock();
     // admin-orders.js y admin-stats.js esperan a esto para leer pedidos y estadísticas.
     window.HA_ADMIN_UNLOCKED = true;
@@ -404,6 +408,7 @@
       return;
     }
     ghToken = token;
+    updateSettingsState();
     setStatus("gh-status", "ok", "Conexión guardada. El token queda en tu cuenta de administrador y vale en todos tus dispositivos.");
     loadProducts();
     loadWhatsappSetting();
@@ -519,6 +524,18 @@
     }
   }
 
+  // Contenido binario de un archivo del repositorio (las fotos recién subidas que la web aún
+  // no sirve). null si no hay token o GitHub no lo devuelve: la foto se queda como "sin foto".
+  async function getRawBlob(path) {
+    const cfg = ghConfig();
+    if (!cfg.owner || !cfg.repo || !cfg.token) return null;
+    const url = `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${encodeURIComponent(path).replace(/%2F/g, "/")}?ref=${encodeURIComponent(cfg.branch)}`;
+    const res = await fetch(url, { cache: "no-store", headers: { Authorization: `Bearer ${cfg.token}`, Accept: "application/vnd.github.raw" } });
+    if (!res.ok) return null;
+    const type = /\.webp$/i.test(path) ? "image/webp" : /\.png$/i.test(path) ? "image/png" : "image/jpeg";
+    return new Blob([await res.arrayBuffer()], { type });
+  }
+
   // Comprueba que el token ve el repositorio y la rama configurados.
   async function assertRepoAccessible() {
     const cfg = ghConfig();
@@ -587,12 +604,12 @@
     const keepStatus = !!(options && options.keepStatus);
     const cfg = ghConfig();
     if (!cfg.owner || !cfg.repo || !cfg.token) {
-      if (!keepStatus) setStatus("p-status", "info", "Configura la conexión con GitHub para cargar y publicar productos.");
+      if (!keepStatus) setStatus("p-list-status", "info", "Configura la conexión con GitHub para cargar y publicar productos.");
       await loadProductsFromLiveSite();
       return;
     }
     try {
-      if (!keepStatus) setStatus("p-status", "info", "Cargando catálogo desde GitHub...");
+      if (!keepStatus) setStatus("p-list-status", "info", "Cargando catálogo desde GitHub...");
       const file = await getFile(PRODUCTS_PATH);
       if (file) {
         products = JSON.parse(file.content);
@@ -603,14 +620,14 @@
         products = [];
         productsSha = null;
       }
-      if (!keepStatus) setStatus("p-status", "", "");
+      if (!keepStatus) setStatus("p-list-status", "", "");
       renderTable();
       fillDatalists();
       maybeSuggestSku();
     } catch (e) {
       // Con keepStatus se conserva el resultado de la publicación y se añade el fallo al recargar.
-      const previous = keepStatus ? ($("p-status").textContent || "").trim() : "";
-      setStatus("p-status", "err", (previous ? previous + " " : "") + "Error cargando catálogo desde GitHub: " + e.message);
+      const previous = keepStatus ? ($("p-list-status").textContent || "").trim() : "";
+      setStatus("p-list-status", "err", (previous ? previous + " " : "") + "Error cargando catálogo desde GitHub: " + e.message);
       // Aunque falle la conexión con GitHub, se intenta rellenar la tabla y los desplegables
       // de categoría/subcategoría con el catálogo público de la web ya publicada, para no
       // dejarlos vacíos mientras se soluciona la conexión.
@@ -628,8 +645,8 @@
       maybeSuggestSku();
     } catch (e) {
       console.warn("No se pudo leer el catálogo publicado:", e);
-      $("product-table-body").innerHTML =
-        `<tr><td colspan="6" class="empty-state">No se pudo cargar el catálogo publicado (${escapeHtml(e.message)}). Recarga la página para reintentarlo.</td></tr>`;
+      $("product-grid").innerHTML =
+        `<div class="empty-state">No se pudo cargar el catálogo publicado (${escapeHtml(e.message)}). Recarga la página para reintentarlo.</div>`;
     }
   }
 
@@ -742,6 +759,16 @@
       cats.map((c) => `<option value="${escapeAttr(c)}">${escapeHtml(c)}</option>`).join("");
     catSelect.value = cats.includes(prevCat) ? prevCat : "";
     updateSubcategoryOptions();
+
+    // Filtro de categoría de la barra de la lista, con cuántos productos hay en cada una.
+    const filterSel = $("p-filter-category");
+    const prevFilter = filterSel.value;
+    filterSel.innerHTML =
+      '<option value="">Categoría: todas</option>' +
+      cats
+        .map((c) => `<option value="${escapeAttr(c)}">${escapeHtml(c)} (${products.filter((p) => p.category === c).length})</option>`)
+        .join("");
+    filterSel.value = cats.includes(prevFilter) ? prevFilter : "";
   }
 
   // Rellena la subcategoría con solo las que ya se han usado dentro de la categoría elegida.
@@ -756,6 +783,22 @@
       '<option value="">(sin subcategoría)</option>' +
       subs.map((s) => `<option value="${escapeAttr(s)}">${escapeHtml(s)}</option>`).join("");
     subSelect.value = subs.includes(prevSub) ? prevSub : "";
+    renderClassChips();
+  }
+
+  // Categoría y tipo de pieza como botones (los <select> ocultos guardan el valor).
+  function renderClassChips() {
+    const chip = (value, label, current, group) =>
+      `<button type="button" class="chip-opt${value === current ? " active" : ""}" role="radio" aria-checked="${value === current}" data-${group}="${escapeAttr(value)}">${escapeHtml(label)}</button>`;
+    const cat = $("p-category").value;
+    const cats = Array.from($("p-category").options).map((o) => o.value).filter(Boolean);
+    $("p-category-chips").innerHTML = cats.map((c) => chip(c, c, cat, "cat")).join("");
+    const subs = Array.from($("p-subcategory").options).map((o) => o.value).filter(Boolean);
+    $("p-subcategory-wrap").hidden = !cat;
+    $("p-subcategory-chips").innerHTML = subs.length
+      ? subs.map((s) => chip(s, s, $("p-subcategory").value, "sub")).join("")
+      : '<p class="help-text">Esta categoría no tiene tipos de pieza.</p>';
+    renderFormFeedback();
   }
 
   function nextSku() {
@@ -777,102 +820,252 @@
     $("p-sku").value = nextSku();
   }
 
+  /* ---------------- PANTALLA DE PRODUCTOS ---------------- */
+
+  function initProductScreen() {
+    $("p-new").addEventListener("click", newProduct);
+    $("p-save").addEventListener("click", saveProduct);
+    $("p-cancel").addEventListener("click", () => closeProductModal());
+    $("p-images").addEventListener("change", onFilesSelected);
+    ["p-filter", "p-filter-category", "p-filter-stock", "p-sort"].forEach((id) =>
+      $(id).addEventListener(id === "p-filter" ? "input" : "change", renderTable)
+    );
+
+    // Un solo listener por contenedor: la cuadrícula y las fotos se repintan a menudo.
+    $("product-grid").addEventListener("click", (e) => {
+      const del = e.target.closest("[data-del]");
+      if (del) return deleteProduct(del.dataset.del);
+      const edit = e.target.closest("[data-edit]");
+      if (edit) editProduct(edit.dataset.edit);
+    });
+    $("thumb-preview").addEventListener("click", onImageTileClick);
+    $("p-category-chips").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-cat]");
+      if (!b) return;
+      $("p-category").value = b.dataset.cat;
+      updateSubcategoryOptions("");
+    });
+    $("p-subcategory-chips").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-sub]");
+      if (!b) return;
+      // Pulsar el tipo ya elegido lo quita (producto sin subcategoría).
+      $("p-subcategory").value = $("p-subcategory").value === b.dataset.sub ? "" : b.dataset.sub;
+      renderClassChips();
+    });
+    ["p-title", "p-desc", "p-price", "p-stock"].forEach((id) => $(id).addEventListener("input", renderFormFeedback));
+
+    const drop = $("p-dropzone");
+    ["dragenter", "dragover"].forEach((ev) =>
+      drop.addEventListener(ev, (e) => {
+        e.preventDefault();
+        drop.classList.add("is-over");
+      })
+    );
+    ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove("is-over")));
+    drop.addEventListener("drop", (e) => {
+      e.preventDefault();
+      addPendingFiles(e.dataTransfer && e.dataTransfer.files);
+    });
+  }
+
+  // Ajustes plegados cuando ya hay token: lo habitual es entrar a gestionar productos.
+  function updateSettingsState() {
+    const ok = !!ghToken;
+    $("settings-state").textContent = ok ? "✓ Conectado a GitHub" : "Falta el token de GitHub: sin él no se puede publicar";
+    $("settings-state").classList.toggle("is-warn", !ok);
+    $("admin-settings").open = !ok;
+  }
+
   function renderTable() {
-    const filter = ($("p-filter").value || "").toLowerCase();
-    const list = products.filter((p) => p.title.toLowerCase().includes(filter));
+    const opts = {
+      query: $("p-filter").value,
+      category: $("p-filter-category").value,
+      stock: $("p-filter-stock").value,
+      sort: $("p-sort").value,
+    };
+    const list = PV.filterProducts(products, opts);
     $("p-count").textContent = products.length;
-    $("product-table-body").innerHTML = list
-      .map(
-        (p) => `
-      <tr>
-        <td><img src="${escapeAttr((p.images && p.images[0]) || "")}" alt=""></td>
-        <td>${escapeHtml(p.title)}</td>
-        <td>${escapeHtml(p.subcategory || p.category || "")}</td>
-        <td>${Number(p.price).toFixed(2)} €${p.discountPercent ? ` <span class="discount-tag">-${Number(p.discountPercent) || 0}%</span>` : ""}</td>
-        <td>${p.stock == null ? "-" : Number(p.stock)}</td>
-        <td class="row-actions">
-          <button type="button" class="small-btn" data-edit="${escapeAttr(p.id)}" aria-label="Editar ${escapeAttr(p.title)}">Editar</button>
-          <button type="button" class="small-btn danger" data-del="${escapeAttr(p.id)}" aria-label="Borrar ${escapeAttr(p.title)}">Borrar</button>
-        </td>
-      </tr>`
-      )
-      .join("");
-    $("product-table-body").querySelectorAll("[data-edit]").forEach((b) =>
-      b.addEventListener("click", () => editProduct(b.dataset.edit))
-    );
-    $("product-table-body").querySelectorAll("[data-del]").forEach((b) =>
-      b.addEventListener("click", () => deleteProduct(b.dataset.del))
-    );
+    const filtered = opts.query || opts.category || opts.stock;
+    const out = products.filter((p) => PV.stockState(p.stock) === "out").length;
+    const withIssues = products.filter((p) => PV.productIssues(p).length).length;
+    $("p-result-info").textContent =
+      (filtered ? `${list.length} de ${products.length} productos` : `${products.length} productos`) +
+      (out ? ` · ${out} agotados` : "") +
+      (withIssues ? ` · ${withIssues} con avisos` : "");
+    const grid = $("product-grid");
+    grid.innerHTML = list.length
+      ? list.map((p) => PV.cardHtml(p, { highlight: p.id === lastSavedId })).join("")
+      : `<div class="empty-state">${products.length ? "Ningún producto coincide con la búsqueda." : "Todavía no hay productos."}</div>`;
+    imageResolver.attachImages(grid);
+  }
+
+  function openProductModal(title) {
+    $("form-title").textContent = title;
+    if (productModal) return;
+    const host = $("product-form-host");
+    const overlay = document.createElement("div");
+    overlay.className = "modal-backdrop";
+    overlay.id = "product-modal-backdrop";
+    overlay.innerHTML = `
+      <div class="modal product-modal" role="dialog" aria-modal="true" aria-labelledby="form-title">
+        <button type="button" class="modal-close" id="product-modal-close" aria-label="Cerrar">&times;</button>
+        <div class="modal-scroll product-modal-scroll"></div>
+      </div>`;
+    overlay.querySelector(".product-modal-scroll").appendChild(host);
+    host.hidden = false;
+    document.body.appendChild(overlay);
+    document.body.style.overflow = "hidden";
+    const opener = document.activeElement;
+
+    function onKey(e) {
+      if (e.key === "Escape") closeProductModal();
+    }
+    function close() {
+      host.hidden = true;
+      $("tab-products").appendChild(host);
+      overlay.remove();
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+      productModal = null;
+      if (opener && typeof opener.focus === "function" && document.contains(opener)) opener.focus();
+    }
+    overlay.addEventListener("mousedown", (e) => {
+      if (e.target === overlay) closeProductModal();
+    });
+    overlay.querySelector("#product-modal-close").addEventListener("click", () => closeProductModal());
+    document.addEventListener("keydown", onKey);
+    productModal = { close, snapshot: formSnapshot() };
+    // El foco va al encabezado del diálogo y no a un campo: en el móvil no abre el teclado.
+    $("form-title").focus({ preventScroll: true });
+  }
+
+  // force: cerrar sin preguntar (tras publicar). Si no, se avisa antes de perder cambios.
+  function closeProductModal(force) {
+    if (!productModal) return;
+    if (!force) {
+      if (savingProduct) {
+        setStatus("p-status", "info", "Espera a que termine la publicación para cerrar.");
+        return;
+      }
+      if (formSnapshot() !== productModal.snapshot && !confirm("¿Cerrar sin publicar? Se perderán los cambios.")) return;
+    }
+    productModal.close();
+    resetForm();
+  }
+
+  function formSnapshot() {
+    const ids = ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-tiers", "p-sku", "p-category", "p-subcategory"];
+    return JSON.stringify([ids.map((id) => $(id).value), formImages.map((it) => it.path || it.url)]);
+  }
+
+  function newProduct() {
+    resetForm();
+    setStatus("p-status", "", "");
+    openProductModal("Nuevo producto");
   }
 
   function editProduct(id) {
     const p = products.find((x) => x.id === id);
     if (!p) return;
+    resetForm();
     editingId = id;
-    pendingFiles = [];
-    currentImages = [...(p.images || [])];
-    $("form-title").textContent = "Editar producto";
+    formImages = (p.images || []).map((path) => ({ kind: "existing", path }));
     $("p-title").value = p.title || "";
     $("p-desc").value = p.description || "";
     $("p-price").value = p.price != null ? String(p.price).replace(".", ",") : "";
     $("p-stock").value = p.stock ?? "";
     $("p-discount").value = p.discountPercent ?? "";
     $("p-tiers").value = formatTiers(p.priceTiers);
+    $("p-more").open = !!(p.discountPercent || (p.priceTiers && p.priceTiers.length));
     $("p-category").value = p.category || "";
     updateSubcategoryOptions(p.subcategory || "");
     $("p-sku").value = p.sku || "";
-    $("p-cancel").style.display = "inline-block";
+    $("p-save").textContent = "Guardar cambios";
+    if (p.slug) {
+      $("p-view-link").href = `/productos/${encodeURIComponent(p.slug)}.html`;
+      $("p-view-link").hidden = false;
+    }
+    setStatus("p-status", "", "");
     renderThumbPreview();
-    window.scrollTo({ top: $("form-title").offsetTop - 80, behavior: "smooth" });
+    openProductModal("Editar producto");
   }
 
   function resetForm() {
     editingId = null;
-    pendingFiles = [];
-    currentImages = [];
-    $("form-title").textContent = "Añadir producto";
+    formImages.forEach((it) => it.kind === "pending" && URL.revokeObjectURL(it.url));
+    formImages = [];
     ["p-title", "p-desc", "p-price", "p-stock", "p-discount", "p-tiers", "p-sku"].forEach((id) => ($(id).value = ""));
     $("p-category").value = "";
+    $("p-more").open = false;
+    $("p-view-link").hidden = true;
+    $("p-save").textContent = "Publicar producto";
     updateSubcategoryOptions("");
     $("p-images").value = "";
     renderThumbPreview();
     maybeSuggestSku();
-    $("p-cancel").style.display = "none";
   }
 
   function onFilesSelected(e) {
-    pendingFiles = Array.from(e.target.files || []);
+    addPendingFiles(e.target.files);
+    // Vaciado para que volver a elegir la misma foto vuelva a disparar "change".
+    e.target.value = "";
+  }
+
+  function addPendingFiles(fileList) {
+    const files = Array.from(fileList || []).filter((f) => /^image\//.test(f.type));
+    if (!files.length) return;
+    formImages = formImages.concat(files.map((file) => ({ kind: "pending", file, name: file.name, url: URL.createObjectURL(file) })));
+    renderThumbPreview();
+  }
+
+  function onImageTileClick(e) {
+    const b = e.target.closest("button");
+    if (!b || b.disabled) return;
+    if (b.dataset.imgRemove != null) {
+      const i = parseInt(b.dataset.imgRemove, 10);
+      const it = formImages[i];
+      if (it && it.kind === "pending") URL.revokeObjectURL(it.url);
+      formImages = formImages.filter((_, k) => k !== i);
+    } else if (b.dataset.imgMain != null) {
+      formImages = PV.moveImage(formImages, parseInt(b.dataset.imgMain, 10), 0);
+    } else if (b.dataset.imgMove != null) {
+      const i = parseInt(b.dataset.imgMove, 10);
+      formImages = PV.moveImage(formImages, i, i + parseInt(b.dataset.dir, 10));
+    } else {
+      return;
+    }
     renderThumbPreview();
   }
 
   function renderThumbPreview() {
-    const existingThumbs = currentImages.map(
-      (src, i) => `
-        <div class="thumb-item">
-          <img src="${escapeAttr(src)}" alt="">
-          <button type="button" class="thumb-remove" data-existing-idx="${i}" title="Quitar imagen" aria-label="Quitar imagen">&times;</button>
-        </div>`
-    );
-    const pendingThumbs = pendingFiles.map(
-      (f, i) => `
-        <div class="thumb-item">
-          <img src="${URL.createObjectURL(f)}" alt="">
-          <button type="button" class="thumb-remove" data-pending-idx="${i}" title="Quitar imagen" aria-label="Quitar imagen">&times;</button>
-        </div>`
-    );
-    $("thumb-preview").innerHTML = existingThumbs.join("") + pendingThumbs.join("");
-    $("thumb-preview").querySelectorAll("[data-existing-idx]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        currentImages.splice(parseInt(btn.dataset.existingIdx, 10), 1);
-        renderThumbPreview();
-      });
-    });
-    $("thumb-preview").querySelectorAll("[data-pending-idx]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        pendingFiles.splice(parseInt(btn.dataset.pendingIdx, 10), 1);
-        renderThumbPreview();
-      });
-    });
+    const box = $("thumb-preview");
+    box.innerHTML = PV.imageTilesHtml(formImages);
+    imageResolver.attachImages(box);
+    renderFormFeedback();
+  }
+
+  // Vista previa de la tarjeta de la tienda, contadores y avisos, con lo que hay escrito ahora.
+  function renderFormFeedback() {
+    const draft = {
+      title: $("p-title").value,
+      description: $("p-desc").value,
+      price: parseDecimal($("p-price").value),
+      stock: $("p-stock").value === "" ? null : Number($("p-stock").value),
+      category: $("p-category").value,
+      subcategory: $("p-subcategory").value,
+      images: formImages.map((it) => it.path || it.url),
+    };
+    const preview = $("p-preview");
+    preview.innerHTML = PV.previewHtml({ ...draft, image: formImages[0] || null });
+    imageResolver.attachImages(preview);
+    $("p-title-count").textContent = draft.title ? `${draft.title.length} car.` : "";
+    const words = draft.description.trim() ? draft.description.trim().split(/\s+/).length : 0;
+    $("p-desc-count").textContent = words ? `${words} palabras` : "";
+    const issues = PV.productIssues(draft);
+    $("p-issues").innerHTML = issues.length
+      ? `<b>Antes de publicar, revisa:</b><ul>${issues.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul>`
+      : `<span class="pform-ok">✓ Todo listo para publicar</span>`;
+    $("p-issues").classList.toggle("is-ok", !issues.length);
   }
 
   // Optimización de las fotos de producto. Una foto de móvil sin reducir (4000 px, 3 MB) hunde la
@@ -912,7 +1105,7 @@
       const img = new Image();
       img.onload = () => resolve(img.naturalWidth && img.naturalHeight ? { width: img.naturalWidth, height: img.naturalHeight } : null);
       img.onerror = () => resolve(null);
-      img.src = `/${path}?m=${Date.now()}`;
+      img.src = imageResolver.cached(path) || `/${path}?m=${Date.now()}`;
     });
   }
 
@@ -1009,7 +1202,7 @@
   async function optimizeImage(img, opts) {
     const canvas = drawScaled(img, opts.maxSide);
     const blob = await encodeWithinBudget(canvas, opts);
-    return { base64: await blobToBase64(blob), width: canvas.width, height: canvas.height, bytes: blob.size, ext: extensionForBlob(blob) };
+    return { blob, base64: await blobToBase64(blob), width: canvas.width, height: canvas.height, bytes: blob.size, ext: extensionForBlob(blob) };
   }
 
   async function saveProduct() {
@@ -1028,44 +1221,63 @@
       }
 
       $("p-save").disabled = true;
+      savingProduct = true;
+      $("product-form-host").inert = true;
       setStatus("p-status", "info", "Publicando...");
 
       const id = editingId || newProductId();
       const existing = editingId ? products.find((x) => x.id === editingId) : null;
-      let images = [...currentImages];
+      const images = [];
       let mainImageDims = null;
       // Fallos que no detienen la publicación pero que conviene contar al final.
       const thumbFailures = [];
       const cleanupFailures = [];
       const imageBytes = { before: 0, after: 0 };
 
-      if (pendingFiles.length) {
-        setStatus("p-status", "info", `Subiendo ${pendingFiles.length} imagen(es)...`);
-        for (let i = 0; i < pendingFiles.length; i++) {
-          const file = pendingFiles[i];
-          // La foto se decodifica una sola vez y se publica optimizada (ver IMAGE_FULL/IMAGE_THUMB).
-          // La extensión la decide el formato real del archivo generado (WebP, o JPEG de reserva).
-          const img = await loadImageFile(file);
-          const full = await optimizeImage(img, IMAGE_FULL);
-          const path = `images/products/${id}_${Date.now()}_${i}${full.ext}`;
-          await putFile(path, full.base64, `Sube imagen de producto: ${title}`, null);
-          images.push(path);
-          if (i === 0 && currentImages.length === 0) mainImageDims = { width: full.width, height: full.height };
-          imageBytes.before += file.size;
-          imageBytes.after += full.bytes;
+      // Las fotos se publican en el orden del formulario (la primera es la principal).
+      // Copia fija: el formulario queda bloqueado (inert) mientras se publica, pero el bucle
+      // no debe depender de que formImages no cambie entre un await y otro.
+      const items = formImages.slice();
+      const pendingTotal = items.filter((it) => it.kind === "pending").length;
+      let uploaded = 0;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it.kind === "existing") {
+          images.push(it.path);
+          continue;
+        }
+        uploaded++;
+        setStatus("p-status", "info", `Subiendo foto ${uploaded} de ${pendingTotal}...`);
+        // La foto se decodifica una sola vez y se publica optimizada (ver IMAGE_FULL/IMAGE_THUMB).
+        // La extensión la decide el formato real del archivo generado (WebP, o JPEG de reserva).
+        const img = await loadImageFile(it.file);
+        const full = await optimizeImage(img, IMAGE_FULL);
+        const path = `images/products/${id}_${Date.now()}_${i}${full.ext}`;
+        await putFile(path, full.base64, `Sube imagen de producto: ${title}`, null);
+        // Se recuerda en memoria: el panel la enseña ya, sin esperar a que GitHub Pages la despliegue.
+        imageResolver.remember(path, full.blob);
+        images.push(path);
+        // Ya está en el repositorio: si algo falla después y se reintenta, no se vuelve a subir.
+        URL.revokeObjectURL(it.url);
+        formImages = formImages.map((x) => (x === it ? { kind: "existing", path } : x));
+        if (i === 0) mainImageDims = { width: full.width, height: full.height };
+        imageBytes.before += it.file.size;
+        imageBytes.after += full.bytes;
 
-          // Miniatura para el grid del catálogo y "productos relacionados":
-          // si falla, la ficha usará la imagen a tamaño completo hasta el próximo
-          // guardado (no es un error que deba interrumpir la publicación).
-          try {
-            const thumb = await optimizeImage(img, IMAGE_THUMB);
-            const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(path);
-            if (thumbPath) await putFile(thumbPath, thumb.base64, `Sube miniatura de producto: ${title}`, null);
-            imageBytes.after += thumb.bytes;
-          } catch (e) {
-            // Sin miniatura se usará la imagen completa; se avisa al final.
-            thumbFailures.push(`${file.name || path} (${e.message})`);
+        // Miniatura para el grid del catálogo y "productos relacionados":
+        // si falla, la ficha usará la imagen a tamaño completo hasta el próximo
+        // guardado (no es un error que deba interrumpir la publicación).
+        try {
+          const thumb = await optimizeImage(img, IMAGE_THUMB);
+          const thumbPath = window.HA_TEMPLATE && window.HA_TEMPLATE.thumbPath(path);
+          if (thumbPath) {
+            await putFile(thumbPath, thumb.base64, `Sube miniatura de producto: ${title}`, null);
+            imageResolver.remember(thumbPath, thumb.blob);
           }
+          imageBytes.after += thumb.bytes;
+        } catch (e) {
+          // Sin miniatura se usará la imagen completa; se avisa al final.
+          thumbFailures.push(`${it.name || path} (${e.message})`);
         }
       }
 
@@ -1074,7 +1286,7 @@
       // Dimensiones reales de la imagen principal (images[0]) para declarar
       // og:image:width/height sin inventar valores: si es una foto nueva salen
       // del reescalado; si ya existía, se reutilizan las de un guardado anterior.
-      if (currentImages.length > 0 && existing && existing.images && existing.images[0] === currentImages[0] && existing.imageWidth && existing.imageHeight) {
+      if (!mainImageDims && images.length > 0 && existing && existing.images && existing.images[0] === images[0] && existing.imageWidth && existing.imageHeight) {
         mainImageDims = { width: existing.imageWidth, height: existing.imageHeight };
       }
       // Si la principal cambió de sitio (se quitó o se reordenó la primera foto),
@@ -1137,17 +1349,24 @@
         ? ` Fotos optimizadas automáticamente: de ${formatBytes(imageBytes.before)} a ${formatBytes(imageBytes.after)} (con miniaturas).`
         : "";
 
+      lastSavedId = id;
+      savingProduct = false;
+      closeProductModal(true);
       setStatus(
-        "p-status",
+        "p-list-status",
         extraWarning ? "err" : "ok",
-        "Publicado correctamente." + imageInfo + " La web pública (y la página de cada producto) tardará uno o dos minutos en mostrar el cambio: es el tiempo que tarda GitHub Pages en desplegarlo, no hace falta volver a guardar. Si guardas varias veces seguidas, cada guardado se pone en cola y el tiempo total de espera aumenta." + extraWarning
+        `✓ Publicado «${title}».` + imageInfo + " Aquí ya lo ves con sus fotos; la web pública lo mostrará en uno o dos minutos (lo que tarda GitHub Pages en desplegar), no hace falta volver a guardar." + extraWarning
       );
-      resetForm();
       await loadProducts({ keepStatus: true });
+      const card = document.querySelector(`.pcard[data-id="${CSS.escape(id)}"]`);
+      if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (e) {
-      setStatus("p-status", "err", e.message);
+      setStatus(productModal ? "p-status" : "p-list-status", "err", e.message);
     } finally {
+      savingProduct = false;
+      $("product-form-host").inert = false;
       $("p-save").disabled = false;
+      if (productModal) renderThumbPreview();
     }
   }
 
@@ -1191,7 +1410,7 @@
     if (!p) return;
     if (!confirm(`¿Borrar "${p.title}" del catálogo? Esta acción se publica de inmediato.`)) return;
     try {
-      setStatus("p-status", "info", "Borrando...");
+      setStatus("p-list-status", "info", "Borrando...");
       const updatedProducts = await putProductsFile((current) => current.filter((x) => x.id !== id), `Borra producto: ${p.title}`);
 
       const cleanupFailures = [];
@@ -1211,10 +1430,10 @@
       }
 
       const extraWarning = seoWarning + imageCleanupWarning(cleanupFailures);
-      setStatus("p-status", extraWarning ? "err" : "ok", "Producto borrado y publicado." + extraWarning);
+      setStatus("p-list-status", extraWarning ? "err" : "ok", "Producto borrado y publicado." + extraWarning);
       await loadProducts({ keepStatus: true });
     } catch (e) {
-      setStatus("p-status", "err", e.message);
+      setStatus("p-list-status", "err", e.message);
     }
   }
 

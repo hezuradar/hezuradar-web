@@ -156,7 +156,8 @@ test("las fichas sin marca en el título son solo las que no caben en 60 caracte
   // 46 desde 2026-11-08: las piezas en bruto llevan pieza, material y medida en el
   // título ("Cejuela de hueso de vaca Kobe en bruto 55 × 6 × 10 mm") para salir en
   // búsquedas como "cejuela hueso"; el dueño prefirió eso a la marca en el título.
-  assertTrue(sinMarca.length <= 46, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
+  // 47 desde 2026-11-10: "Selleta o cordal de hueso de búfalo ámbar 80 × 2 × 12 mm".
+  assertTrue(sinMarca.length <= 47, "demasiadas fichas sin la marca en el título: " + sinMarca.length + " (" + sinMarca.join(", ") + ")");
 });
 
 test("los títulos de producto caben en el resultado de Google (64 caracteres como mucho)", () => {

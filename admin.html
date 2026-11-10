@@ -11,7 +11,7 @@
 <link rel="icon" href="images/site/favicon-16x16.png" sizes="16x16" type="image/png">
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/css/style.css?v=20261109a">
+<link rel="stylesheet" href="assets/css/style.css?v=20261110g">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -63,8 +63,13 @@
 
   <div id="tab-products" class="admin-tab-panel">
 
-  <div class="card-panel">
-    <h2 style="font-size:1.17em">Conexión con GitHub</h2>
+  <details class="card-panel admin-settings" id="admin-settings">
+    <summary>
+      <h2 class="admin-settings-title">Ajustes de publicación</h2>
+      <span class="settings-state" id="settings-state">Comprobando conexión…</span>
+    </summary>
+    <div class="admin-settings-body">
+    <h3 class="form-section-title">Conexión con GitHub</h3>
     <p class="help-text">
       Para publicar cambios en la web necesitas un <b>Personal Access Token</b> de GitHub con permiso
       <code>repo</code> (o <code>Contents: Read and write</code> si es un token fine-grained) sobre este repositorio.
@@ -102,10 +107,8 @@
     <button class="btn btn-primary" id="gh-save" type="submit">Guardar conexión</button>
     </form>
     <div id="gh-status"></div>
-  </div>
 
-  <div class="card-panel">
-    <h2 style="font-size:1.17em">Contacto por WhatsApp</h2>
+    <h3 class="form-section-title">Contacto por WhatsApp</h3>
     <p class="help-text">
       Si lo desactivas, desaparecen de toda la web el botón flotante, los botones «Consultar por WhatsApp» y el
       teléfono de contacto, y al confirmar un pedido o una solicitud de presupuesto ya no se abre WhatsApp
@@ -117,81 +120,128 @@
     </label>
     <button class="btn btn-primary" id="wa-save" type="button">Guardar</button>
     <div id="wa-status"></div>
-  </div>
+    </div>
+  </details>
 
-  <div class="card-panel">
-    <h2 id="form-title" style="font-size:1.17em">Añadir producto</h2>
-    <div class="field">
-      <label for="p-title">Título</label>
-      <input id="p-title" placeholder="p.ej. Cejuela de hueso blanco para Fender">
+  <section class="card-panel products-panel" aria-labelledby="products-heading">
+    <div class="products-head">
+      <h2 id="products-heading">Productos <span class="count-pill" id="p-count">0</span></h2>
+      <button class="btn btn-primary" id="p-new" type="button"><span aria-hidden="true">＋</span> Nuevo producto</button>
     </div>
-    <div class="field">
-      <label for="p-desc">Descripción</label>
-      <textarea id="p-desc" placeholder="Descripción del producto..."></textarea>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label for="p-price">Precio (EUR)</label>
-        <input id="p-price" type="text" inputmode="decimal" placeholder="10,00">
+    <div class="products-toolbar" role="search">
+      <div class="products-search">
+        <label class="visually-hidden" for="p-filter">Buscar productos</label>
+        <input id="p-filter" type="search" autocomplete="off" placeholder="Buscar por nombre, SKU, material…">
       </div>
-      <div class="field">
-        <label for="p-stock">Stock disponible</label>
-        <input id="p-stock" type="number" step="1" min="0" placeholder="10">
-      </div>
+      <label class="visually-hidden" for="p-filter-category">Categoría</label>
+      <select id="p-filter-category" class="toolbar-select"><option value="">Categoría: todas</option></select>
+      <label class="visually-hidden" for="p-filter-stock">Estado</label>
+      <select id="p-filter-stock" class="toolbar-select">
+        <option value="">Estado: todos</option>
+        <option value="out">Agotados</option>
+        <option value="low">Poco stock (5 o menos)</option>
+        <option value="ok">Con stock</option>
+        <option value="none">Stock sin controlar</option>
+        <option value="issues">Con avisos por revisar</option>
+      </select>
+      <label class="visually-hidden" for="p-sort">Ordenar</label>
+      <select id="p-sort" class="toolbar-select">
+        <option value="recent">Más recientes</option>
+        <option value="title">Nombre (A-Z)</option>
+        <option value="priceAsc">Precio: menor a mayor</option>
+        <option value="priceDesc">Precio: mayor a menor</option>
+        <option value="stock">Stock: reponer primero</option>
+      </select>
     </div>
-    <div class="field-row">
-      <div class="field">
-        <label for="p-discount">Descuento (%) (opcional)</label>
-        <input id="p-discount" type="number" step="1" min="0" max="99" placeholder="p.ej. 20">
-      </div>
-      <div class="field">
-        <label for="p-tiers">Precios por cantidad (opcional)</label>
-        <input id="p-tiers" type="text" placeholder="10=4,15; 20=4,05; 30=3,85">
-        <small class="help-text">«A partir de N unidades = precio por unidad», separados por «;». La cesta los aplica sola.</small>
-      </div>
-    </div>
-    <div class="field-row">
-      <div class="field">
-        <label for="p-category">Categoría</label>
-        <select id="p-category">
-          <option value="">Selecciona categoría</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="p-subcategory">Subcategoría (opcional)</label>
-        <select id="p-subcategory">
-          <option value="">(sin subcategoría)</option>
-        </select>
-      </div>
-    </div>
-    <div class="field">
-      <label for="p-sku">SKU / referencia (opcional)</label>
-      <input id="p-sku" placeholder="p.ej. RR0022">
-      <p class="help-text">Al añadir un producto nuevo se sugiere automáticamente el siguiente número (RRxxxx); puedes cambiarlo si quieres.</p>
-    </div>
-    <div class="field">
-      <label for="p-images">Imágenes</label>
-      <input id="p-images" type="file" accept="image/*" multiple>
-      <p class="help-text">Puedes seleccionar varias. Se añadirán a las imágenes ya existentes al editar. Pulsa la ✕ de una imagen para quitarla (puedes dejar el producto sin imágenes).</p>
-      <div class="thumb-preview" id="thumb-preview"></div>
-    </div>
-    <div style="display:flex;gap:10px;margin-top:8px">
-      <button class="btn btn-primary" id="p-save">Publicar producto</button>
-      <button class="btn btn-outline" id="p-cancel" style="display:none">Cancelar edición</button>
-    </div>
-    <div id="p-status"></div>
-  </div>
+    <p class="products-result" id="p-result-info" aria-live="polite"></p>
+    <div id="p-list-status"></div>
+    <div id="product-grid" class="padmin-grid"></div>
+  </section>
 
-  <div class="card-panel">
-    <h2 style="font-size:1.17em">Productos publicados (<span id="p-count">0</span>)</h2>
-    <input id="p-filter" aria-label="Filtrar productos por nombre" placeholder="Filtrar por nombre..." style="margin-bottom:12px;padding:9px 12px;border-radius:8px;border:1px solid var(--color-border);width:100%">
-    <div style="overflow-x:auto">
-      <table class="admin-table">
-        <thead>
-          <tr><th></th><th>Título</th><th>Categoría</th><th>Precio</th><th>Stock</th><th></th></tr>
-        </thead>
-        <tbody id="product-table-body"></tbody>
-      </table>
+  <!-- El formulario de alta/edición se abre como pantalla emergente (ver openProductModal en
+       admin.js): vive oculto aquí y se mueve al modal al abrirlo, como el de pedidos. -->
+  <div id="product-form-host" class="pform" hidden>
+    <div class="pform-head">
+      <h2 id="form-title" tabindex="-1">Nuevo producto</h2>
+      <a class="small-btn" id="p-view-link" href="#" target="_blank" rel="noopener" hidden>Ver en la web ↗</a>
+    </div>
+
+    <div class="pform-grid">
+      <div class="pform-side">
+        <h3 class="pform-label">Fotos</h3>
+        <label class="dropzone" id="p-dropzone" for="p-images">
+          <span class="dropzone-icon" aria-hidden="true">⬆</span>
+          <span><b>Añadir fotos</b><br><span class="dropzone-sub">Pulsa o arrastra aquí. Se optimizan solas.</span></span>
+        </label>
+        <input id="p-images" class="visually-hidden" type="file" accept="image/*" multiple>
+        <div class="pimg-tiles" id="thumb-preview" aria-live="polite"></div>
+        <p class="help-text">La primera es la <b>principal</b> (portada y Google). Usa ★ para cambiarla y las flechas para ordenar.</p>
+
+        <h3 class="pform-label">Así se verá en la tienda</h3>
+        <div class="pform-preview" id="p-preview" aria-hidden="true"></div>
+      </div>
+
+      <div class="pform-main">
+        <div class="field">
+          <label for="p-title">Título <span class="field-count" id="p-title-count"></span></label>
+          <input id="p-title" maxlength="120" placeholder="Selleta o cordal de hueso blanco 85 × 2,5 × 15 mm">
+          <p class="help-text">Pieza + material + medidas con «×» (largo × grosor × alto), como el resto del catálogo.</p>
+        </div>
+
+        <fieldset class="pform-fieldset">
+          <legend class="pform-label">Categoría</legend>
+          <div class="chip-group" id="p-category-chips" role="radiogroup" aria-label="Categoría"></div>
+          <select id="p-category" hidden aria-hidden="true" tabindex="-1"><option value="">Selecciona categoría</option></select>
+        </fieldset>
+        <fieldset class="pform-fieldset" id="p-subcategory-wrap">
+          <legend class="pform-label">Tipo de pieza</legend>
+          <div class="chip-group" id="p-subcategory-chips" role="radiogroup" aria-label="Tipo de pieza"></div>
+          <select id="p-subcategory" hidden aria-hidden="true" tabindex="-1"><option value="">(sin subcategoría)</option></select>
+        </fieldset>
+
+        <div class="field-row field-row-3">
+          <div class="field">
+            <label for="p-price">Precio (€)</label>
+            <input id="p-price" type="text" inputmode="decimal" placeholder="4,50">
+          </div>
+          <div class="field">
+            <label for="p-stock">Stock</label>
+            <input id="p-stock" type="number" step="1" min="0" placeholder="Vacío = sin controlar">
+          </div>
+          <div class="field">
+            <label for="p-sku">SKU</label>
+            <input id="p-sku" placeholder="RR0076">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="p-desc">Descripción <span class="field-count" id="p-desc-count"></span></label>
+          <textarea id="p-desc" rows="9" placeholder="Qué pieza es, color y aspecto del material, para qué sirve esta medida y con qué otras piezas combina. Termina con «Medidas: … mm.»"></textarea>
+        </div>
+
+        <details class="pform-more" id="p-more">
+          <summary>Descuento y precios por cantidad</summary>
+          <div class="field-row">
+            <div class="field">
+              <label for="p-discount">Descuento (%)</label>
+              <input id="p-discount" type="number" step="1" min="0" max="99" placeholder="p.ej. 20">
+            </div>
+            <div class="field">
+              <label for="p-tiers">Precios por cantidad</label>
+              <input id="p-tiers" type="text" placeholder="10=4,15; 20=4,05; 30=3,85">
+              <small class="help-text">«A partir de N unidades = precio por unidad», separados por «;». La cesta los aplica sola.</small>
+            </div>
+          </div>
+        </details>
+
+        <div class="pform-issues" id="p-issues" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <div class="pform-actions">
+      <div id="p-status" class="pform-status"></div>
+      <button class="btn btn-outline" id="p-cancel" type="button">Cancelar</button>
+      <button class="btn btn-primary" id="p-save" type="button">Publicar producto</button>
     </div>
   </div>
 
@@ -534,7 +584,8 @@
 <script src="assets/js/product-page-template.js?v=20261109a"></script>
 <script src="assets/js/catalog-template.js?v=20261101c"></script>
 <script src="assets/js/merchant-feed.js?v=20261108a"></script>
-<script src="assets/js/admin.js?v=20261108b"></script>
+<script src="assets/js/admin-products-view.js?v=20261110e"></script>
+<script src="assets/js/admin.js?v=20261110g"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
 <script src="assets/js/admin-orders.js?v=20261109b"></script>
