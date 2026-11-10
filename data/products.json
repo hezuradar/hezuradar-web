@@ -1334,7 +1334,7 @@
     "sku": "RR0067",
     "category": "Hueso",
     "subcategory": "Bloques y placas",
-    "stock": null,
+    "stock": 20,
     "discountPercent": null,
     "images": [
       "images/products/4ecabbdf-95fa-40dd-a182-dc7dd6d16cb7_1790948923550_0.webp",
@@ -1344,7 +1344,7 @@
     "slug": "bloque-hueso-tenido-negro-90x7x10-4ecabbdf",
     "imageWidth": 1100,
     "imageHeight": 825,
-    "updatedAt": "2026-10-22"
+    "updatedAt": "2026-11-10"
   },
   {
     "id": "cb3eff93-fccb-4fab-b8b0-749fd04ce83a",
