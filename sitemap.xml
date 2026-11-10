@@ -1131,4 +1131,19 @@
       <image:loc>https://hezuradar.com/images/products/5d598606-6c81-4618-8b9d-07330f976b3a_1794315497071_2.jpg</image:loc>
     </image:image>
   </url>
+  <url>
+    <loc>https://hezuradar.com/productos/cejuela-de-hueso-buey-curado-en-grasa-en-bruto-55-x-6-x-10-c96c8995.html</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319062028_0.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319066070_1.jpg</image:loc>
+    </image:image>
+    <image:image>
+      <image:loc>https://hezuradar.com/images/products/c96c8995-e88e-4b71-9cad-f8f776c5f9a9_1794319069659_2.jpg</image:loc>
+    </image:image>
+  </url>
 </urlset>
