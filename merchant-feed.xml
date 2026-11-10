@@ -1106,5 +1106,21 @@
       <g:identifier_exists>no</g:identifier_exists>
       <g:product_type>Hueso &gt; Selleta</g:product_type>
     </item>
+    <item>
+      <g:id>RR0076</g:id>
+      <title>Cejuela de hueso teñido Negro 60x7x12 mm en bruto</title>
+      <description>Hueso de buey teñido de negro Medidas 60x7x12</description>
+      <link>https://hezuradar.com/productos/cejuela-de-hueso-tenido-negro-60x7x12-mm-en-bruto-5d598606.html</link>
+      <g:image_link>https://hezuradar.com/images/products/5d598606-6c81-4618-8b9d-07330f976b3a_1794315488734_0.jpg</g:image_link>
+      <g:additional_image_link>https://hezuradar.com/images/products/5d598606-6c81-4618-8b9d-07330f976b3a_1794315492868_1.jpg</g:additional_image_link>
+      <g:additional_image_link>https://hezuradar.com/images/products/5d598606-6c81-4618-8b9d-07330f976b3a_1794315497071_2.jpg</g:additional_image_link>
+      <g:availability>in_stock</g:availability>
+      <g:price>5.60 EUR</g:price>
+      <g:condition>new</g:condition>
+      <g:brand>HezurAdar</g:brand>
+      <g:mpn>RR0076</g:mpn>
+      <g:identifier_exists>no</g:identifier_exists>
+      <g:product_type>Hueso &gt; Bloques y placas</g:product_type>
+    </item>
   </channel>
 </rss>
