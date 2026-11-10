@@ -1541,5 +1541,26 @@
     "imageWidth": 1100,
     "imageHeight": 825,
     "updatedAt": "2026-11-10"
+  },
+  {
+    "id": "e3c5b8b4-fdfb-4c68-b582-d3512d00b3f6",
+    "title": "Cejuela de cuerno de oveja latxa para Fender 55 x 4 x 10",
+    "description": "Cuerno de oveja latxa para tallar Cejuelas tipo Fender \n\nMedidas 55 x 4 x 10",
+    "price": 3,
+    "sku": "RR0079",
+    "category": "Cuerno",
+    "subcategory": "Cejuela",
+    "stock": 100,
+    "discountPercent": null,
+    "images": [
+      "images/products/e3c5b8b4-fdfb-4c68-b582-d3512d00b3f6_1794320085033_0.jpg",
+      "images/products/e3c5b8b4-fdfb-4c68-b582-d3512d00b3f6_1794320088657_1.jpg",
+      "images/products/e3c5b8b4-fdfb-4c68-b582-d3512d00b3f6_1794320093001_2.jpg",
+      "images/products/e3c5b8b4-fdfb-4c68-b582-d3512d00b3f6_1794320097054_3.jpg"
+    ],
+    "slug": "cejuela-de-cuerno-de-oveja-latxa-para-fender-55-x-4-x-10-e3c5b8b4",
+    "imageWidth": 1100,
+    "imageHeight": 825,
+    "updatedAt": "2026-11-10"
   }
 ]
