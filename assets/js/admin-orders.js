@@ -98,6 +98,8 @@
     $("o-payment").addEventListener("change", updateOrderFormSubtotal);
     $("revenue-from").addEventListener("change", renderRevenue);
     $("revenue-to").addEventListener("change", renderRevenue);
+    // Gasto en envíos de las facturas de Correos importadas (admin-shipping.js).
+    window.addEventListener("ha-shipments-updated", renderRevenue);
 
     // Nada de datos de clientes hasta que el panel se desbloquee con el login (admin.js).
     whenAdminUnlocked(() => firebase.auth().onAuthStateChanged((user) => {
@@ -468,6 +470,18 @@
     const total = included.reduce((s, o) => s + orderTotal(o), 0);
     $("revenue-total").textContent = formatPrice(total);
     $("revenue-count").textContent = included.length;
+    renderShippingSpend(total);
+  }
+
+  // Gasto real en Correos dentro de las mismas fechas, por la fecha de cada envío.
+  function renderShippingSpend(revenue) {
+    const SHIP = window.HA_SHIPPING;
+    const all = window.HA_LATEST_SHIPMENTS || [];
+    const list = SHIP ? SHIP.filterByRange(all, $("revenue-from").value, $("revenue-to").value) : [];
+    const spend = SHIP ? SHIP.summarize(list).total : 0;
+    $("revenue-shipping").textContent = formatPrice(spend);
+    $("revenue-shipping-count").textContent = list.length ? `${list.length} ${list.length === 1 ? "envío" : "envíos"}` : "";
+    $("revenue-net").textContent = formatPrice(revenue - spend);
   }
 
   function orderTotal(o) {

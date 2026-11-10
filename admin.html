@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css?v=20261110g">
+<link rel="stylesheet" href="assets/css/admin-shipping.css?v=20261110a">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -58,6 +59,7 @@
     <button type="button" class="admin-tab active" data-tab="tab-products" aria-pressed="true">Productos</button>
     <button type="button" class="admin-tab" data-tab="tab-orders" aria-pressed="false">Pedidos<span class="tab-badge" id="orders-pending-badge" style="display:none"></span></button>
     <button type="button" class="admin-tab" data-tab="tab-customers" aria-pressed="false">Clientes</button>
+    <button type="button" class="admin-tab" data-tab="tab-shipping" aria-pressed="false">Envíos</button>
     <button type="button" class="admin-tab" data-tab="tab-stats" aria-pressed="false">Estadísticas</button>
   </div>
 
@@ -268,8 +270,10 @@
         <div class="revenue-summary">
           <div class="revenue-stat"><span>Total facturado</span><b id="revenue-total">0,00 €</b></div>
           <div class="revenue-stat"><span>Pedidos</span><b id="revenue-count">0</b></div>
+          <div class="revenue-stat"><span>Gasto en envíos (Correos)</span><b id="revenue-shipping">0,00 €</b><small id="revenue-shipping-count"></small></div>
+          <div class="revenue-stat"><span>Facturado menos envíos</span><b id="revenue-net">0,00 €</b></div>
         </div>
-        <p class="help-text">No incluye pedidos cancelados; las solicitudes de diseño cuentan cuando están confirmadas (o enviadas/entregadas) y tienen precio. Deja las fechas vacías para ver todo el histórico.</p>
+        <p class="help-text">No incluye pedidos cancelados; las solicitudes de diseño cuentan cuando están confirmadas (o enviadas/entregadas) y tienen precio. El gasto en envíos suma, por fecha de envío, las facturas de Correos importadas en la pestaña Envíos (con IVA y combustible). Deja las fechas vacías para ver todo el histórico.</p>
       </div>
 
       <div class="card-panel" id="order-form-host" hidden>
@@ -451,6 +455,111 @@
     </div>
   </div>
 
+  <div id="tab-shipping" class="admin-tab-panel" style="display:none">
+    <div id="shipping-login-notice" class="card-panel">
+      <p class="help-text">Cargando gastos de envío...</p>
+    </div>
+    <div id="shipping-panel" style="display:none">
+      <div class="card-panel">
+        <h2 style="font-size:1.17em">Importar factura de Correos</h2>
+        <p class="help-text">Sube el Excel de control de la factura (hojas <b>Envios</b> y <b>Resumen</b>). Los costes se recalculan con el suplemento de combustible y el IVA de la hoja Resumen; antes de guardar verás el resumen. Si vuelves a subir la factura de un mes, sustituye a la anterior.</p>
+        <label class="btn btn-primary ship-file-btn" for="ship-file"><span aria-hidden="true">📄</span> Elegir Excel (.xlsx)</label>
+        <input id="ship-file" class="visually-hidden" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+        <div id="ship-import-status" role="status" aria-live="polite"></div>
+        <div id="ship-preview" class="ship-preview" hidden>
+          <div id="ship-preview-body"></div>
+          <div class="ship-preview-actions">
+            <button class="btn btn-primary" id="ship-save" type="button">Guardar envíos</button>
+            <button class="btn btn-outline" id="ship-discard" type="button">Descartar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-toolbar">
+        <div>
+          <h2 class="stats-title">Gastos de envío</h2>
+          <p class="stats-sub" id="ship-range-label"></p>
+        </div>
+        <div class="ship-filters">
+          <div class="field">
+            <label for="ship-from">Desde</label>
+            <input type="date" id="ship-from">
+          </div>
+          <div class="field">
+            <label for="ship-to">Hasta</label>
+            <input type="date" id="ship-to">
+          </div>
+          <select id="ship-invoice" class="toolbar-select" aria-label="Factura"><option value="">Factura: todas</option></select>
+          <button type="button" class="small-btn" id="ship-clear-range">Ver todo</button>
+        </div>
+      </div>
+      <div id="ship-list-status"></div>
+
+      <div class="kpi-grid">
+        <div class="kpi kpi-hero">
+          <span class="kpi-label">Gasto total en envíos</span>
+          <b class="kpi-value" id="ship-kpi-total">0,00&nbsp;€</b>
+          <span class="kpi-note">IVA y combustible incluidos</span>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Envíos</span>
+          <b class="kpi-value" id="ship-kpi-count">0</b>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Coste medio por envío</span>
+          <b class="kpi-value" id="ship-kpi-avg">0,00&nbsp;€</b>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Descuentos de Correos</span>
+          <b class="kpi-value" id="ship-kpi-discount">0,00&nbsp;€</b>
+        </div>
+        <div class="kpi">
+          <span class="kpi-label">Suplemento combustible</span>
+          <b class="kpi-value" id="ship-kpi-fuel">0,00&nbsp;€</b>
+          <span class="kpi-note">IVA: <b id="ship-kpi-vat">0,00&nbsp;€</b></span>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="card-panel stats-card">
+          <div class="stats-card-head"><div><h3>Por zona de Correos</h3><p class="stats-card-sub">Zona de tarifa que aplica Correos según la distancia del destino</p></div></div>
+          <ol id="ship-by-zone" class="rank-list"></ol>
+        </div>
+        <div class="card-panel stats-card">
+          <div class="stats-card-head"><div><h3>Por destino</h3><p class="stats-card-sub">Provincias con más gasto (hasta 15)</p></div></div>
+          <ol id="ship-by-destination" class="rank-list"></ol>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="card-panel stats-card">
+          <div class="stats-card-head"><div><h3>Por tramo de peso</h3></div></div>
+          <ol id="ship-by-tier" class="rank-list"></ol>
+        </div>
+        <div class="card-panel stats-card">
+          <div class="stats-card-head"><div><h3>Facturas importadas</h3></div></div>
+          <ul id="ship-invoices-list" class="ship-invoices"></ul>
+        </div>
+      </div>
+
+      <div class="card-panel">
+        <h2 style="font-size:1.17em">Envíos (<span id="ship-count">0</span>)</h2>
+        <p class="help-text">El pedido se enlaza por el nº de seguimiento guardado en el pedido; si no lo tiene, se muestra la columna «Cliente / pedido» del Excel.</p>
+        <div class="table-scroll" tabindex="0" role="region" aria-label="Tabla de envíos">
+          <table class="size-table ship-table">
+            <thead>
+              <tr>
+                <th>Fecha</th><th>Seguimiento</th><th>Destino</th><th>Zona</th><th>Tramo</th>
+                <th class="num">Neto</th><th class="num">Combust.</th><th class="num">Coste final</th><th>Pedido</th>
+              </tr>
+            </thead>
+            <tbody id="ship-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="tab-stats" class="admin-tab-panel" style="display:none">
     <div id="stats-login-notice" class="card-panel">
       <p class="help-text">Cargando estadísticas...</p>
@@ -589,7 +698,10 @@
 <script src="assets/js/admin.js?v=20261110j"></script>
 <script src="assets/js/drive-export.js?v=20261009b"></script>
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
-<script src="assets/js/admin-orders.js?v=20261109b"></script>
+<script src="assets/js/xlsx-mini.js?v=20261110a"></script>
+<script src="assets/js/shipping-costs.js?v=20261110a"></script>
+<script src="assets/js/admin-orders.js?v=20261110a"></script>
+<script src="assets/js/admin-shipping.js?v=20261110a"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>
 </body>
