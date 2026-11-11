@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="images/site/apple-touch-icon.png">
 <link rel="preload" href="assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/style.css?v=20261110g">
-<link rel="stylesheet" href="assets/css/admin-shipping.css?v=20261110a">
+<link rel="stylesheet" href="assets/css/admin-shipping.css?v=20261111a">
 </head>
 <body class="admin-body">
 <a class="skip-link" href="#main">Saltar al contenido</a>
@@ -520,6 +520,21 @@
         </div>
       </div>
 
+      <div class="card-panel stats-card">
+        <div class="stats-card-head"><div>
+          <h3>Envío cobrado vs coste real</h3>
+          <p class="stats-card-sub" id="ship-cmp-sub">Lo que han pagado los clientes por el envío frente a lo que ha costado en Correos</p>
+        </div></div>
+        <div class="revenue-summary ship-cmp">
+          <div class="revenue-stat"><span>Cobrado a clientes</span><b id="ship-cmp-charged">0,00 €</b><small id="ship-cmp-charged-note"></small></div>
+          <div class="revenue-stat"><span>Coste real Correos</span><b id="ship-cmp-spent">0,00 €</b><small id="ship-cmp-spent-note"></small></div>
+          <div class="revenue-stat" id="ship-cmp-balance-box"><span>Diferencia</span><b id="ship-cmp-balance">0,00 €</b><small id="ship-cmp-balance-note"></small></div>
+        </div>
+        <div class="ship-cmp-bar" aria-hidden="true"><span id="ship-cmp-bar-fill"></span></div>
+        <p class="help-text" id="ship-cmp-matched"></p>
+        <p class="help-text">Lo cobrado suma el envío de los pedidos no cancelados por su fecha de pedido; el coste real, los envíos de Correos por su fecha de envío. Un pedido de final de mes puede enviarse al mes siguiente, así que compara periodos completos.</p>
+      </div>
+
       <div class="stats-grid">
         <div class="card-panel stats-card">
           <div class="stats-card-head"><div><h3>Por zona de Correos</h3><p class="stats-card-sub">Zona de tarifa que aplica Correos según la distancia del destino</p></div></div>
@@ -699,9 +714,9 @@
 <script src="assets/js/drive-export.js?v=20261009b"></script>
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
 <script src="assets/js/xlsx-mini.js?v=20261110a"></script>
-<script src="assets/js/shipping-costs.js?v=20261110a"></script>
+<script src="assets/js/shipping-costs.js?v=20261111a"></script>
 <script src="assets/js/admin-orders.js?v=20261110a"></script>
-<script src="assets/js/admin-shipping.js?v=20261110a"></script>
+<script src="assets/js/admin-shipping.js?v=20261111a"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>
 </body>

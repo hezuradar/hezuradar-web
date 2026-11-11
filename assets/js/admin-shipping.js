@@ -265,6 +265,7 @@
     const list = filtered();
     const sum = SHIP.summarize(list);
     renderKpis(sum);
+    renderComparison();
     renderRank("ship-by-zone", sum.byZone, "Sin envíos en el periodo", (g) => `Zona ${g.key}`);
     renderRank("ship-by-destination", sum.byDestination.slice(0, 15), "Sin envíos en el periodo", (g) => g.key);
     renderRank("ship-by-tier", sum.byTier, "Sin envíos en el periodo", (g) => g.key);
@@ -280,6 +281,38 @@
     $("ship-kpi-discount").textContent = formatPrice(sum.discount);
     $("ship-kpi-fuel").textContent = formatPrice(sum.fuel);
     $("ship-kpi-vat").textContent = formatPrice(sum.vat);
+  }
+
+  // Fechas de la comparación: las del filtro o, si se ha elegido una factura, sus fechas.
+  function comparisonRange() {
+    const inv = invoices.find((i) => i.id === $("ship-invoice").value);
+    if (inv) return { from: inv.fromDate || "", to: inv.toDate || "" };
+    return { from: $("ship-from").value, to: $("ship-to").value };
+  }
+
+  function renderComparison() {
+    const { from, to } = comparisonRange();
+    const c = SHIP.chargedVsReal(orders, shipments, from, to, window.HA_ORDER_COUNTS_AS_REVENUE);
+    const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+    $("ship-cmp-charged").textContent = formatPrice(c.charged);
+    $("ship-cmp-charged-note").textContent =
+      `${plural(c.chargedOrders, "pedido", "pedidos")} con envío cobrado de ${plural(c.orders, "pedido", "pedidos")}`;
+    $("ship-cmp-spent").textContent = formatPrice(c.spent);
+    $("ship-cmp-spent-note").textContent = plural(c.shipments, "envío", "envíos");
+    $("ship-cmp-balance").textContent = (c.balance > 0 ? "+" : "") + formatPrice(c.balance);
+    $("ship-cmp-balance-box").classList.toggle("is-neg", c.balance < 0);
+    $("ship-cmp-balance-box").classList.toggle("is-pos", c.balance >= 0 && c.spent > 0);
+    $("ship-cmp-balance-note").textContent = c.coverage == null
+      ? ""
+      : c.balance < 0
+        ? `Pones tú ${formatPrice(-c.balance)} · cubres el ${Math.round(c.coverage * 100)} %`
+        : `Cubres el ${Math.round(c.coverage * 100)} % del coste`;
+    $("ship-cmp-bar-fill").style.width = `${Math.min(100, Math.round((c.coverage || 0) * 100))}%`;
+    $("ship-cmp-bar-fill").classList.toggle("is-neg", c.balance < 0);
+    const m = c.matched;
+    $("ship-cmp-matched").textContent = m.count
+      ? `Envío a envío (${plural(m.count, "pedido enlazado", "pedidos enlazados")} por nº de seguimiento): cobrado ${formatPrice(m.charged)}, coste ${formatPrice(m.spent)}, diferencia ${(m.balance > 0 ? "+" : "") + formatPrice(m.balance)}${m.losing ? ` · ${plural(m.losing, "envío", "envíos")} cobrado${m.losing === 1 ? "" : "s"} por debajo del coste` : ""}.`
+      : "Ningún envío del periodo está enlazado a su pedido: guarda el nº de seguimiento en el pedido para ver el cuadre envío a envío.";
   }
 
   function renderRank(id, rows, emptyText, labelFn) {

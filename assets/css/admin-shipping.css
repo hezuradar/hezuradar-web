@@ -32,6 +32,13 @@
 .ship-table small.is-neg{color:#b3261e}
 .ship-table .muted{color:var(--color-muted)}
 
+.ship-cmp{margin:0 0 12px}
+.ship-cmp .revenue-stat.is-neg b{color:#b3261e}
+.ship-cmp .revenue-stat.is-pos b{color:#1c7a3f}
+.ship-cmp-bar{height:8px;border-radius:999px;background:#eef2f5;overflow:hidden;margin-bottom:10px}
+.ship-cmp-bar span{display:block;height:100%;width:0;border-radius:999px;background:#1c7a3f;transition:width .3s var(--ease-out)}
+.ship-cmp-bar span.is-neg{background:#d98a1c}
+
 .revenue-stat small{display:block;margin-top:2px;font-size:.72rem;color:var(--color-muted)}
 
 @media (max-width:640px){

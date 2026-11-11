@@ -345,8 +345,55 @@
     return map;
   }
 
+  // Día local («AAAA-MM-DD») en que se creó un pedido, el mismo criterio que usa el
+  // resumen de ventas de la pestaña Pedidos.
+  function orderDay(o) {
+    const d = new Date(o && o.createdAt);
+    if (isNaN(d)) return "";
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+  }
+
+  // Envío cobrado a los clientes frente a lo que ha costado de verdad en Correos, dentro
+  // de las mismas fechas: lo cobrado por la fecha del pedido y el coste por la del envío.
+  // `countsAsRevenue` es la regla de facturación de admin-orders.js (sin cancelados...).
+  // `matched` compara solo los envíos enlazados a su pedido por el nº de seguimiento.
+  function chargedVsReal(orders, shipments, from, to, countsAsRevenue) {
+    const counts = typeof countsAsRevenue === "function" ? countsAsRevenue : () => true;
+    const inRange = (day) => !!day && (!from || day >= from) && (!to || day <= to);
+    const billed = (orders || []).filter((o) => counts(o) && inRange(orderDay(o)));
+    const charged = sumField(billed, "shippingCost");
+    const real = filterByRange(shipments, from, to);
+    const spent = sumField(real, "total");
+
+    const byTracking = ordersByTracking(billed);
+    const pairs = real
+      .map((s) => ({ s, o: byTracking.get(docIdFor(s.tracking)) }))
+      .filter((p) => p.o);
+    const matchedCharged = round2(pairs.reduce((a, p) => a + (Number(p.o.shippingCost) || 0), 0));
+    const matchedSpent = round2(pairs.reduce((a, p) => a + (p.s.total || 0), 0));
+
+    return {
+      charged,
+      chargedOrders: billed.filter((o) => (Number(o.shippingCost) || 0) > 0).length,
+      orders: billed.length,
+      spent,
+      shipments: real.length,
+      balance: round2(charged - spent),
+      coverage: spent > 0 ? charged / spent : null,
+      matched: {
+        count: pairs.length,
+        charged: matchedCharged,
+        spent: matchedSpent,
+        balance: round2(matchedCharged - matchedSpent),
+        losing: pairs.filter((p) => (Number(p.o.shippingCost) || 0) < (p.s.total || 0)).length,
+      },
+    };
+  }
+
   window.HA_SHIPPING = {
     parseWorkbook,
+    chargedVsReal,
+    orderDay,
     computeCosts,
     filterByRange,
     summarize,

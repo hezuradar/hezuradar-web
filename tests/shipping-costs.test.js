@@ -166,6 +166,32 @@ test("ordersByTracking cruza envíos y pedidos por nº de seguimiento sin distin
   assertEqual(S.docIdFor("pq/test 01"), "PQTEST01");
 });
 
+test("chargedVsReal compara el envío cobrado con el coste real en las mismas fechas", () => {
+  const orders = [
+    { orderCode: "A", status: "enviado", createdAt: "2026-10-07T12:00:00", shippingCost: 4.5, trackingNumber: "PQ1" },
+    { orderCode: "B", status: "entregado", createdAt: "2026-10-18T12:00:00", shippingCost: 6 },
+    { orderCode: "C", status: "cancelado", createdAt: "2026-10-19T12:00:00", shippingCost: 9 },
+    { orderCode: "D", status: "pendiente", createdAt: "2026-11-02T12:00:00", shippingCost: 4.5 },
+    { orderCode: "E", status: "pendiente", createdAt: "2026-10-20T12:00:00" },
+  ];
+  const shipments = [
+    { date: "2026-10-08", tracking: "PQ1", total: 5.4 },
+    { date: "2026-10-19", tracking: "PQ2", total: 5.54 },
+    { date: "2026-11-03", tracking: "PQ3", total: 5.54 },
+  ];
+  const counts = (o) => o.status !== "cancelado";
+  const r = S.chargedVsReal(orders, shipments, "2026-10-01", "2026-10-31", counts);
+  assertEqual(r.charged, 10.5);
+  assertEqual(r.orders, 3);
+  assertEqual(r.chargedOrders, 2);
+  assertEqual(r.spent, 10.94);
+  assertEqual(r.shipments, 2);
+  assertEqual(r.balance, -0.44);
+  assertEqual(r.matched, { count: 1, charged: 4.5, spent: 5.4, balance: -0.9, losing: 1 });
+  assertEqual(S.chargedVsReal(orders, shipments, "", "", counts).charged, 15);
+  assertEqual(S.chargedVsReal([], [], "", "").coverage, null);
+});
+
 test("periodMonth reconoce el mes en castellano", () => {
   assertEqual(S.periodMonth("Octubre 2026"), "2026-10");
   assertEqual(S.periodMonth("setiembre de 2026"), "2026-09");
