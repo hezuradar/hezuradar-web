@@ -79,6 +79,27 @@ test("identifica la factura por el mes del periodo y convierte las fechas a ISO"
   assertTrue(r.shipments.every((s) => s.invoiceId === "2026-10"));
 });
 
+test("el mes de la factura sale de los envíos aunque el Excel ponga el mes en que llega", () => {
+  const summary = workbook().sheets.Resumen.map((r) => (r[0] === "Periodo" ? [r[0], "Noviembre 2026"] : r));
+  const r = S.parseWorkbook(workbook(null, summary));
+  assertEqual(r.invoice.id, "2026-10");
+  assertEqual(r.invoice.period, "Octubre 2026");
+  assertTrue(r.shipments.every((s) => s.invoiceId === "2026-10"));
+  assertTrue(r.warnings.some((w) => /mes anterior/.test(w)));
+});
+
+test("el mes de la factura es el de la mayoría de envíos, sin hoja Resumen", () => {
+  const wb = workbook([
+    row("30/09/2026", "PQTEST0001A", "Bizkaia", "Z2", "0-250 g", 6.2, 2.21),
+    row("05/10/2026", "PQTEST0002B", "Burgos", "Z3", "0-250 g", 6.37, 2.27),
+    row("09/10/2026", "PQTEST0003C", "Burgos", "Z3", "0-250 g", 6.37, 2.27),
+  ]);
+  delete wb.sheets.Resumen;
+  const r = S.parseWorkbook(wb);
+  assertEqual(r.invoice.id, "2026-10");
+  assertEqual(r.invoice.period, "Octubre 2026");
+});
+
 test("sin hoja Resumen usa el 21 % de IVA, sin combustible, y lo avisa", () => {
   const wb = workbook();
   delete wb.sheets.Resumen;
@@ -190,6 +211,21 @@ test("chargedVsReal compara el envío cobrado con el coste real en las mismas fe
   assertEqual(r.matched, { count: 1, charged: 4.5, spent: 5.4, balance: -0.9, losing: 1 });
   assertEqual(S.chargedVsReal(orders, shipments, "", "", counts).charged, 15);
   assertEqual(S.chargedVsReal([], [], "", "").coverage, null);
+});
+
+test("chargedVsReal solo cuenta los pedidos de los meses facturados por Correos", () => {
+  const orders = [
+    { status: "enviado", createdAt: "2026-10-07T12:00:00", shippingCost: 4.5 },
+    { status: "pendiente", createdAt: "2026-11-02T12:00:00", shippingCost: 4.5 },
+    { status: "enviado", createdAt: "2026-09-28T12:00:00", shippingCost: 4.5 },
+  ];
+  const shipments = [{ date: "2026-10-08", tracking: "PQ1", total: 5.4 }];
+  const r = S.chargedVsReal(orders, shipments, "", "", null, ["2026-10"]);
+  assertEqual(r.charged, 4.5);
+  assertEqual(r.orders, 1);
+  assertEqual(r.spent, 5.4);
+  // Sin meses facturados no se limita (compatibilidad).
+  assertEqual(S.chargedVsReal(orders, shipments, "", "", null, []).charged, 13.5);
 });
 
 test("periodMonth reconoce el mes en castellano", () => {

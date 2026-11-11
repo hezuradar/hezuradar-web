@@ -259,6 +259,20 @@
     };
   }
 
+  // Mes al que corresponden los envíos: el que más se repite (si empata, el más antiguo).
+  function serviceMonth(items) {
+    const counts = new Map();
+    items.forEach((s) => counts.set(monthOf(s.date), (counts.get(monthOf(s.date)) || 0) + 1));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
+  }
+
+  // «2026-10» -> «Octubre 2026».
+  function monthName(ym) {
+    const [y, m] = String(ym).split("-");
+    const name = Object.keys(MONTHS).find((k) => MONTHS[k] === Number(m) && k !== "setiembre") || m;
+    return name.charAt(0).toUpperCase() + name.slice(1) + " " + y;
+  }
+
   // Interpreta el libro leído con HA_XLSX.readWorkbook().
   // Devuelve { invoice, shipments, errors, warnings }.
   function parseWorkbook(workbook) {
@@ -279,11 +293,21 @@
     const vatRate = summary.vatRate > 0 && summary.vatRate < 1 ? summary.vatRate : DEFAULT_VAT_RATE;
     if (!(summary.vatRate > 0)) warnings.push("No se encuentra el tipo de IVA en la hoja Resumen: se usa el 21 %.");
 
-    const firstDate = parsed.items.map((s) => s.date).sort()[0];
-    const id = periodMonth(summary.period) || monthOf(firstDate);
+    // Correos factura a mes vencido: la factura que llega en noviembre es de los envíos de
+    // octubre. El mes de la factura se saca de las fechas de los envíos, no del «Periodo»
+    // del Excel ni de cuándo se importa, para que pedidos y costes caigan en el mismo mes.
+    const id = serviceMonth(parsed.items);
+    const labelMonth = periodMonth(summary.period);
+    if (labelMonth && labelMonth !== id) {
+      warnings.push(
+        `El periodo del Excel dice «${summary.period}», pero los envíos son de ${monthName(id)}: ` +
+          `la factura se guarda como ${monthName(id)} (Correos factura el mes anterior).`
+      );
+    }
     let shipments = computeCosts(parsed.items, fuel, vatRate).map((s) => Object.assign(s, { invoiceId: id }));
     if (summary.total > 0) shipments = reconcileCents(shipments, round2(summary.total));
-    const invoice = buildInvoice(id, summary.period, shipments, summary, fuel, vatRate);
+    const period = labelMonth === id ? summary.period : monthName(id);
+    const invoice = buildInvoice(id, period, shipments, summary, fuel, vatRate);
     if (Math.abs(invoice.total - invoice.computedTotal) > INVOICE_TOLERANCE) {
       warnings.push(
         `La suma de los envíos (${invoice.computedTotal.toFixed(2)} €) no cuadra con el total de la factura (${invoice.total.toFixed(2)} €).`
@@ -357,12 +381,17 @@
   // de las mismas fechas: lo cobrado por la fecha del pedido y el coste por la del envío.
   // `countsAsRevenue` es la regla de facturación de admin-orders.js (sin cancelados...).
   // `matched` compara solo los envíos enlazados a su pedido por el nº de seguimiento.
-  function chargedVsReal(orders, shipments, from, to, countsAsRevenue) {
+  // `months` («AAAA-MM») son los meses con factura de Correos importada: solo cuentan los
+  // pedidos y envíos de esos meses, para no comparar lo cobrado en un mes que Correos aún
+  // no ha facturado (p. ej. el mes en curso) con un coste que todavía no existe.
+  function chargedVsReal(orders, shipments, from, to, countsAsRevenue, months) {
     const counts = typeof countsAsRevenue === "function" ? countsAsRevenue : () => true;
-    const inRange = (day) => !!day && (!from || day >= from) && (!to || day <= to);
+    const billedMonths = new Set(months || []);
+    const inPeriod = (day) => !billedMonths.size || billedMonths.has(monthOf(day));
+    const inRange = (day) => !!day && (!from || day >= from) && (!to || day <= to) && inPeriod(day);
     const billed = (orders || []).filter((o) => counts(o) && inRange(orderDay(o)));
     const charged = sumField(billed, "shippingCost");
-    const real = filterByRange(shipments, from, to);
+    const real = filterByRange(shipments, from, to).filter((s) => inPeriod(s.date));
     const spent = sumField(real, "total");
 
     const byTracking = ordersByTracking(billed);

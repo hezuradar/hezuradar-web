@@ -283,16 +283,26 @@
     $("ship-kpi-vat").textContent = formatPrice(sum.vat);
   }
 
-  // Fechas de la comparación: las del filtro o, si se ha elegido una factura, sus fechas.
-  function comparisonRange() {
-    const inv = invoices.find((i) => i.id === $("ship-invoice").value);
-    if (inv) return { from: inv.fromDate || "", to: inv.toDate || "" };
-    return { from: $("ship-from").value, to: $("ship-to").value };
+  // Periodo de la comparación: solo los meses con factura de Correos importada (o el de la
+  // factura elegida), recortados por las fechas del filtro.
+  function comparisonPeriod() {
+    const chosen = $("ship-invoice").value;
+    const months = invoices.map((i) => i.id).filter((id) => !chosen || id === chosen).sort();
+    return { from: $("ship-from").value, to: $("ship-to").value, months };
+  }
+
+  function monthLabel(ym) {
+    const [y, m] = ym.split("-").map(Number);
+    const name = new Date(y, m - 1, 1).toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+    return name.charAt(0).toUpperCase() + name.slice(1);
   }
 
   function renderComparison() {
-    const { from, to } = comparisonRange();
-    const c = SHIP.chargedVsReal(orders, shipments, from, to, window.HA_ORDER_COUNTS_AS_REVENUE);
+    const { from, to, months } = comparisonPeriod();
+    const c = SHIP.chargedVsReal(orders, shipments, from, to, window.HA_ORDER_COUNTS_AS_REVENUE, months);
+    $("ship-cmp-sub").textContent = months.length
+      ? `Periodo facturado por Correos: ${months.map(monthLabel).join(", ")}${from || to ? " (dentro de las fechas del filtro)" : ""}`
+      : "Importa una factura de Correos para comparar";
     const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
     $("ship-cmp-charged").textContent = formatPrice(c.charged);
     $("ship-cmp-charged-note").textContent =

@@ -532,7 +532,7 @@
         </div>
         <div class="ship-cmp-bar" aria-hidden="true"><span id="ship-cmp-bar-fill"></span></div>
         <p class="help-text" id="ship-cmp-matched"></p>
-        <p class="help-text">Lo cobrado suma el envío de los pedidos no cancelados por su fecha de pedido; el coste real, los envíos de Correos por su fecha de envío. Un pedido de final de mes puede enviarse al mes siguiente, así que compara periodos completos.</p>
+        <p class="help-text">Solo se comparan los meses que Correos ya ha facturado (las facturas importadas): lo cobrado suma el envío de los pedidos no cancelados de esos meses, por su fecha de pedido, y el coste real los envíos de esas facturas. Los pedidos de un mes sin factura importada (p. ej. el mes en curso) no cuentan. Un pedido de final de mes puede enviarse al mes siguiente, así que el cuadre es más fiable con varios meses.</p>
       </div>
 
       <div class="stats-grid">
@@ -714,9 +714,9 @@
 <script src="assets/js/drive-export.js?v=20261009b"></script>
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
 <script src="assets/js/xlsx-mini.js?v=20261110a"></script>
-<script src="assets/js/shipping-costs.js?v=20261111a"></script>
+<script src="assets/js/shipping-costs.js?v=20261111d"></script>
 <script src="assets/js/admin-orders.js?v=20261110a"></script>
-<script src="assets/js/admin-shipping.js?v=20261111a"></script>
+<script src="assets/js/admin-shipping.js?v=20261111b"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>
 </body>
