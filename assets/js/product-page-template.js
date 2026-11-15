@@ -6,9 +6,9 @@
 
   var SITE_URL = "https://hezuradar.com";
   // Envío en España según DOMESTIC_RATES en assets/js/cart.js: 1 unidad, 1,50 € por
-  // correo ordinario; 2 o más, 5,50 € certificado. En los datos estructurados se
+  // correo ordinario; 2 o más, 5,60 € certificado. En los datos estructurados se
   // declara la tarifa certificada (Google pide no declarar envío gratis cuando no lo es).
-  var STANDARD_SHIPPING_EUR = "5.50";
+  var STANDARD_SHIPPING_EUR = "5.60";
   // Mínimo legal para ventas a distancia a consumidores en España (art. 102 TRLGDCU).
   var RETURN_WINDOW_DAYS = 14;
   // Política real de devoluciones y envío (confirmada por el propietario, no
@@ -546,7 +546,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<script src="/assets/js/i18n.js?v=20261102e"></script>\n' +
+      '<script src="/assets/js/i18n.js?v=20261115a"></script>\n' +
       '<link rel="stylesheet" href="/assets/css/style.css?v=20261102b">\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -628,7 +628,7 @@
       '<script src="/assets/js/catalog-template.js?v=20261101c" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
       '<script src="/assets/js/paypal-fee.js?v=20261109a" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261102j" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261115h" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261101b" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
@@ -916,7 +916,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<script src="/assets/js/i18n.js?v=20261102e"></script>\n' +
+      '<script src="/assets/js/i18n.js?v=20261115a"></script>\n' +
       '<link rel="stylesheet" href="/assets/css/style.css?v=20261102b">\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +

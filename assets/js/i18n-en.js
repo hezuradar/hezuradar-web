@@ -1342,6 +1342,9 @@ Object.assign(window.HA_I18N_DICT, {
   "Una pieza se envía por correo ordinario, sin número de seguimiento. A partir de dos piezas, certificado.":
     "A single piece is sent by standard mail, without tracking. Orders of two or more pieces go by registered mail.",
   "Envío por correo certificado, con número de seguimiento.": "Sent by registered mail, with tracking.",
+  "Los envíos a Canarias van por correo certificado, con número de seguimiento.":
+    "Orders to the Canary Islands go by registered mail, with tracking.",
+  "Canarias": "Canary Islands",
   "Finalizar pedido": "Checkout",
   "· precio por cantidad": "· bulk price",
   "La cesta admite como máximo 50 productos distintos.": "The basket holds at most 50 different products.",

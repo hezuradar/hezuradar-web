@@ -2,10 +2,13 @@
   "use strict";
 
   const LS_CART = "ha_cart";
-  // Gastos de envío. En España, 1 pieza va por correo ordinario y 2 o más certificado.
+  // Gastos de envío. En España, 1 pieza va por correo ordinario y 2 o más certificado;
+  // a Canarias (códigos postales 35xxx y 38xxx) siempre certificado, a tarifa propia.
   // Fuera de España, Paq Light Internacional de Correos (tarifa 2026, PVP con IVA) según
   // la zona del país y el peso del pedido, hasta 2 kg.
-  const DOMESTIC_RATES = { single: 1.5, multi: 5.5 };
+  const DOMESTIC_RATES = { single: 1.5, multi: 5.6 };
+  const CANARIAS_RATE = 9;
+  const CANARIAS_POSTAL_RE = /^(35|38)\d{3}$/;
   const INTERNATIONAL_RATES = {
     EU1: [[250, 15.04], [750, 16.73], [1000, 18.6], [1500, 22.09], [2000, 25.7]],
     EU2: [[250, 19.15], [750, 24.01], [1000, 27.25], [1500, 32.8], [2000, 38.31]],
@@ -53,6 +56,8 @@
   let lastFocus = null;
   // País de envío (código ISO) elegido en el checkout; la cesta lo usa para el resumen.
   let country = "ES";
+  // Código postal escrito en el checkout: decide la tarifa de Canarias.
+  let postalCode = "";
 
   document.addEventListener("DOMContentLoaded", () => {
     updateBadge();
@@ -232,8 +237,14 @@
       if (!band) return { cost: null, label: "Envío a confirmar", kind: "international", weight };
       return { cost: band[1], label: SHIPPING_LABELS.international, kind: "international", weight };
     }
+    if (isCanariasPostal(postalCode)) {
+      return { cost: CANARIAS_RATE, label: SHIPPING_LABELS.multi, kind: "canarias", place: "Canarias" };
+    }
     const kind = n === 1 ? "single" : "multi";
     return { cost: DOMESTIC_RATES[kind], label: SHIPPING_LABELS[kind], kind };
+  }
+  function isCanariasPostal(code) {
+    return CANARIAS_POSTAL_RE.test(String(code || "").replace(/\s+/g, ""));
   }
   function shippingCost() {
     return shippingQuote().cost || 0;
@@ -474,12 +485,14 @@
     const note =
       q.kind === "single"
         ? "Una pieza se envía por correo ordinario, sin número de seguimiento. A partir de dos piezas, certificado."
+        : q.kind === "canarias"
+        ? "Los envíos a Canarias van por correo certificado, con número de seguimiento."
         : country === "ES"
         ? "Envío por correo certificado, con número de seguimiento."
         : `Los envíos fuera de España van por Paq Light Internacional de Correos, con número de seguimiento. Peso aproximado del pedido: ${formatWeight(q.weight)}.`;
     return `
       <div class="cart-mini-line"><span>Subtotal</span><span>${formatPrice(subtotal())}</span></div>
-      <div class="cart-mini-line"><span>${q.label} (${escapeHtml(countryName(country))})</span><span>${formatPrice(q.cost)}</span></div>
+      <div class="cart-mini-line"><span>${q.label} (${escapeHtml(q.place || countryName(country))})</span><span>${formatPrice(q.cost)}</span></div>
       ${feeRow}
       <div class="cart-subtotal"><span>Total</span><b>${formatPrice(round2(subtotal() + q.cost + fee))}</b></div>
       <p class="help-text">${note}</p>
@@ -720,6 +733,20 @@
     });
   }
 
+  // Código postal del checkout: solo repinta si cambia de tarifa (Canarias o no).
+  function bindPostalInput(id) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    postalCode = input.value;
+    input.addEventListener("input", () => {
+      const wasCanarias = isCanariasPostal(postalCode);
+      postalCode = input.value;
+      if (isCanariasPostal(postalCode) === wasCanarias) return;
+      pendingOrder = null;
+      refreshSummary();
+    });
+  }
+
   function bindViewEvents() {
     if (view === "cart") {
       document.querySelectorAll("[data-inc]").forEach((b) =>
@@ -766,6 +793,7 @@
       });
       document.getElementById("checkout-form").addEventListener("submit", onSubmitCheckout);
       bindCountrySelect("co-country");
+      bindPostalInput("co-postal");
       paymentMethod = "";
       paypalMode = "";
       document.querySelectorAll('input[name="paymentMethod"]').forEach((input) => {
@@ -994,6 +1022,7 @@
       const orderLines = lines();
       const orderSubtotal = subtotal();
       country = COUNTRY_CODES.includes(data.country) ? data.country : "ES";
+      postalCode = data.postalCode;
       const quote = shippingQuote();
       const orderShipping = quote.cost || 0;
       // Recargo de PayPal (pago normal): va sumado en `total`, no en un campo propio
