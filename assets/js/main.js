@@ -43,7 +43,7 @@
     try {
       const [products, store] = await Promise.all([
         fetchJSON(catalogUrl("data/products.json")),
-        fetchJSON("data/store.json"),
+        fetchStore("data/store.json"),
       ]);
       state.products = products;
       state.store = store;
@@ -174,6 +174,13 @@
   function waLink(phone, text) {
     const msg = text || "Hola, estoy interesado en vuestros productos.";
     return `https://api.whatsapp.com/send?phone=${phone.replace("+", "")}&text=${encodeURIComponent(msg)}`;
+  }
+
+  // store.json ya lo ha pedido year.js: se reutiliza su respuesta y solo se vuelve a
+  // pedir si aquella falló.
+  async function fetchStore(path) {
+    const store = window.HA_storePromise ? await window.HA_storePromise : null;
+    return store || fetchJSON(path);
   }
 
   async function fetchJSON(path) {

@@ -827,9 +827,13 @@
     $("p-save").addEventListener("click", saveProduct);
     $("p-cancel").addEventListener("click", () => closeProductModal());
     $("p-images").addEventListener("change", onFilesSelected);
-    ["p-filter", "p-filter-category", "p-filter-stock", "p-sort"].forEach((id) =>
-      $(id).addEventListener(id === "p-filter" ? "input" : "change", renderTable)
-    );
+    ["p-filter-category", "p-filter-stock", "p-sort"].forEach((id) => $(id).addEventListener("change", renderTable));
+    // El buscador espera a que se deje de teclear un momento antes de repintar la tabla.
+    let filterTimer = null;
+    $("p-filter").addEventListener("input", () => {
+      clearTimeout(filterTimer);
+      filterTimer = setTimeout(renderTable, 120);
+    });
 
     // Un solo listener por contenedor: la cuadrícula y las fotos se repintan a menudo.
     $("product-grid").addEventListener("click", (e) => {

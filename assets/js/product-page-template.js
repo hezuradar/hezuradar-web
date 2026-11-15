@@ -77,7 +77,7 @@
   }
 
   function formatPrice(n) {
-    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
+    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(Number(n) || 0);
   }
 
   function effectivePrice(p) {
@@ -547,7 +547,7 @@
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
       '<script src="/assets/js/i18n.js?v=20261115a"></script>\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261102b">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261115d">\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
       "<body>\n" +
@@ -618,18 +618,18 @@
       // antes de DOMContentLoaded. El SDK de Firebase ya no va aquí:
       // firebase-orders.js lo carga solo al enviar un pedido. Las versiones ?v=
       // las alinea scripts/generate-product-pages.js con las de index.html.
-      '<script src="/assets/js/year.js?v=20261026a" defer></script>\n' +
+      '<script src="/assets/js/year.js?v=20261115a" defer></script>\n' +
       '<script src="/assets/js/firebase-config.js?v=20260915l" defer></script>\n' +
       '<script src="/assets/js/firebase-orders.js?v=20261022a" defer></script>\n' +
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
       '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
       '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20261102c" defer></script>\n' +
+      '<script src="/assets/js/emailjs-notify.js?v=20261109f" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261101c" defer></script>\n' +
       '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
       '<script src="/assets/js/paypal-fee.js?v=20261109a" defer></script>\n' +
       '<script src="/assets/js/cart.js?v=20261115h" defer></script>\n' +
-      '<script src="/assets/js/product-page.js?v=20261101b" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
+      '<script src="/assets/js/product-page.js?v=20261115a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
     );
@@ -917,7 +917,7 @@
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
       '<script src="/assets/js/i18n.js?v=20261115a"></script>\n' +
-      '<link rel="stylesheet" href="/assets/css/style.css?v=20261102b">\n' +
+      '<link rel="stylesheet" href="/assets/css/style.css?v=20261115d">\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +
       "<body>\n" +
@@ -963,7 +963,7 @@
       "  </section>\n" +
       "</main>\n\n" +
       footerHtml(instagram) +
-      '<script src="/assets/js/year.js?v=20261026a" defer></script>\n' +
+      '<script src="/assets/js/year.js?v=20261115a" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
     );

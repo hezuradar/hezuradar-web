@@ -86,6 +86,18 @@ function syncAssetVersions(html, versions) {
   );
 }
 
+// La plantilla también la usa admin.js para publicar fichas sueltas: sus "?v=" fijos
+// se ponen al día con los de la raíz (tests/asset-versions.test.js avisa si se desfasan).
+function syncTemplateVersions(versions) {
+  const file = path.join(ROOT, "assets/js/product-page-template.js");
+  const src = fs.readFileSync(file, "utf8");
+  const synced = syncAssetVersions(src, versions);
+  if (synced !== src) {
+    fs.writeFileSync(file, synced, "utf8");
+    console.log("product-page-template.js: versiones de CSS/JS actualizadas.");
+  }
+}
+
 function escapeHtml(str) {
   return String(str || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
@@ -126,6 +138,7 @@ function main() {
   let changed = false;
   const today = TODAY;
   const versions = currentAssetVersions();
+  syncTemplateVersions(versions);
 
   products.forEach((p) => {
     if (!p.slug) {
@@ -207,4 +220,6 @@ function main() {
   console.log("index.html regenerado con el catálogo (" + products.length + " productos).");
 }
 
-main();
+if (require.main === module) main();
+
+module.exports = { currentAssetVersions, syncAssetVersions };

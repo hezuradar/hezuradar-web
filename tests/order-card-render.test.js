@@ -137,6 +137,17 @@ test("orderCard no deja pasar una URL peligrosa al src de la imagen", () => {
   assertFalse(html.includes("javascript:alert(1)"), "se coló javascript: en el src");
 });
 
+test("orderCard no mete la imagen del diseño (base64) en el HTML: se carga al verse", () => {
+  const snapshot = "data:image/jpeg;base64," + "A".repeat(5000);
+  const html = orderCard({
+    ...baseOrder,
+    designs: [{ kind: "pua", orderCode: "HA-1", material: { label: "Hueso" }, qty: 1, design: { snapshot } }],
+  });
+  assertFalse(html.includes("base64,"), "el data URL del diseño no debería ir en el HTML de la tarjeta");
+  assertTrue(html.includes('data-design-thumb="0"'), "falta el hueco de la miniatura del diseño");
+  assertTrue(html.includes('id="view-design-p1-0"'), "falta el botón Ver diseño");
+});
+
 test("orderCard sin líneas no muestra el bloque de checklist", () => {
   const html = orderCard({ ...baseOrder, items: [] });
   assertFalse(html.includes("prep-block"));

@@ -260,8 +260,21 @@
     return inv ? list.filter((s) => s.invoiceId === inv) : list;
   }
 
+  // Con la pestaña Envíos oculta no se recalcula nada: se repinta al abrirla
+  // (evento ha-tab-shown de admin-orders.js).
+  let pendingRender = false;
+  window.addEventListener("ha-tab-shown", (e) => {
+    if (e.detail && e.detail.tab === "tab-shipping" && pendingRender) render();
+  });
+
   function render() {
     if (!$("shipping-panel")) return;
+    const tab = $("tab-shipping");
+    if (tab && tab.style.display === "none") {
+      pendingRender = true;
+      return;
+    }
+    pendingRender = false;
     const list = filtered();
     const sum = SHIP.summarize(list);
     renderKpis(sum);

@@ -46,6 +46,9 @@
   let catalogLoadError = false;
   let statusFilter = "";
   let rangeDays = 0; // 0 = todos los pedidos; si no, solo los creados en los últimos N días
+  // Pedidos pintados en la lista; "Mostrar más" suma ORDERS_PAGE (se reinicia al cambiar de filtro).
+  const ORDERS_PAGE = 50;
+  let visibleOrders = ORDERS_PAGE;
   let unsubscribe = null;
   let editingDocId = null;
   let itemRows = [];
@@ -73,6 +76,7 @@
     document.querySelectorAll(".status-tab").forEach((btn) => {
       btn.addEventListener("click", () => {
         statusFilter = btn.dataset.status;
+        visibleOrders = ORDERS_PAGE;
         document.querySelectorAll(".status-tab").forEach((b) => {
           b.classList.toggle("active", b === btn);
           b.setAttribute("aria-pressed", b === btn ? "true" : "false");
@@ -137,6 +141,8 @@
         });
         document.querySelectorAll(".admin-tab-panel").forEach((p) => (p.style.display = "none"));
         document.getElementById(btn.dataset.tab).style.display = "block";
+        // Estadísticas y Envíos no se repintan mientras están ocultas: lo hacen al mostrarse.
+        window.dispatchEvent(new CustomEvent("ha-tab-shown", { detail: { tab: btn.dataset.tab } }));
       });
     });
   }
@@ -275,6 +281,7 @@
 
   function setOrdersRange(days) {
     rangeDays = days;
+    visibleOrders = ORDERS_PAGE;
     document.querySelectorAll("#orders-range button").forEach((b) => {
       const on = (Number(b.dataset.days) || 0) === days;
       b.classList.toggle("active", on);
@@ -322,13 +329,25 @@
       return;
     }
 
-    $("orders-list").innerHTML = catalogNotice + list.map(orderCard).join("");
+    // Solo se pintan los primeros pedidos; "Mostrar más" amplía la lista de ORDERS_PAGE en ORDERS_PAGE.
+    const shown = list.slice(0, visibleOrders);
+    const remaining = list.length - shown.length;
+    const moreBtn = remaining
+      ? `<button type="button" class="small-btn orders-more" id="orders-more">Mostrar ${Math.min(remaining, ORDERS_PAGE)} más (quedan ${remaining})</button>`
+      : "";
+    $("orders-list").innerHTML = catalogNotice + shown.map(orderCard).join("") + moreBtn;
+    if (remaining) {
+      $("orders-more").addEventListener("click", () => {
+        visibleOrders += ORDERS_PAGE;
+        renderOrders();
+      });
+    }
     if (focusId) {
       const el = document.getElementById(focusId);
       if (el && typeof el.focus === "function") el.focus({ preventScroll: true });
     }
 
-    list.forEach((o) => {
+    shown.forEach((o) => {
       const sel = document.getElementById(`status-${o.docId}`);
       if (sel) sel.addEventListener("change", () => updateStatus(o.docId, sel.value));
       const editBtn = document.getElementById(`edit-${o.docId}`);
@@ -343,7 +362,10 @@
       if (waAlbaranBtn) waAlbaranBtn.addEventListener("click", () => sendAlbaranWhatsApp(o.docId));
       const resendEmailBtn = document.getElementById(`resend-email-${o.docId}`);
       if (resendEmailBtn) resendEmailBtn.addEventListener("click", () => resendCustomerEmail(o.docId));
+      const thumbCard = document.getElementById(`order-card-${o.docId}`);
       orderDesigns(o).forEach((ds, i) => {
+        const thumb = thumbCard && thumbCard.querySelector(`img[data-design-thumb="${i}"]`);
+        if (thumb) lazyDesignThumb(thumb, (ds.design || {}).snapshot);
         const viewDesignBtn = document.getElementById(`view-design-${o.docId}-${i}`);
         if (viewDesignBtn) viewDesignBtn.addEventListener("click", () => viewDesign(ds));
         const downloadBtn = document.getElementById(`download-design-${o.docId}-${i}`);
@@ -381,6 +403,30 @@
         }
       }
     });
+  }
+
+  // La miniatura del diseño (base64 de hasta ~1 MB) no va en el HTML de la tarjeta: se pone
+  // como src solo cuando la tarjeta entra en pantalla, así repintar la lista no la arrastra.
+  const designThumbSrc = new WeakMap();
+  const designThumbObserver =
+    "IntersectionObserver" in window
+      ? new IntersectionObserver((entries, obs) => {
+          entries.forEach((e) => {
+            if (!e.isIntersecting) return;
+            obs.unobserve(e.target);
+            e.target.src = designThumbSrc.get(e.target) || "";
+          });
+        }, { rootMargin: "300px" })
+      : null;
+
+  function lazyDesignThumb(img, snapshot) {
+    const src = safeImageUrl(snapshot);
+    if (!designThumbObserver) {
+      img.src = src;
+      return;
+    }
+    designThumbSrc.set(img, src);
+    designThumbObserver.observe(img);
   }
 
   // Convierte un data URL (base64) en un Blob decodificándolo a mano, sin usar fetch(): así no
@@ -534,8 +580,16 @@
     return name ? "n:" + name : null;
   }
 
+  // Se calcula una vez por cada lista de pedidos (cada snapshot de Firestore crea una nueva):
+  // la usan la pestaña Clientes, el desplegable del formulario y el buscador en cada tecla.
+  let customersCache = { src: null, list: [] };
   function customersFromOrders() {
-    const sorted = orders.slice().sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    if (customersCache.src !== orders) customersCache = { src: orders, list: buildCustomers() };
+    return customersCache.list;
+  }
+
+  function buildCustomers() {
+    const sorted = orders.slice().sort((a, b) => orderTimeMs(a) - orderTimeMs(b));
     const map = new Map();
     sorted.forEach((o) => {
       const c = o.customer || {};
@@ -571,7 +625,12 @@
       .map(([value, opt]) => `<option value="${escapeAttr(value)}">${escapeHtml(opt.label)}</option>`)
       .join("");
     sortSel.value = CUSTOMERS.DEFAULT_SORT;
-    $("customer-filter").addEventListener("input", renderCustomers);
+    // Al escribir se espera a que se deje de teclear un momento antes de filtrar.
+    let filterTimer = null;
+    $("customer-filter").addEventListener("input", () => {
+      clearTimeout(filterTimer);
+      filterTimer = setTimeout(renderCustomers, 150);
+    });
     fieldSel.addEventListener("change", renderCustomers);
     sortSel.addEventListener("change", renderCustomers);
   }
@@ -1110,7 +1169,7 @@
         const material = (ds.material && ds.material.label) || "Sin especificar";
         return `
             ${many ? `<div class="order-total-row" style="margin-top:${i ? 14 : 0}px"><b>Diseño ${i + 1} · ${escapeHtml(DESIGN_KINDS[ds.kind] || "Diseño")} · ${escapeHtml(ds.orderCode || "")}</b></div>` : ""}
-            ${d.snapshot ? `<img src="${escapeAttr(safeImageUrl(d.snapshot))}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
+            ${d.snapshot ? `<img data-design-thumb="${i}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;min-height:60px;background:#f0f3f5;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
             <div class="order-totals">
               <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
               ${many ? `<div class="order-total-row"><span>Cantidad</span><span>${Number(ds.qty) || 1}</span></div>` : ""}

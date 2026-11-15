@@ -38,11 +38,18 @@
     return res.json();
   }
 
+  // store.json ya lo ha pedido year.js: se reutiliza su respuesta y solo se vuelve a
+  // pedir si aquella falló.
+  async function fetchStore(path) {
+    const store = window.HA_storePromise ? await window.HA_storePromise : null;
+    return store || fetchJSON(path);
+  }
+
   async function loadData() {
     try {
       const [products, store] = await Promise.all([
         fetchJSON(catalogUrl("/data/products.json")),
-        fetchJSON("/data/store.json"),
+        fetchStore("/data/store.json"),
       ]);
       window.HA = window.HA || {};
       window.HA.products = products;
@@ -83,7 +90,7 @@
     return `https://api.whatsapp.com/send?phone=${phone.replace("+", "")}&text=${encodeURIComponent(msg)}`;
   }
   function formatPrice(n) {
-    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(n);
+    return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR" }).format(Number(n) || 0);
   }
   function effectivePrice(p) {
     const pct = Number(p.discountPercent) || 0;

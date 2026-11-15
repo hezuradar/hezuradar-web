@@ -204,8 +204,47 @@
 
   /* ---------------- RENDER ---------------- */
 
+  // Con la pestaña oculta solo se apunta que hay cambios; se repinta al abrirla
+  // (evento ha-tab-shown de admin-orders.js). Chart.js se descarga la primera vez.
+  let pendingRender = false;
+  let chartLoad = null;
+  window.addEventListener("ha-tab-shown", (e) => {
+    if (e.detail && e.detail.tab === "tab-stats" && pendingRender) renderAll();
+  });
+
+  function statsTabShown() {
+    const tab = $("tab-stats");
+    return !!tab && tab.style.display !== "none";
+  }
+
+  function loadChartJs() {
+    if (!chartLoad) {
+      chartLoad = new Promise((resolve) => {
+        const s = document.createElement("script");
+        s.src = "/assets/js/vendor/chart-4.4.4.umd.min.js";
+        s.onload = resolve;
+        // Sin Chart.js se pintan igual las cifras y tablas; upsertChart() se salta las gráficas.
+        s.onerror = () => {
+          console.error("No se pudo cargar Chart.js: las gráficas no se mostrarán.");
+          resolve();
+        };
+        document.head.appendChild(s);
+      });
+    }
+    return chartLoad;
+  }
+
   function renderAll() {
     if (!allOrders) return;
+    if (!statsTabShown()) {
+      pendingRender = true;
+      return;
+    }
+    pendingRender = false;
+    if (typeof Chart === "undefined" && !chartLoad) {
+      loadChartJs().then(renderAll);
+      return;
+    }
     const r = currentRange();
     $("stats-range-label").textContent = r.label;
 
@@ -723,7 +762,7 @@
   }
 
   function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+    return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   }
 
   const escapeAttr = escapeHtml;

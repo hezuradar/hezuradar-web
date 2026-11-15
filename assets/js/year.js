@@ -24,10 +24,15 @@
   };
 
   if (!window.fetch) return;
-  fetch("/data/store.json", { cache: "no-cache" })
+  // La misma descarga la reutilizan main.js y product-page.js (se cargan después).
+  window.HA_storePromise = fetch("/data/store.json", { cache: "no-cache" })
     .then(function (r) {
       return r.ok ? r.json() : null;
     })
+    .catch(function () {
+      return null;
+    });
+  window.HA_storePromise
     .then(function (store) {
       if (!store) return;
       var off = store.whatsappEnabled === false;
