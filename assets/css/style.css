@@ -248,6 +248,33 @@ h1,h2,h3{color:var(--color-ink);margin:0 0 .4em}
 .modal-sku{color:var(--color-muted);font-size:.8rem}
 .modal-actions{display:flex;gap:10px;margin-top:auto}
 
+/* Selector de pedidos para la hoja de etiquetas (admin-label-picker.js). */
+.label-pick-modal{max-width:620px}
+.label-pick-body{padding:24px;max-height:88vh;display:flex;flex-direction:column;gap:12px}
+.label-pick-body h2{font-size:1.17em;margin:0;padding-right:40px}
+.label-pick-body .help-text{margin:0}
+.label-pick-all{display:flex;align-items:center;gap:10px;font-weight:700;padding:8px 12px;border-bottom:1px solid var(--color-border)}
+.label-pick-list{overflow:auto;min-height:0;flex:1;display:flex;flex-direction:column}
+.label-pick-row{
+  display:grid;grid-template-columns:auto auto 1fr auto auto;align-items:center;gap:12px;
+  padding:10px 12px;border-radius:10px;cursor:pointer;transition:background .15s ease;
+}
+.label-pick-row:hover{background:#f0f3f5}
+.label-pick-row:has(input:not(:checked)){color:var(--color-muted)}
+.label-pick-all input,.label-pick-row input{width:18px;height:18px;margin:0;accent-color:var(--color-primary)}
+.label-pick-code{font-weight:800;font-size:.82rem;color:var(--color-primary-dark)}
+.label-pick-name{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.label-pick-place,.label-pick-date{font-size:.85rem;color:var(--color-muted);white-space:nowrap}
+.label-pick-actions{display:flex;justify-content:flex-end;gap:10px;padding-top:12px;border-top:1px solid var(--color-border)}
+.label-pick-actions .btn{width:auto;flex:none}
+@media (max-width:600px){
+  .label-pick-row{grid-template-columns:auto minmax(0,1fr) auto;row-gap:2px}
+  .label-pick-name{grid-column:2/4}
+  .label-pick-place{grid-column:2/4;min-width:0;overflow:hidden;text-overflow:ellipsis}
+  .label-pick-date{grid-column:3;grid-row:1}
+  .label-pick-body{max-height:85vh}
+}
+
 .design-view-box{background:#fff;border-radius:16px;max-width:560px;width:100%;overflow:hidden;position:relative}
 .design-view-scroll{max-height:88vh;overflow:auto;padding:24px;text-align:center}
 .design-view-box img{max-width:100%;border-radius:10px;background:#f0f3f5}

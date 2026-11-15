@@ -1517,12 +1517,17 @@ ${bodyHtml}
     `;
   }
 
+  // Botón "Etiquetas de confirmados": primero se eligen los pedidos (admin-label-picker.js).
   function printConfirmedOrders() {
     const confirmed = orders.filter((o) => o.status === "confirmado");
     if (!confirmed.length) {
       alert("No hay pedidos confirmados para imprimir.");
       return;
     }
+    window.HA_LABEL_PICKER.open({ orders: confirmed, onPrint: printLabelSheet });
+  }
+
+  function printLabelSheet(confirmed) {
     const win = window.open("", "_blank", "width=900,height=700");
     if (!win) {
       alert("El navegador ha bloqueado la ventana de impresión. Permite las ventanas emergentes para esta página.");
