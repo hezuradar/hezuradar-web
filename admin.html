@@ -257,6 +257,12 @@
 
       <div class="card-panel">
         <h2 style="font-size:1.17em">Resumen de ventas</h2>
+        <div class="seg-toggle orders-range" id="revenue-range" role="group" aria-label="Periodo del resumen de ventas">
+          <button type="button" data-days="7" aria-pressed="false">Últimos 7 días</button>
+          <button type="button" data-days="30" aria-pressed="false">Último mes</button>
+          <button type="button" data-days="90" aria-pressed="false">Últimos 3 meses</button>
+          <button type="button" data-days="0" class="active" aria-pressed="true">Todos</button>
+        </div>
         <div class="field-row">
           <div class="field">
             <label for="revenue-from">Desde</label>
@@ -715,7 +721,7 @@
 <script src="assets/js/admin-customers.js?v=20261022a"></script>
 <script src="assets/js/xlsx-mini.js?v=20261110a"></script>
 <script src="assets/js/shipping-costs.js?v=20261111d"></script>
-<script src="assets/js/admin-orders.js?v=20261110a"></script>
+<script src="assets/js/admin-orders.js?v=20261115b"></script>
 <script src="assets/js/admin-shipping.js?v=20261111b"></script>
 <script src="/assets/js/vendor/chart-4.4.4.umd.min.js"></script>
 <script src="assets/js/admin-stats.js?v=20261020d"></script>

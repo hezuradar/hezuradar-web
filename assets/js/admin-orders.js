@@ -96,8 +96,12 @@
     $("o-shipping-cost").addEventListener("input", updateOrderFormSubtotal);
     $("o-payment-fee").addEventListener("input", updateOrderFormSubtotal);
     $("o-payment").addEventListener("change", updateOrderFormSubtotal);
-    $("revenue-from").addEventListener("change", renderRevenue);
-    $("revenue-to").addEventListener("change", renderRevenue);
+    $("revenue-from").addEventListener("change", onRevenueDatesChanged);
+    $("revenue-to").addEventListener("change", onRevenueDatesChanged);
+    $("revenue-range").addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-days]");
+      if (btn) setRevenueRange(Number(btn.dataset.days) || 0);
+    });
     // Gasto en envíos de las facturas de Correos importadas (admin-shipping.js).
     window.addEventListener("ha-shipments-updated", renderRevenue);
 
@@ -456,8 +460,38 @@
     document.addEventListener("keydown", onKey);
   }
 
+  // Periodos rápidos del resumen de ventas: rellenan Desde/Hasta (hoy incluido) para que
+  // facturación y gasto en Correos sigan usando el mismo filtro; "Todos" (0) los vacía.
+  function setRevenueRange(days) {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate() - days + 1);
+    $("revenue-from").value = days ? localIsoDate(start) : "";
+    $("revenue-to").value = days ? localIsoDate(today) : "";
+    markRevenueRange(days);
+    renderRevenue();
+  }
+
+  function markRevenueRange(days) {
+    document.querySelectorAll("#revenue-range button").forEach((b) => {
+      const on = days !== null && (Number(b.dataset.days) || 0) === days;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  // Fechas escritas a mano: se marca "Todos" si quedan vacías y ningún periodo si no.
+  function onRevenueDatesChanged() {
+    markRevenueRange(!$("revenue-from").value && !$("revenue-to").value ? 0 : null);
+    renderRevenue();
+  }
+
+  function localIsoDate(d) {
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
   function renderRevenue() {
-    const from = $("revenue-from").value ? new Date($("revenue-from").value + "T00:00:00") : null;
+    const from =$("revenue-from").value ? new Date($("revenue-from").value + "T00:00:00") : null;
     const to = $("revenue-to").value ? new Date($("revenue-to").value + "T23:59:59") : null;
     const included = orders.filter((o) => {
       if (!countsAsRevenue(o)) return false;
