@@ -407,6 +407,8 @@
 
   // La miniatura del diseño (base64 de hasta ~1 MB) no va en el HTML de la tarjeta: se pone
   // como src solo cuando la tarjeta entra en pantalla, así repintar la lista no la arrastra.
+  // SVG vacío mientras tanto, para que la miniatura no se vea como imagen rota.
+  const DESIGN_THUMB_PLACEHOLDER = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E";
   const designThumbSrc = new WeakMap();
   const designThumbObserver =
     "IntersectionObserver" in window
@@ -1169,7 +1171,7 @@
         const material = (ds.material && ds.material.label) || "Sin especificar";
         return `
             ${many ? `<div class="order-total-row" style="margin-top:${i ? 14 : 0}px"><b>Diseño ${i + 1} · ${escapeHtml(DESIGN_KINDS[ds.kind] || "Diseño")} · ${escapeHtml(ds.orderCode || "")}</b></div>` : ""}
-            ${d.snapshot ? `<img data-design-thumb="${i}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;min-height:60px;background:#f0f3f5;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
+            ${d.snapshot ? `<img data-design-thumb="${i}" src="${DESIGN_THUMB_PLACEHOLDER}" alt="Diseño configurado por el cliente" style="width:100%;max-width:220px;min-height:60px;background:#f0f3f5;border-radius:10px;border:1px solid var(--color-border);margin-bottom:10px">` : ""}
             <div class="order-totals">
               <div class="order-total-row"><span>Material</span><b>${escapeHtml(material)}</b></div>
               ${many ? `<div class="order-total-row"><span>Cantidad</span><span>${Number(ds.qty) || 1}</span></div>` : ""}
