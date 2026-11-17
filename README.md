@@ -117,55 +117,23 @@ aunque cambies de dispositivo, y no afectan a los emails ni al total facturado.
 > el código de cualquier app web. La seguridad real la dan las reglas de Firestore del paso 3 y tu
 > contraseña de administrador.
 
-## 5. Aviso por email de cada pedido (EmailJS)
+## 5. Aviso por email de cada pedido y formulario de contacto
 
-Además de abrirse WhatsApp, al confirmar un pedido se envía un email a `hezuradar@gmail.com` con el
-resumen. Esto usa **EmailJS**, un servicio gratuito que manda correos directamente desde el
-navegador del cliente sin necesitar un servidor propio (hasta 200 emails/mes gratis).
+Al confirmar un pedido en la cesta se envía un email a `hezuradar@gmail.com` con el resumen, y los
+mensajes del formulario de contacto de la portada llegan al mismo correo. Los dos los manda el
+Apps Script de la sección 7 desde Gmail (no hace falta configurar nada más que ese script):
 
-Si no lo configuras, la tienda sigue funcionando igual (WhatsApp y el guardado en Firebase no se ven
-afectados); simplemente no llegará el aviso por correo.
+- **Aviso de pedido:** la cesta solo manda el ID del pedido recién guardado; el script lo lee de
+  Firestore, así que el contenido del correo no se puede falsificar. Se envía una vez por pedido,
+  solo en los primeros 30 minutos y con un tope diario (`DAILY_LIMITS.notify` en `Code.gs`). Si
+  falla, el pedido muestra el error en el panel. Los pedidos de los diseñadores avisan al
+  exportarse a Drive.
+- **Formulario de contacto:** exige la casilla reCAPTCHA, que el script valida con Google, y tiene
+  su propio tope diario (`DAILY_LIMITS.contact`).
 
-### Configurarlo (una sola vez, ~5 minutos)
-
-1. Crea una cuenta gratis en [emailjs.com](https://www.emailjs.com).
-2. **Email Services** → **Add New Email Service** → conecta tu Gmail (`hezuradar@gmail.com`) →
-   copia el **Service ID**.
-3. **Email Templates** → **Create New Template**. En el asunto/cuerpo usa estas variables (tal cual,
-   con las llaves dobles):
-   - `{{order_code}}`, `{{items_text}}`, `{{subtotal}}`, `{{customer_name}}`, `{{customer_phone}}`,
-     `{{customer_email}}`, `{{shipping_address}}`, `{{notes}}`
-   - En el campo **To Email** de la plantilla pon `{{to_email}}` (o directamente
-     `hezuradar@gmail.com`).
-   - Guarda y copia el **Template ID**.
-4. **Account** → **General** → copia tu **Public Key**.
-5. Pega los tres valores en
-   [assets/js/emailjs-config.js](assets/js/emailjs-config.js), reemplazando `TU_PUBLIC_KEY`,
-   `TU_SERVICE_ID` y `TU_TEMPLATE_ID`. Sube el cambio al repositorio.
-
-> Igual que con Firebase, estos identificadores no son contraseñas secretas: EmailJS está diseñado
-> para usarlos en código público de cliente. El límite de envíos gratuito y la cuenta conectada son
-> la protección real.
-
-### Email de confirmación al cliente (opcional)
-
-Además del aviso a `hezuradar@gmail.com`, si el cliente rellena su email al hacer el pedido se le
-puede enviar automáticamente un correo de confirmación con el resumen del pedido en formato visual
-(logo, productos, importes, forma de pago y dirección de envío). Usa la misma cuenta de EmailJS,
-pero necesita **una segunda plantilla**:
-
-1. En EmailJS, **Email Templates** → **Create New Template** (una nueva, distinta a la del aviso
-   interno).
-2. En **To Email** pon `{{to_email}}` (así cada correo se envía a la dirección de cada cliente).
-3. En el asunto, algo como: `Pedido {{order_code}} confirmado - Hezur&Adar`.
-4. En el cuerpo, cambia al editor de código (HTML) y deja únicamente: `{{{order_html}}}` (con
-   triple llave) — el diseño ya viene maquetado desde la web, esta variable lo inserta tal cual.
-5. Guarda y copia el **Template ID** → pégalo en
-   [assets/js/emailjs-config.js](assets/js/emailjs-config.js) en `customerTemplateId`, reemplazando
-   `TU_CUSTOMER_TEMPLATE_ID`. Sube el cambio al repositorio.
-
-Si no configuras esta segunda plantilla, todo sigue funcionando igual (WhatsApp, aviso interno y
-guardado en Firebase); simplemente no se enviará confirmación por email al cliente.
+> Hasta el 17/11/2026 esto lo hacía EmailJS desde el navegador del cliente. Se quitó porque su clave
+> pública dejaba a cualquiera mandarte correos con el texto que quisiera (y agotar los 200 envíos
+> del mes), y en el plan gratuito no se puede limitar por dominio.
 
 ## 6. Personalizador de placas (`/disenador.html`)
 
@@ -323,7 +291,7 @@ atributos), sube la versión `?v=` de `i18n-en.js` en `assets/js/i18n.js` y pasa
 ## Notas
 
 - El botón "Añadir" de cada producto lo mete en la cesta; desde la cesta se rellenan los datos de
-  envío y se confirma el pedido, que se envía por WhatsApp, por email (si configuras EmailJS) y
+  envío y se confirma el pedido, que se envía por WhatsApp, por email (desde el Apps Script) y
   (si has configurado Firebase) queda guardado para gestionarlo desde el panel.
 - No hay cobro online: el pago se acuerda por WhatsApp, como en la web de referencia.
 - Todas las fotos y textos de producto se importaron desde la tienda original de HezurAdar.

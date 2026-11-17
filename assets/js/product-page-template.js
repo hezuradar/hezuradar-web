@@ -518,7 +518,7 @@
       "<head>\n" +
       '<meta charset="UTF-8">\n' +
       '<meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-      '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://www.google.com https://www.gstatic.com; frame-src https://www.google.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://firestore.googleapis.com https://api.emailjs.com https://script.google.com https://script.googleusercontent.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
+      '<meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' https://www.google.com https://www.gstatic.com; frame-src https://www.google.com; style-src \'self\' \'unsafe-inline\' https://fonts.googleapis.com; font-src \'self\' https://fonts.gstatic.com; img-src \'self\' data: blob:; connect-src \'self\' https://firestore.googleapis.com https://script.google.com https://script.googleusercontent.com; object-src \'none\'; base-uri \'self\'; form-action \'self\';">\n' +
       "<title>" + escapeHtml(pageTitle(product)) + "</title>\n" +
       '<meta name="description" content="' + escapeAttr(metaDescription(product)) + '">\n' +
       '<meta name="robots" content="max-image-preview:large">\n' +
@@ -546,7 +546,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<script src="/assets/js/i18n.js?v=20261115a"></script>\n' +
+      '<script src="/assets/js/i18n.js?v=20261117a"></script>\n' +
       '<link rel="stylesheet" href="/assets/css/style.css?v=20261115d">\n' +
       buildProductJsonLd(product, canonicalUrl) + "\n" +
       "</head>\n" +
@@ -622,13 +622,10 @@
       '<script src="/assets/js/firebase-config.js?v=20260915l" defer></script>\n' +
       '<script src="/assets/js/firebase-orders.js?v=20261022a" defer></script>\n' +
       '<script src="/assets/js/analytics.js?v=20261009a" defer></script>\n' +
-      '<script src="/assets/js/vendor/emailjs-browser-4.4.1.min.js" defer></script>\n' +
-      '<script src="/assets/js/emailjs-config.js?v=20261002e" defer></script>\n' +
-      '<script src="/assets/js/emailjs-notify.js?v=20261109f" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261101c" defer></script>\n' +
-      '<script src="/assets/js/drive-export.js?v=20261009b" defer></script>\n' +
+      '<script src="/assets/js/drive-export.js?v=20261117b" defer></script>\n' +
       '<script src="/assets/js/paypal-fee.js?v=20261109a" defer></script>\n' +
-      '<script src="/assets/js/cart.js?v=20261115h" defer></script>\n' +
+      '<script src="/assets/js/cart.js?v=20261117a" defer></script>\n' +
       '<script src="/assets/js/product-page.js?v=20261115a" data-product-id="' + escapeAttr(product.id) + '" defer></script>\n' +
       "</body>\n" +
       "</html>\n"
@@ -916,7 +913,7 @@
       '<link rel="icon" href="/images/site/favicon-16x16.png" sizes="16x16" type="image/png">\n' +
       '<link rel="apple-touch-icon" href="/images/site/apple-touch-icon.png">\n' +
       '<link rel="preload" href="/assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>\n' +
-      '<script src="/assets/js/i18n.js?v=20261115a"></script>\n' +
+      '<script src="/assets/js/i18n.js?v=20261117a"></script>\n' +
       '<link rel="stylesheet" href="/assets/css/style.css?v=20261115d">\n' +
       buildCategoryJsonLd(cat, items) + "\n" +
       "</head>\n" +

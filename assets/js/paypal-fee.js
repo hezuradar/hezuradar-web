@@ -1,7 +1,6 @@
 // Formas de pago y recargo de PayPal. Lo usan la cesta (cart.js), el aviso por email al
-// negocio (emailjs-notify.js) y el panel de pedidos (admin-orders.js); el email al cliente
-// (scripts/drive-export/Code.gs) repite la misma lógica porque el Apps Script no puede
-// cargar este archivo.
+// negocio y el email al cliente (scripts/drive-export/Code.gs, que repite la misma lógica
+// porque el Apps Script no puede cargar este archivo) y el panel de pedidos (admin-orders.js).
 //
 // PayPal tiene dos modalidades:
 //  - "amigos y familiares": sin comisión para la tienda, así que sin recargo para el cliente.

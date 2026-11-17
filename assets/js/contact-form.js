@@ -1,6 +1,6 @@
 // Formulario de contacto de la portada: botón «Escríbenos» de la tarjeta Contacto →
-// ventana modal con nombre, email, teléfono y mensaje (todos obligatorios) y reCAPTCHA v2 → email a la tienda con
-// EmailJS (HA_EMAIL.sendContactEmail en assets/js/emailjs-notify.js).
+// ventana modal con nombre, email, teléfono y mensaje (todos obligatorios) y reCAPTCHA v2 → email a la tienda
+// desde el Apps Script (HA_DRIVE.sendContact en assets/js/drive-export.js), que valida el reCAPTCHA.
 (function () {
   "use strict";
 
@@ -216,7 +216,7 @@
       setStatus("err", "Marca la casilla «No soy un robot» para enviar el mensaje.");
       return;
     }
-    if (!window.HA_EMAIL || !window.HA_EMAIL.sendContactEmail) {
+    if (!window.HA_DRIVE || !window.HA_DRIVE.sendContact) {
       setStatus("err", "No se ha podido enviar el mensaje. Escríbenos directamente a hezuradar@gmail.com.");
       return;
     }
@@ -225,7 +225,7 @@
     $("cf-submit").disabled = true;
     setStatus("info", "Enviando...");
     try {
-      await window.HA_EMAIL.sendContactEmail({ name: data.name, email: data.email, phone: data.phone, message: data.message, captchaToken: token });
+      await window.HA_DRIVE.sendContact({ name: data.name, email: data.email, phone: data.phone, message: data.message, captchaToken: token });
       markSent();
       $("contact-form").reset();
       setStatus("ok", "¡Mensaje enviado! Te responderemos lo antes posible.");

@@ -60,6 +60,27 @@
     }).catch((e) => console.warn("No se pudo exportar el pedido a Drive:", e));
   }
 
+  // Aviso al negocio de un pedido de la cesta recién guardado: el script lo lee de
+  // Firestore y manda el correo. Como el de Drive, en segundo plano y sin esperar respuesta.
+  function notifyOrderInBackground(orderId) {
+    if (!DRIVE_EXPORT_URL || !orderId) return;
+    fetch(DRIVE_EXPORT_URL, {
+      method: "POST",
+      mode: "no-cors",
+      keepalive: true,
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "notifyOrder", orderId }),
+    }).catch((e) => console.warn("No se pudo enviar el aviso del pedido:", e));
+  }
+
+  // Formulario de contacto de la portada: el script valida el reCAPTCHA y manda el correo.
+  async function sendContact(msg) {
+    if (!DRIVE_EXPORT_URL) throw new Error("El envío de mensajes no está configurado.");
+    const data = await callScript({ action: "contact", ...msg }, 45000);
+    if (!data.ok) throw new Error(data.error || "Error desconocido al enviar el mensaje.");
+    return data;
+  }
+
   // Clave PÚBLICA (site key) de Google reCAPTCHA v2 "No soy un robot" para hezuradar.com.
   // La secreta va solo en las propiedades del Apps Script (RECAPTCHA_SECRET).
   // Mientras esté vacía, la cesta no muestra la casilla ni envía el email al cliente.
@@ -93,6 +114,8 @@
     recaptchaSiteKey: RECAPTCHA_SITE_KEY,
     exportOrder,
     exportOrderInBackground,
+    notifyOrderInBackground,
+    sendContact,
     confirmCustomerEmail,
     resendCustomerEmail,
   };

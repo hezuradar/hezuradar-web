@@ -48,13 +48,17 @@ const CONFIRM_WINDOW_MINUTES = 30;
 // a Drive desde los diseñadores y confirmaciones al cliente desde la cesta). Gmail
 // personal permite ~100 correos al día: así un bucle de pedidos falsos no puede
 // agotarlos ni llenar Drive, y siempre queda margen para los avisos reales.
-const DAILY_LIMITS = { export: 25, confirm: 40, confirmPerRecipient: 3 };
+// notify: aviso al negocio de cada pedido de la cesta; contact: formulario de contacto.
+const DAILY_LIMITS = { export: 25, confirm: 40, confirmPerRecipient: 3, notify: 30, contact: 10 };
+const EMAIL_RE = /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/;
 
 function doPost(e) {
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || "{}");
+    if (body.action === "contact") return json_({ ok: true, ...sendContact_(body) });
     const orderId = String(body.orderId || "");
     if (!/^[A-Za-z0-9]{10,40}$/.test(orderId)) throw publicErr_("ID de pedido no válido.");
+    if (body.action === "notifyOrder") return json_({ ok: true, ...notifyOrder_(orderId) });
     if (body.action === "confirmCustomer") return json_({ ok: true, ...confirmCustomer_(orderId, String(body.captchaToken || "")) });
     if (body.action === "resendCustomer") return json_({ ok: true, ...resendCustomer_(orderId, String(body.idToken || "")) });
     // Con sesión de administrador ("Enviar a cortar") se puede reexportar siempre.
@@ -281,6 +285,158 @@ function notifyNewOrder_(o, code, folderUrl, designs, attachments) {
   });
 }
 
+/* ---------------- Aviso al negocio de los pedidos de la cesta ---------------- */
+
+// Antes lo mandaba EmailJS desde el navegador del cliente, con una clave pública que
+// cualquiera podía usar para mandar a NOTIFY_EMAIL correos con el texto que quisiera.
+// Ahora la cesta solo manda el ID y el correo sale del pedido guardado en Firestore:
+// una vez por pedido, solo en los primeros minutos y con tope diario. Los pedidos de
+// diseño avisan al exportarse a Drive (notifyNewOrder_).
+function notifyOrder_(orderId) {
+  const pre = getOrder_(orderId);
+  if (pre.notifiedAt) return { sent: false, reason: "ya avisado" };
+  if (orderDesigns_(pre).length) return { sent: false, reason: "pedido de diseño" };
+  checkRecent_(pre);
+  try {
+    const lock = LockService.getScriptLock();
+    lock.waitLock(15000);
+    try {
+      const o = getOrder_(orderId);
+      if (o.notifiedAt) return { sent: false, reason: "ya avisado" };
+      takeDailyQuota_("notify");
+      MailApp.sendEmail({
+        to: NOTIFY_EMAIL,
+        subject: `Nuevo pedido ${plain_(o.orderCode, 40)} · ${plain_((o.customer || {}).name, 60) || "sin nombre"}`,
+        htmlBody: ownerOrderEmailHtml_(o),
+        name: "HezurAdar",
+        replyTo: EMAIL_RE.test(String((o.customer || {}).email || "")) ? o.customer.email : undefined,
+      });
+      patchOrder_(orderId, { notifiedAt: new Date().toISOString() }, ["notifyError"]);
+    } finally {
+      lock.releaseLock();
+    }
+  } catch (err) {
+    // Queda en el pedido para que el panel avise de que no llegó el correo.
+    patchOrder_(orderId, { notifyError: String((err && err.message) || err).slice(0, 300) });
+    throw err;
+  }
+  return { sent: true };
+}
+
+// Mismo diseño que tenía la plantilla de EmailJS. Los textos libres pasan por plain_ (sin
+// enlaces): cualquiera puede crear un pedido, y el aviso no debe servir para colarte phishing.
+function ownerOrderEmailHtml_(o) {
+  const c = o.customer || {};
+  const s = o.shipping || {};
+  const T = EMAIL_TEXTS.es;
+  const items = Array.isArray(o.items) ? o.items : [];
+  const subtotal = Number(o.subtotal) || 0;
+  const shipping = Number(o.shippingCost) || 0;
+  const total = typeof o.total === "number" ? o.total : subtotal + shipping;
+  const fee = paypalFee_(o);
+  const howTo = paymentHowTo_(o, T);
+  const email = EMAIL_RE.test(String(c.email || "")) ? String(c.email) : "";
+  const td = "padding:4px 0;color:#33424c;font-size:13px";
+  const row = (label, value) => `<tr><td style="padding:2px 0"><b>${label}</b></td><td style="padding:2px 0;text-align:right">${value}</td></tr>`;
+  const rows = items
+    .map(
+      (it) => `<tr>
+        ${itemThumbCell_(it)}
+        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px">${esc_(plain_(it.title, 200))}
+          ${it.discountPercent ? `<span style="color:#6c7d89;font-size:12px"> (-${esc_(Number(it.discountPercent) || 0)}%)</span>` : ""}
+          <div style="color:#6c7d89;font-size:12px">${esc_(Number(it.qty) || 0)} × ${esc_(eur_(it.price))}</div></td>
+        <td style="padding:10px 0;border-bottom:1px solid #e1e8ed;color:#1c2b36;font-size:14px;text-align:right;white-space:nowrap">${esc_(eur_((Number(it.price) || 0) * (Number(it.qty) || 0)))}</td>
+      </tr>`
+    )
+    .join("");
+  const notes = plain_(s.notes, 1000);
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e1e8ed;border-radius:12px;overflow:hidden">
+    <div style="background:#245F96;padding:22px 28px"><span style="color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:.3px">Hezur&amp;Adar</span>
+      <div style="color:#cfe0f0;font-size:12px;margin-top:2px">Nuevo pedido recibido</div></div>
+    <div style="padding:28px">
+      <h2 style="margin:0 0 4px;color:#1c2b36;font-size:19px">Pedido ${esc_(plain_(o.orderCode, 40))}</h2>
+      <p style="margin:0 0 18px;color:#6c7d89;font-size:13px">${esc_(date_(o.createdAtServer || o.createdAt))}</p>
+      <div style="background:#f5f7f9;border-radius:10px;padding:14px 16px;margin-bottom:20px">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;color:#33424c">
+          ${row("Cliente", esc_(plain_(c.name, 200)))}
+          ${row("Teléfono", esc_(plain_(c.phone, 40) || "-"))}
+          ${row("Email", email ? `<a href="mailto:${esc_(email)}" style="color:#245F96;text-decoration:none">${esc_(email)}</a>` : "-")}
+          ${row("Forma de pago", esc_(paymentLabel_(o, T)))}
+        </table>
+        ${howTo ? `<p style="margin:10px 0 0;color:#245F96;font-size:12px">Instrucción que ha visto el cliente: ${esc_(howTo)}</p>` : ""}
+      </div>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:6px">${rows}</table>
+      <table style="width:100%;border-collapse:collapse;margin-top:10px">
+        <tr><td style="${td}">Subtotal</td><td style="${td};text-align:right">${esc_(eur_(subtotal))}</td></tr>
+        ${shipping ? `<tr><td style="${td}">${esc_(plain_(s.method, 60) || "Envío")}</td><td style="${td};text-align:right">${esc_(eur_(shipping))}</td></tr>` : ""}
+        ${fee ? `<tr><td style="${td}">${esc_(T.paypalFee)}</td><td style="${td};text-align:right">${esc_(eur_(fee))}</td></tr>` : ""}
+        <tr><td style="padding:8px 0 0;color:#1c2b36;font-size:16px;font-weight:bold;border-top:1px solid #e1e8ed">Total</td>
+            <td style="padding:8px 0 0;color:#245F96;font-size:16px;font-weight:bold;text-align:right;border-top:1px solid #e1e8ed">${esc_(eur_(total))}</td></tr>
+      </table>
+      <div style="margin-top:22px;padding-top:18px;border-top:1px solid #e1e8ed">
+        <p style="margin:0 0 4px;color:#1c2b36;font-size:14px;font-weight:bold">Dirección de envío</p>
+        <div style="${td}">${esc_(plain_(s.address, 300))}<br>${esc_(plain_(s.postalCode, 20))} ${esc_(plain_(s.city, 120))}${s.province ? " (" + esc_(plain_(s.province, 120)) + ")" : ""}${s.country ? "<br>" + esc_(plain_(s.country, 80)) : ""}</div>
+        ${notes ? `<p style="margin:8px 0 0;color:#6c7d89;font-size:13px"><b>Notas del cliente:</b> ${esc_(notes)}</p>` : ""}
+        ${o.lang === "en" ? `<p style="margin:8px 0 0;color:#6c7d89;font-size:13px"><b>🌐 El cliente ha comprado con la web en inglés.</b></p>` : ""}
+      </div>
+      <p style="margin:22px 0 0;font-size:13px"><a href="${SITE_URL}admin.html" style="color:#245F96">Abrir el panel de pedidos</a> · Revisa ahí el importe antes de pedir el pago.</p>
+    </div>
+  </div>`;
+}
+
+/* ---------------- Formulario de contacto ---------------- */
+
+// Mensaje del formulario de la portada (assets/js/contact-form.js). Exige el reCAPTCHA
+// (validado aquí con Google) y tiene tope diario, para que nadie lo use en bucle.
+function sendContact_(body) {
+  const msg = {
+    name: String(body.name || "").trim(),
+    email: String(body.email || "").trim(),
+    phone: String(body.phone || "").trim(),
+    message: String(body.message || "").trim(),
+  };
+  const valid =
+    msg.name && msg.name.length <= 100 &&
+    EMAIL_RE.test(msg.email) && msg.email.length <= 150 &&
+    msg.phone && msg.phone.length <= 20 &&
+    msg.message.length >= 5 && msg.message.length <= 3000;
+  if (!valid) throw publicErr_("Revisa los datos del formulario.");
+  verifyCaptcha_(String(body.captchaToken || ""));
+  const lock = LockService.getScriptLock();
+  lock.waitLock(15000);
+  try {
+    takeDailyQuota_("contact");
+    MailApp.sendEmail({
+      to: NOTIFY_EMAIL,
+      subject: `Mensaje de contacto · ${plain_(msg.name, 60)}`,
+      htmlBody: contactEmailHtml_(msg),
+      name: "HezurAdar",
+      replyTo: msg.email,
+    });
+  } finally {
+    lock.releaseLock();
+  }
+  return { sent: true };
+}
+
+function contactEmailHtml_(msg) {
+  const td = "padding:3px 0;color:#1c2b36;font-size:14px";
+  const label = "padding:3px 0;color:#6c7d89;font-size:13px;width:70px";
+  return `<div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #e1e8ed;border-radius:12px;overflow:hidden">
+    <div style="background:#245F96;padding:22px 28px"><span style="color:#ffffff;font-size:20px;font-weight:bold;letter-spacing:.3px">Hezur&amp;Adar</span></div>
+    <div style="padding:26px 28px">
+      <p style="margin:0 0 16px;color:#1c2b36;font-size:16px;font-weight:bold">Nuevo mensaje desde el formulario de contacto</p>
+      <table style="width:100%;border-collapse:collapse;margin-bottom:16px">
+        <tr><td style="${label}">Nombre</td><td style="${td}">${esc_(msg.name)}</td></tr>
+        <tr><td style="${label}">Email</td><td style="${td}">${esc_(msg.email)}</td></tr>
+        <tr><td style="${label}">Teléfono</td><td style="${td}">${esc_(msg.phone)}</td></tr>
+      </table>
+      <div style="padding:14px 16px;background:#f5f8fa;border-radius:8px;color:#1c2b36;font-size:14px;line-height:1.6;white-space:pre-wrap">${esc_(msg.message)}</div>
+      <p style="margin:18px 0 0;color:#6c7d89;font-size:12px">Responde a este correo para contestar a ${esc_(msg.email)}.</p>
+    </div>
+  </div>`;
+}
+
 /* ---------------- Confirmación al cliente ---------------- */
 
 function confirmCustomer_(orderId, captchaToken) {
@@ -348,6 +504,10 @@ function verifyAdmin_(idToken) {
     method: "post",
     contentType: "application/json",
     payload: JSON.stringify({ idToken: idToken }),
+    // La clave API está restringida por sitio web (Google Cloud → Credenciales): sin esta
+    // cabecera, Google rechazaría la petición del script y el panel no podría reenviar
+    // emails ni enviar a cortar.
+    headers: { Referer: "https://hezuradar.com/" },
     muteHttpExceptions: true,
   });
   const user = ((JSON.parse(res.getContentText() || "{}").users) || [])[0];
@@ -363,7 +523,7 @@ function verifyAdmin_(idToken) {
 function sendCustomerEmail_(o) {
   const c = o.customer || {};
   const email = String(c.email || "").trim();
-  if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email) || email.length > 200) {
+  if (!EMAIL_RE.test(email) || email.length > 200) {
     throw publicErr_("El pedido no tiene un email de cliente válido.");
   }
   MailApp.sendEmail({
@@ -534,7 +694,7 @@ function plain_(str, max) {
     .slice(0, max || 120);
 }
 
-// Miniatura de cada producto, como en el aviso al negocio (assets/js/emailjs-notify.js).
+// Miniatura de cada producto (email al cliente y aviso al negocio).
 // La ruta la escribe el navegador del cliente: solo se aceptan fotos de producto de la
 // propia web, así el correo no puede cargar imágenes de otro sitio.
 const SITE_URL = "https://hezuradar.com/";

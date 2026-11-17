@@ -877,21 +877,10 @@
     if (first) first.focus();
   }
 
-  function withTimeout(promise, ms) {
-    let timer;
-    return Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        timer = setTimeout(() => reject(Object.assign(new Error("Tiempo de espera agotado"), { code: "timeout" })), ms);
-      }),
-    ]).finally(() => clearTimeout(timer));
-  }
-
-  // Pedidos que no llegaron a Firestore (sin conexión, tiempo agotado...): se guardan en el
-  // navegador del cliente y se reintentan con el mismo ID, para que no se pierdan del panel
-  // aunque el aviso por email y WhatsApp sí haya salido.
+  // Pedidos que no llegaron a Firestore cuando el aviso salía por EmailJS (antes del
+  // 17/11/2026): quedaron en el navegador del cliente y se reintentan con el mismo ID al
+  // volver a la web. Ya no se añaden nuevos: sin guardado no hay aviso y el cliente reintenta.
   const LS_UNSAVED = "ha_unsaved_orders";
-  const RETRY_DELAYS_MS = [8000, 30000, 90000];
   const MAX_UNSAVED_ATTEMPTS = 6;
   let flushing = false;
 
@@ -911,12 +900,6 @@
     } catch (e) {
       // Sin almacenamiento solo quedan los reintentos mientras la página siga abierta.
     }
-  }
-
-  function queueUnsaved(docId, order, maybeSaved) {
-    if (!docId) return;
-    const rest = readUnsaved().filter((e) => e.docId !== docId);
-    writeUnsaved(rest.concat({ docId, order, attempts: 0, maybeSaved: !!maybeSaved }));
   }
 
   async function flushUnsaved() {
@@ -1071,42 +1054,22 @@
         },
       };
 
-      // Base de datos y aviso por email al negocio van en paralelo: si uno de los dos
-      // se cuelga o falla, el otro sigue llegando.
-      const [saved, mailed] = await Promise.allSettled([
-        window.HA_DB && window.HA_DB.saveOrder
-          ? window.HA_DB.saveOrder(order, { id: po.docId })
-          : Promise.reject(new Error("Base de datos no disponible")),
-        window.HA_EMAIL && window.HA_EMAIL.sendOrderEmail
-          ? withTimeout(window.HA_EMAIL.sendOrderEmail(order), 15000)
-          : Promise.reject(new Error("Email no disponible")),
-      ]);
-
-      let orderId = saved.status === "fulfilled" ? saved.value : null;
-      if (!orderId) {
-        const err = saved.reason || {};
+      // El aviso por email al negocio lo manda el Apps Script leyendo el pedido guardado
+      // (HA_DRIVE.notifyOrderInBackground, más abajo): si no se guarda, no llega nada.
+      let orderId = null;
+      try {
+        if (!window.HA_DB || !window.HA_DB.saveOrder) throw new Error("Base de datos no disponible");
+        orderId = await window.HA_DB.saveOrder(order, { id: po.docId });
+      } catch (err) {
         console.error("No se pudo guardar el pedido en la base de datos:", err);
         // Un intento anterior se quedó sin respuesta y ahora las reglas rechazan el mismo
         // documento: es que aquel guardado sí llegó (solo el admin puede modificarlo).
         if (po.maybeSaved && /permission/i.test(String(err.code || err.message))) orderId = po.docId;
         if (err.code === "timeout") po.maybeSaved = true;
-        if (!orderId && mailed.status === "fulfilled") {
-          // El cliente verá el pedido como hecho (el aviso al negocio salió) pero no consta en
-          // el panel: se guarda una copia limpia (sin los campos que se añaden más abajo) para
-          // reintentarlo y se avisa al negocio con el motivo. Si el aviso también falló, no se
-          // da el pedido por hecho y el cliente reintenta con el mismo ID.
-          queueUnsaved(po.docId, JSON.parse(JSON.stringify(order)), po.maybeSaved);
-          RETRY_DELAYS_MS.forEach((ms) => setTimeout(flushUnsaved, ms));
-          order.notRegistered = String(err.code || err.message || "desconocido").slice(0, 120);
-          if (window.HA_EMAIL && window.HA_EMAIL.sendOrderEmail) {
-            window.HA_EMAIL.sendOrderEmail({ ...order }).catch((e) => console.error("No se pudo enviar el aviso de pedido sin registrar:", e));
-          }
-        }
       }
-      if (mailed.status === "rejected") console.error("No se pudo enviar el email del pedido:", mailed.reason);
 
       const waUrl = whatsappUrl(order);
-      if (!orderId && mailed.status === "rejected") {
+      if (!orderId) {
         // No ha llegado nada al negocio: no se da el pedido por hecho ni se vacía la cesta.
         if (waWindow) waWindow.close();
         setCheckoutStatus(
@@ -1129,6 +1092,7 @@
       clearCart();
       openDrawer("success");
 
+      if (window.HA_DRIVE && window.HA_DRIVE.notifyOrderInBackground) window.HA_DRIVE.notifyOrderInBackground(orderId);
       if (order.customerEmailRequested && window.HA_DRIVE) {
         window.HA_DRIVE.confirmCustomerEmail(orderId, token).then((ok) => setCustomerEmailStatus(ok, email));
       }
@@ -1161,7 +1125,6 @@
     const fee = paypalApi() ? paypalApi().orderFee(order) : 0;
     return [
       `🛒 *Nuevo pedido ${order.orderCode}*`,
-      order.notRegistered ? "⚠️ No se pudo registrar en el panel: añadirlo a mano." : null,
       uiLang() === "en" ? "🌐 El cliente ha comprado con la web en inglés." : null,
       "",
       "Productos:",
