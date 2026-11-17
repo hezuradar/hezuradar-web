@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<!-- Iframe invisible de App Check (assets/js/app-check.js). Aquí, y solo aquí, se carga
+     reCAPTCHA Enterprise (Fraud Defense): si se cargara en la página, su enterprise.js se
+     quedaría con grecaptcha.render y la casilla «No soy un robot» de la cesta y del contacto
+     dejaría de emitir tokens que el Apps Script sabe verificar. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://www.google.com https://www.gstatic.com; frame-src https://www.google.com https://recaptcha.google.com; connect-src https://content-firebaseappcheck.googleapis.com https://www.google.com; img-src https://www.gstatic.com data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none';">
+<title>App Check</title>
+</head>
+<body>
+<script src="/assets/js/vendor/firebase-app-compat-10.12.2.js"></script>
+<script src="/assets/js/vendor/firebase-app-check-compat-10.12.2.js"></script>
+<script src="/assets/js/firebase-config.js?v=20260915l"></script>
+<script src="/assets/js/app-check-frame.js?v=20261117a"></script>
+</body>
+</html>

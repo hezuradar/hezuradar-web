@@ -28,10 +28,13 @@
     });
   }
 
+  // App Check (assets/js/app-check.js) se activa antes de cargar Firestore, para que el SDK
+  // mande su token en cada petición. Si App Check falla, el pedido se guarda igual.
   function loadSdk() {
     if (window.firebase && window.firebase.firestore) return Promise.resolve();
     if (!sdkPromise) {
-      sdkPromise = SDK_SCRIPTS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve()).catch((e) => {
+      const appCheck = window.HA_APPCHECK ? window.HA_APPCHECK.load() : Promise.resolve(false);
+      sdkPromise = appCheck.then(() => SDK_SCRIPTS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve())).catch((e) => {
         sdkPromise = null; // se podrá reintentar
         throw e;
       });
@@ -48,6 +51,7 @@
     if (!window.firebase) return null;
     try {
       if (!firebase.apps.length) firebase.initializeApp(window.HA_FIREBASE_CONFIG);
+      if (window.HA_APPCHECK) window.HA_APPCHECK.activate();
       return firebase.app();
     } catch (e) {
       console.error("Firebase no se pudo inicializar:", e);
@@ -114,10 +118,12 @@
         },
       ],
     };
+    const baseHeaders = { "Content-Type": "application/json" };
+    const headers = window.HA_APPCHECK ? await window.HA_APPCHECK.headers(baseHeaders) : baseHeaders;
     const res = await withTimeout(
       fetch(`https://firestore.googleapis.com/v1/${base}:commit?key=${cfg.apiKey}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(body),
       }),
       SAVE_TIMEOUT_MS,

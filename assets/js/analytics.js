@@ -2,7 +2,8 @@
 // cuadro de mando de "Estadísticas" en el panel de administración. No usa ningún
 // servicio de terceros (nada que pagar ni configurar fuera de Firebase, que ya se usa
 // para los pedidos). Va por la API REST de Firestore con una sola petición, para no
-// tener que cargar el SDK de Firebase (~370 KB) en cada visita.
+// tener que cargar el SDK de Firebase (~370 KB) en cada visita. Cada petición lleva el token
+// de App Check (assets/js/app-check.js), que solo carga Firebase App (~55 KB con App Check).
 (function () {
   "use strict";
 
@@ -56,16 +57,18 @@
     const body = {
       writes: [{ update: { name: docName, fields }, updateMask: { fieldPaths: mask }, updateTransforms: transforms }],
     };
-    try {
-      fetch(
-        `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents:commit?key=${cfg.apiKey}`,
-        { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }
-      ).catch(() => {
+    const baseHeaders = { "Content-Type": "application/json" };
+    const headersReady = window.HA_APPCHECK ? window.HA_APPCHECK.headers(baseHeaders) : Promise.resolve(baseHeaders);
+    headersReady
+      .then((headers) =>
+        fetch(
+          `https://firestore.googleapis.com/v1/projects/${cfg.projectId}/databases/(default)/documents:commit?key=${cfg.apiKey}`,
+          { method: "POST", keepalive: true, headers, body: JSON.stringify(body) }
+        )
+      )
+      .catch(() => {
         // El registro de estadísticas nunca debe interrumpir la visita del cliente.
       });
-    } catch (e) {
-      // Igual que arriba: se ignora en silencio.
-    }
   }
 
   function trackPageview() {
@@ -81,9 +84,11 @@
   window.HA_ANALYTICS = { trackProductView };
 
   // La visita a la página se registra sola, sin que las demás páginas tengan que llamarla.
-  if (document.readyState === "complete" || document.readyState === "interactive") {
+  // Después de la carga completa: App Check descarga Firebase y reCAPTCHA, y así no retrasa
+  // la página que ve el cliente.
+  if (document.readyState === "complete") {
     trackPageview();
   } else {
-    document.addEventListener("DOMContentLoaded", trackPageview);
+    window.addEventListener("load", trackPageview, { once: true });
   }
 })();
