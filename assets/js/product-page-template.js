@@ -620,7 +620,7 @@
       // las alinea scripts/generate-product-pages.js con las de index.html.
       '<script src="/assets/js/year.js?v=20261115a" defer></script>\n' +
       '<script src="/assets/js/firebase-config.js?v=20260915l" defer></script>\n' +
-      '<script src="/assets/js/app-check.js?v=20261117b" defer></script>\n' +
+      '<script src="/assets/js/app-check.js?v=20261117e" defer></script>\n' +
       '<script src="/assets/js/firebase-orders.js?v=20261117a" defer></script>\n' +
       '<script src="/assets/js/analytics.js?v=20261117a" defer></script>\n' +
       '<script src="/assets/js/catalog-template.js?v=20261101c" defer></script>\n' +

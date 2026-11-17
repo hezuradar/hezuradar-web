@@ -21,7 +21,10 @@
     "/assets/js/vendor/firebase-app-compat-10.12.2.js",
     "/assets/js/vendor/firebase-app-check-compat-10.12.2.js",
   ];
-  const TOKEN_TIMEOUT_MS = 10000;
+  // Un token nuevo tarda entre 0,7 y 7 s (medido en hezuradar.com el 17/11/2026), más la
+  // carga del iframe la primera vez. Con la obligatoriedad activada, un token que no llega es
+  // un pedido rechazado: mejor esperar de más.
+  const TOKEN_TIMEOUT_MS = 25000;
   const REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
   let frame = null;
@@ -83,11 +86,22 @@
   }
 
   // { token, expireTimeMillis }, reutilizando el último mientras le queden más de 5 minutos.
+  // Si ya hay una petición en curso (estadísticas y cesta a la vez), se espera a esa.
+  let inFlight = null;
   async function tokenResult(forceRefresh) {
     if (!window.HA_FIREBASE_ENABLED) throw new Error("Firebase no está configurado.");
     if (!forceRefresh && cached && cached.expireTimeMillis - Date.now() > REFRESH_MARGIN_MS) return cached;
-    cached = await requestToken(forceRefresh);
-    return cached;
+    if (!forceRefresh && inFlight) return inFlight;
+    const req = requestToken(forceRefresh).then((res) => {
+      cached = res;
+      return res;
+    });
+    inFlight = req;
+    try {
+      return await req;
+    } finally {
+      if (inFlight === req) inFlight = null;
+    }
   }
 
   // Token para las peticiones REST. Devuelve "" si no se puede conseguir (bloqueador,
@@ -149,10 +163,12 @@
   }
 
   // Carga Firebase App y App Check (31 KB + 23 KB) y activa App Check, antes de que
-  // firebase-orders.js cargue Firestore.
+  // firebase-orders.js cargue Firestore. Pide ya el token en segundo plano: la cesta llama
+  // aquí al abrir el pago (HA_DB.preload), y así está listo cuando el cliente confirma.
   function load() {
     if (!window.HA_FIREBASE_ENABLED) return Promise.resolve(false);
     if (!sdkPromise) {
+      tokenResult(false).catch(() => {});
       sdkPromise = SDK_SCRIPTS.reduce((p, src) => p.then(() => loadScript(src)), Promise.resolve())
         .then(activate)
         .catch((e) => {
