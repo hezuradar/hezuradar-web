@@ -262,19 +262,13 @@
     return o;
   }
 
-  // Precio unitario que debería tener una línea según el catálogo publicado (con
-  // descuentos por cantidad y porcentaje), para detectar pedidos con precios alterados.
-  // Solo en pedidos pendientes: se compara con el catálogo actual, así que un pedido ya
-  // confirmado saldría marcado en cuanto cambiase un precio después de hacerlo.
-  function catalogPriceMismatches(o) {
-    if (o.status !== "pendiente") return [];
-    if (!catalogProducts.length || !window.HA_CATALOG_TEMPLATE) return [];
-    return (o.items || []).filter((it) => {
-      const p = catalogProducts.find((x) => x.id === it.id);
-      if (!p) return false;
-      const expected = window.HA_CATALOG_TEMPLATE.unitPriceFor(p, Number(it.qty) || 1);
-      return Math.abs((Number(it.price) || 0) - expected) > 0.005;
-    });
+  // Avisos de importes alterados (assets/js/order-integrity.js): precios distintos del
+  // catálogo, productos inventados y subtotal/total que no cuadran con las líneas.
+  function orderIntegrityIssues(o) {
+    const api = window.HA_ORDER_INTEGRITY;
+    if (!api) return [];
+    const unitPriceFor = window.HA_CATALOG_TEMPLATE && window.HA_CATALOG_TEMPLATE.unitPriceFor;
+    return api.orderIssues(o, catalogProducts, unitPriceFor);
   }
 
   /* ---------------- LIST + REVENUE ---------------- */
@@ -1181,7 +1175,7 @@
             ${d.fileInDrive && ds.driveFolderUrl ? `<p class="help-text">El archivo original está en <a href="${escapeAttr(safeLinkUrl(ds.driveFolderUrl))}" target="_blank" rel="noopener">su carpeta de Drive</a>.</p>` : ""}`;
       })
       .join("");
-    const mismatches = design ? [] : catalogPriceMismatches(o);
+    const integrityIssues = design ? [] : orderIntegrityIssues(o);
 
     return `
       <article class="order-card status-${escapeAttr(status)}" id="order-card-${escapeAttr(o.docId)}">
@@ -1224,7 +1218,7 @@
               ${shippingCost > 0 ? `<div class="order-total-row"><span>Envío</span><span>${formatPrice(shippingCost)}</span></div>` : ""}
               <div class="order-total-row order-total-grand"><span>Total</span><b>${formatPrice(total)}</b></div>
             </div>
-            ${mismatches.length ? `<div class="status-msg err">⚠️ Precio distinto del catálogo en: ${escapeHtml(mismatches.map((it) => it.title).join(", "))}. Revisa el importe antes de confirmar.</div>` : ""}
+            ${integrityIssues.length ? `<div class="status-msg err">⚠️ ${integrityIssues.map(escapeHtml).join("<br>")} Revisa el importe antes de confirmar.</div>` : ""}
             ${showPrep ? prepSummaryHtml(prep, id, codeAttr) : ""}`
             }
           </div>
